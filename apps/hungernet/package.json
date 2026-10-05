@@ -1,0 +1,31 @@
+{
+  "name": "@hungernet/hungernet-site",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0 --port 4181",
+    "build": "tsc --noEmit -p tsconfig.json && vite build",
+    "lint": "eslint .",
+    "typecheck": "tsc -b --pretty",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@hungernet/api-client": "workspace:*",
+    "@hungernet/auth": "workspace:*",
+    "@hungernet/styles": "workspace:*",
+    "@hungernet/types": "workspace:*",
+    "@hungernet/ui": "workspace:*",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-router-dom": "^7.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^4.4.1",
+    "typescript": "^5.8.2",
+    "vite": "^6.2.2",
+    "vitest": "^3.0.8"
+  }
+}

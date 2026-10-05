@@ -1,0 +1,269 @@
+from __future__ import annotations
+
+import secrets
+from datetime import UTC, datetime
+
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
+from sqlalchemy import func, select
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.config import settings
+from app.core.deps import (
+    get_current_user,
+    get_current_user_id,
+    get_db,
+    require_csrf,
+    require_permission,
+    require_recent_auth,
+)
+from app.core.security import hash_token, verify_session_token
+from app.db.models import AuditEvent, Identity, Session, User
+from app.integrations.oauth import OAuthProviderError, authorization_url
+from app.schemas.public import PublicProfileResponse
+from app.schemas.user import LinkedIdentityResponse, SessionDeviceResponse, UserMeResponse, UserUpdateRequest
+from app.services.auth_service import AuthFlowError, AuthService
+
+router = APIRouter(prefix="/users", tags=["users"])
+
+
+@router.get("/me", response_model=UserMeResponse)
+async def read_current_user(user: User = Depends(get_current_user)) -> UserMeResponse:
+    return UserMeResponse(
+        id=user.id,
+        username=user.username,
+        email=user.email,
+        display_name=user.display_name,
+        avatar_url=user.avatar_url,
+        bio=user.bio,
+        profile_visibility=user.profile_visibility,
+        is_active=user.is_active,
+        is_superuser=user.is_superuser,
+    )
+
+
+@router.patch(
+    "/me",
+    response_model=UserMeResponse,
+    dependencies=[Depends(require_csrf), Depends(require_permission("platform.profile.update"))],
+)
+async def update_current_user(
+    payload: UserUpdateRequest,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> UserMeResponse:
+    updates = payload.model_dump(exclude_unset=True)
+    if "username" in updates and updates["username"]:
+        normalized = updates["username"].strip().lower()
+        conflict = await db.scalar(
+            select(User.id).where(func.lower(User.username) == normalized, User.id != user.id)
+        )
+        if conflict:
+            raise HTTPException(status_code=409, detail="Username is already in use")
+        updates["username"] = normalized
+    if "avatar_url" in updates and updates["avatar_url"] is not None:
+        updates["avatar_url"] = str(updates["avatar_url"])
+    for field, value in updates.items():
+        setattr(user, field, value)
+    try:
+        await db.commit()
+    except IntegrityError as error:
+        await db.rollback()
+        raise HTTPException(status_code=409, detail="Profile value conflicts with another account") from error
+    await db.refresh(user)
+    return UserMeResponse(
+        id=user.id,
+        username=user.username,
+        email=user.email,
+        display_name=user.display_name,
+        avatar_url=user.avatar_url,
+        bio=user.bio,
+        profile_visibility=user.profile_visibility,
+        is_active=user.is_active,
+        is_superuser=user.is_superuser,
+    )
+
+
+@router.get("/me/identities", response_model=list[LinkedIdentityResponse])
+async def list_linked_identities(
+    user_id: str = Depends(get_current_user_id),
+    db: AsyncSession = Depends(get_db),
+) -> list[LinkedIdentityResponse]:
+    identities = await db.scalars(
+        select(Identity).where(Identity.user_id == user_id).order_by(Identity.created_at)
+    )
+    return [
+        LinkedIdentityResponse(
+            provider=item.provider,
+            linked_at=item.created_at,
+            provider_email=item.provider_email,
+        )
+        for item in identities
+    ]
+
+
+@router.post(
+    "/me/identities/{provider}/start",
+    dependencies=[Depends(require_csrf), Depends(require_recent_auth)],
+)
+async def start_identity_link(
+    provider: str,
+    request: Request,
+    response: Response,
+    user_id: str = Depends(get_current_user_id),
+    db: AsyncSession = Depends(get_db),
+) -> dict[str, str]:
+    provider = provider.lower()
+    if provider not in settings.allowed_oauth_providers:
+        raise HTTPException(status_code=404, detail="Unsupported OAuth provider")
+    token = request.cookies.get(settings.session_cookie_name)
+    if not token:
+        credentials = request.headers.get("authorization", "")
+        token = credentials[7:] if credentials.lower().startswith("bearer ") else ""
+    claims = verify_session_token(token)
+    if claims is None or claims.get("sub") != user_id:
+        raise HTTPException(status_code=401, detail="A valid current session is required to link identities")
+
+    redirect_uri = f"{settings.oauth_callback_base_url.rstrip('/')}/auth/oauth/{provider}/callback"
+    return_to = f"{settings.allowed_return_origins[0]}/security"
+    try:
+        transaction, state, challenge = await AuthService.begin_oauth(
+            db,
+            provider=provider,
+            redirect_uri=redirect_uri,
+            return_to=return_to,
+            purpose="link",
+            user_id=user_id,
+            session_id=claims["sid"],
+        )
+        url = authorization_url(
+            provider,
+            state=state,
+            nonce=transaction.nonce,
+            code_challenge=challenge,
+            redirect_uri=redirect_uri,
+        )
+    except (AuthFlowError, OAuthProviderError) as error:
+        raise HTTPException(status_code=503, detail="OAuth provider is unavailable") from error
+    response.set_cookie(
+        f"{settings.csrf_cookie_name}_oauth",
+        state,
+        max_age=600,
+        secure=settings.session_cookie_secure,
+        httponly=True,
+        samesite="lax",
+        domain=settings.session_cookie_domain,
+        path=f"{settings.api_v1_prefix}/auth/oauth/{provider}/callback",
+    )
+    return {"authorization_url": url}
+
+
+@router.delete(
+    "/me/identities/{provider}",
+    status_code=204,
+    dependencies=[Depends(require_csrf), Depends(require_recent_auth)],
+)
+async def unlink_identity(
+    provider: str,
+    user: User = Depends(require_permission("platform.profile.update")),
+    db: AsyncSession = Depends(get_db),
+) -> Response:
+    identity = await db.scalar(
+        select(Identity).where(Identity.user_id == user.id, Identity.provider == provider.lower())
+    )
+    if identity is None:
+        raise HTTPException(status_code=404, detail="Linked identity not found")
+    identity_count = await db.scalar(select(func.count()).select_from(Identity).where(Identity.user_id == user.id))
+    if (identity_count or 0) <= 1:
+        raise HTTPException(status_code=409, detail="Cannot remove the last sign-in identity")
+    db.add(
+        AuditEvent(
+            actor_user_id=user.id,
+            action="identity.unlinked",
+            target_type="identity",
+            target_id=identity.id,
+            details=f"Unlinked provider {identity.provider}",
+        )
+    )
+    await db.delete(identity)
+    await db.commit()
+    return Response(status_code=204)
+
+
+@router.get("/me/sessions", response_model=list[SessionDeviceResponse])
+async def list_sessions(
+    request: Request,
+    user_id: str = Depends(get_current_user_id),
+    db: AsyncSession = Depends(get_db),
+) -> list[SessionDeviceResponse]:
+    token = request.cookies.get(settings.session_cookie_name)
+    claims = verify_session_token(token) if token else None
+    sessions = await db.scalars(
+        select(Session)
+        .where(Session.user_id == user_id, Session.revoked_at.is_(None))
+        .order_by(Session.last_seen_at.desc())
+    )
+    return [
+        SessionDeviceResponse(
+            id=item.id,
+            device_label=item.device_label,
+            created_at=item.created_at,
+            last_seen_at=item.last_seen_at,
+            expires_at=item.expires_at,
+            current=bool(claims and claims.get("sid") == item.id),
+        )
+        for item in sessions
+    ]
+
+
+@router.delete("/me/sessions/{session_id}", status_code=204, dependencies=[Depends(require_csrf)])
+async def revoke_session(
+    session_id: str,
+    request: Request,
+    user_id: str = Depends(get_current_user_id),
+    db: AsyncSession = Depends(get_db),
+) -> Response:
+    session = await db.scalar(
+        select(Session).where(Session.id == session_id, Session.user_id == user_id, Session.revoked_at.is_(None))
+    )
+    if session is None:
+        raise HTTPException(status_code=404, detail="Session not found")
+    session.revoked_at = datetime.now(UTC)
+    await db.commit()
+    response = Response(status_code=204)
+    current_token = request.cookies.get(settings.session_cookie_name)
+    current_claims = verify_session_token(current_token) if current_token else None
+    if current_claims and current_claims.get("sid") == session_id:
+        response.delete_cookie(settings.session_cookie_name, domain=settings.session_cookie_domain, path="/")
+    return response
+
+
+@router.delete("/me/sessions", status_code=204, dependencies=[Depends(require_csrf)])
+async def revoke_other_sessions(
+    request: Request,
+    user_id: str = Depends(get_current_user_id),
+    db: AsyncSession = Depends(get_db),
+) -> Response:
+    current_token = request.cookies.get(settings.session_cookie_name)
+    current_claims = verify_session_token(current_token) if current_token else None
+    statement = select(Session).where(Session.user_id == user_id, Session.revoked_at.is_(None))
+    sessions = await db.scalars(statement)
+    now = datetime.now(UTC)
+    for session in sessions:
+        if not current_claims or session.id != current_claims.get("sid"):
+            session.revoked_at = now
+    await db.commit()
+    return Response(status_code=204)
+
+
+@router.get("/{username}", response_model=PublicProfileResponse)
+async def get_user_by_username(username: str, db: AsyncSession = Depends(get_db)) -> PublicProfileResponse:
+    user = await db.scalar(select(User).where(func.lower(User.username) == username.lower()))
+    if user is None or user.profile_visibility != "public" or not user.is_active:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    return PublicProfileResponse(
+        username=user.username,
+        display_name=user.display_name,
+        avatar_url=user.avatar_url,
+        bio=user.bio,
+    )

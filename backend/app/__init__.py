@@ -1,0 +1,1 @@
+"""HungerNet platform API application."""
