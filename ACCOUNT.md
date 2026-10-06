@@ -24,9 +24,9 @@ The app uses its API session cookie when available. Otherwise, it sends the app-
 
 Normal sites use `https://api.hungernet.dev/api/v1`. The shared `.hungernet.dev` session cookie can be scoped to the normal HungerNet domain; third-party app domains rely on the app-scoped PKCE token when the cookie is unavailable.
 
-Workers.dev sites use `https://api.hacklets.dev/api/v1`. Because the Accounts site and API are cross-site, the API must allow the requesting Workers.dev origin through CORS and issue host-only `Secure; SameSite=None` session and CSRF cookies. It must not set the `.hungernet.dev` cookie domain for a Workers.dev request. OAuth state cookies remain short-lived and `SameSite=Lax` because they are used on the API's provider callback.
+Workers.dev apps use `https://api.hacklets.dev/api/v1`, except the Accounts app. The Accounts Worker proxies `/api/v1` requests to the API from the same origin so browsers can use its host-only session and CSRF cookies without third-party-cookie access. Wrangler must route `/api/v1` through the Worker before serving SPA assets. The API must allow Workers.dev origins through CORS and must not set the `.hungernet.dev` cookie domain for a Workers.dev request. OAuth state cookies remain short-lived and `SameSite=Lax` because they are used on the API's provider callback.
 
-The browser makes API requests to the API host selected above and authorization navigations to the matching Accounts host; it does not need a connection to `*.hungernet.dev` while using a Workers.dev app. This requires a deployed API version that includes the Workers.dev CORS/cookie handling and current auth routes.
+The browser makes API requests to the API host selected above (or the Accounts same-origin proxy) and authorization navigations to the matching Accounts host; it does not need a connection to `*.hungernet.dev` while using a Workers.dev app. This requires a deployed API version that includes the Workers.dev CORS/cookie handling and current auth routes.
 
 ## Security properties
 

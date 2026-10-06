@@ -1,12 +1,18 @@
-import { NORMAL_DOMAINS, getDomainConfig } from "./domains";
+import { NORMAL_DOMAINS, WORKERS_DEV_DOMAINS } from "./domains";
 
 export interface ApiClientOptions {
   credentials?: RequestCredentials;
 }
 
-export function resolveApiBaseUrl(): string {
-  if (typeof window === "undefined") return NORMAL_DOMAINS.api;
-  return getDomainConfig().api;
+export function resolveApiBaseUrl(
+  normalApiBaseUrl = NORMAL_DOMAINS.api,
+  origin = typeof window === "undefined" ? undefined : window.location.origin,
+): string {
+  if (!origin) return normalApiBaseUrl;
+
+  const hostname = new URL(origin).hostname.toLowerCase();
+  if (hostname === new URL(WORKERS_DEV_DOMAINS.accounts).hostname) return "/api/v1";
+  return hostname.endsWith(".workers.dev") ? WORKERS_DEV_DOMAINS.api : normalApiBaseUrl;
 }
 
 export type ApiErrorCode =
