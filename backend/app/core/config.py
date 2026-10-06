@@ -4,6 +4,7 @@ from pydantic import Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 WORKERS_DEV_ORIGIN = "https://*.millered001.workers.dev"
+WORKERS_DEV_ACCOUNTS_ORIGIN = "https://accounts.millered001.workers.dev"
 WORKERS_DEV_ORIGIN_REGEX = (
     r"(?i)^https://(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+"
     r"millered001\.workers\.dev$"
@@ -44,6 +45,7 @@ class Settings(BaseSettings):
         "https://hungersmp.com",
         "https://ifamished.com",
         "https://optifineforfabric.com",
+        WORKERS_DEV_ACCOUNTS_ORIGIN,
         WORKERS_DEV_ORIGIN,
     ])
     oauth_app_redirect_uris: dict[str, list[str]] = Field(default_factory=lambda: {

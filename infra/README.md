@@ -20,12 +20,12 @@ Required GitHub environment secrets:
 Required VPS environment variables (configure in the protected VPS environment file, not in source control):
 
 - `POSTGRES_PASSWORD`, `DATABASE_URL`, and `JWT_SECRET` (at least 32 random characters)
-- `CORS_ALLOWED_ORIGINS` as a JSON array of exact HTTPS production frontend origins plus `https://*.millered001.workers.dev`
+- `CORS_ALLOWED_ORIGINS` as a JSON array of exact HTTPS production frontend origins, including `https://accounts.millered001.workers.dev`, plus `https://*.millered001.workers.dev`
 - `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, `DISCORD_CLIENT_ID`, and `DISCORD_CLIENT_SECRET`
-- `ALLOWED_RETURN_ORIGINS` as a JSON array of exact HTTPS production return origins plus `https://*.millered001.workers.dev`
+- `ALLOWED_RETURN_ORIGINS` as a JSON array of exact HTTPS production return origins, including `https://accounts.millered001.workers.dev`, plus `https://*.millered001.workers.dev`
 - Optional `POSTGRES_DB`, `POSTGRES_USER`, `API_V1_PREFIX`, `JWT_ALGORITHM`, `JWT_EXPIRY_MINUTES`, `TRUST_HOST`, `SESSION_COOKIE_DOMAIN`, and rate-limit values
 
-Use the same password in `POSTGRES_PASSWORD` and `DATABASE_URL`. The database URL must use `postgresql+asyncpg://...@db:5432/...`; URL-encode any reserved characters in the password. CORS origins must be a JSON array; the only supported wildcard is the constrained `*.millered001.workers.dev` subdomain pattern.
+Use the same password in `POSTGRES_PASSWORD` and `DATABASE_URL`. The database URL must use `postgresql+asyncpg://...@db:5432/...`; URL-encode any reserved characters in the password. CORS origins must be a JSON array; the only supported wildcard is the constrained `*.millered001.workers.dev` subdomain pattern. Redeploy the API after changing CORS settings.
 
 ## Deployment sequence
 

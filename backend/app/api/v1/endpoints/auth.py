@@ -112,6 +112,20 @@ def _require_trusted_auth_origin(request: Request = None) -> None:
         raise HTTPException(status_code=403, detail="Untrusted request origin")
 
 
+def _auth_cookie_policy(
+    origin: str | None,
+    *,
+    same_site: str | None = None,
+) -> tuple[str | None, str]:
+    cookie_domain = settings.session_cookie_domain
+    cookie_same_site = same_site or settings.session_cookie_same_site
+    if origin and is_workers_dev_origin(origin):
+        cookie_domain = None
+        if same_site is None and settings.session_cookie_secure:
+            cookie_same_site = "none"
+    return cookie_domain, cookie_same_site
+
+
 async def _create_login_response(
     request: Request = None,
     response: Response = None,
@@ -119,8 +133,11 @@ async def _create_login_response(
     user: User = None,
 ) -> dict[str, bool]:
     device_label = "Browser"
+    origin = None
     if request is not None:
         device_label = request.headers.get("user-agent", "Browser")[:160]
+        origin = request.headers.get("origin")
+    cookie_domain, cookie_same_site = _auth_cookie_policy(origin)
     token, session = await AuthService.issue_session(
         db,
         user=user,
@@ -134,8 +151,8 @@ async def _create_login_response(
         expires=session.expires_at,
         httponly=True,
         secure=settings.session_cookie_secure,
-        samesite=settings.session_cookie_same_site,
-        domain=settings.session_cookie_domain,
+        samesite=cookie_same_site,
+        domain=cookie_domain,
         path="/",
     )
     return {"authenticated": True}
@@ -456,16 +473,17 @@ async def get_session_status(
 
 
 @router.get("/csrf")
-async def issue_csrf_token(response: Response) -> dict[str, str]:
+async def issue_csrf_token(request: Request, response: Response) -> dict[str, str]:
     token = secrets.token_urlsafe(32)
+    cookie_domain, cookie_same_site = _auth_cookie_policy(request.headers.get("origin"))
     response.set_cookie(
         settings.csrf_cookie_name,
         token,
         max_age=3600,
         secure=settings.session_cookie_secure,
         httponly=False,
-        samesite=settings.session_cookie_same_site,
-        domain=settings.session_cookie_domain,
+        samesite=cookie_same_site,
+        domain=cookie_domain,
         path="/",
     )
     return {"csrfToken": token}
@@ -513,6 +531,7 @@ async def oauth_start(
         raise HTTPException(status_code=503, detail="OAuth provider is unavailable") from error
 
     response = RedirectResponse(url, status_code=302)
+    cookie_domain, _ = _auth_cookie_policy(origin, same_site="lax")
     response.set_cookie(
         f"{settings.csrf_cookie_name}_oauth",
         state,
@@ -520,7 +539,7 @@ async def oauth_start(
         secure=settings.session_cookie_secure,
         httponly=True,
         samesite="lax",
-        domain=settings.session_cookie_domain,
+        domain=cookie_domain,
         path=f"{settings.api_v1_prefix}/auth/oauth/{provider}/callback",
     )
     return response
@@ -578,9 +597,11 @@ async def oauth_callback(
         raise HTTPException(status_code=400, detail="Provider identity could not be verified") from exception
 
     response = RedirectResponse(transaction.return_to, status_code=303)
+    return_origin = f"{urlsplit(transaction.return_to).scheme}://{urlsplit(transaction.return_to).netloc}"
+    cookie_domain, _ = _auth_cookie_policy(return_origin, same_site="lax")
     response.delete_cookie(
         cookie_name,
-        domain=settings.session_cookie_domain,
+        domain=cookie_domain,
         path=f"{settings.api_v1_prefix}/auth/oauth/{provider}/callback",
         secure=settings.session_cookie_secure,
         httponly=True,
@@ -593,6 +614,7 @@ async def oauth_callback(
             device_label=request.headers.get("user-agent", "Browser")[:160],
         )
         max_age = max(0, int((session.expires_at - datetime.now(UTC)).total_seconds()))
+        session_domain, session_same_site = _auth_cookie_policy(return_origin)
         response.set_cookie(
             settings.session_cookie_name,
             token,
@@ -600,8 +622,8 @@ async def oauth_callback(
             expires=session.expires_at,
             httponly=True,
             secure=settings.session_cookie_secure,
-            samesite=settings.session_cookie_same_site,
-            domain=settings.session_cookie_domain,
+            samesite=session_same_site,
+            domain=session_domain,
             path="/",
         )
     return response
@@ -626,15 +648,22 @@ async def logout(
             session.revoked_at = datetime.now(UTC)
             await db.commit()
     response = Response(status_code=204)
+    cookie_domain, cookie_same_site = _auth_cookie_policy(request.headers.get("origin"))
     response.delete_cookie(
         settings.session_cookie_name,
-        domain=settings.session_cookie_domain,
+        domain=cookie_domain,
         path="/",
         secure=settings.session_cookie_secure,
         httponly=True,
-        samesite=settings.session_cookie_same_site,
+        samesite=cookie_same_site,
     )
-    response.delete_cookie(settings.csrf_cookie_name, domain=settings.session_cookie_domain, path="/")
+    response.delete_cookie(
+        settings.csrf_cookie_name,
+        domain=cookie_domain,
+        path="/",
+        secure=settings.session_cookie_secure,
+        samesite=cookie_same_site,
+    )
     return response
 
 

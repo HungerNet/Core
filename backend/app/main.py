@@ -9,7 +9,12 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.responses import JSONResponse
 
 from app.api.v1.router import router as v1_router
-from app.core.config import WORKERS_DEV_ORIGIN, WORKERS_DEV_ORIGIN_REGEX, settings
+from app.core.config import (
+    WORKERS_DEV_ACCOUNTS_ORIGIN,
+    WORKERS_DEV_ORIGIN,
+    WORKERS_DEV_ORIGIN_REGEX,
+    settings,
+)
 from app.core.middleware import (
     RedisRateLimitMiddleware,
     RequestContextMiddleware,
@@ -46,7 +51,10 @@ app.include_router(v1_router, prefix=settings.api_v1_prefix)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[origin for origin in settings.cors_allowed_origins if origin != WORKERS_DEV_ORIGIN],
+    allow_origins=list(dict.fromkeys([
+        *[origin for origin in settings.cors_allowed_origins if origin != WORKERS_DEV_ORIGIN],
+        WORKERS_DEV_ACCOUNTS_ORIGIN,
+    ])),
     allow_origin_regex=WORKERS_DEV_ORIGIN_REGEX,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],

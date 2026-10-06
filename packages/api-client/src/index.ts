@@ -120,17 +120,17 @@ export function createApiClient({
   const request = async <T>(path: string, init: RequestInit = {}): Promise<T> => {
     const method = (init.method ?? "GET").toUpperCase();
     const headers = new Headers(init.headers);
+    headers.set("Accept", "application/json");
+    if (init.body !== undefined && !headers.has("Content-Type")) {
+      headers.set("Content-Type", "application/json");
+    }
     if (!["GET", "HEAD", "OPTIONS"].includes(method)) {
       headers.set("X-CSRF-Token", await getCsrfToken());
     }
     const response = await fetch(resolveUrl(resolvedBaseUrl, path), {
       ...init,
       credentials,
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-        ...Object.fromEntries(headers.entries()),
-      },
+      headers: Object.fromEntries(headers.entries()),
     });
 
     return parseJsonResponse<T>(response);

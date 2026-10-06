@@ -6,7 +6,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { createApiClient, resolveApiBaseUrl } from "@hungernet/api-client";
+import { ApiClientError, createApiClient, resolveApiBaseUrl } from "@hungernet/api-client";
 import type { AuthSession, PublicProfile, User } from "@hungernet/types";
 
 export type AuthStatus = "loading" | "authenticated" | "unauthenticated";
@@ -209,7 +209,20 @@ export function OAuthSignIn({
       await client.post("/auth/login", { identifier, password, code });
       finishSignIn();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Authentication failed");
+      if (mode === "signin" && cause instanceof ApiClientError && cause.status === 401) {
+        const attemptedIdentifier = identifier.trim();
+        if (attemptedIdentifier.includes("@")) {
+          setEmail(attemptedIdentifier);
+        } else {
+          setUsername(attemptedIdentifier);
+        }
+        setPassword("");
+        setCode("");
+        setMode("register");
+        setError("We couldn't sign you in. Create an account if you're new, or return to sign in.");
+      } else {
+        setError(cause instanceof Error ? cause.message : "Authentication failed");
+      }
     } finally {
       setBusy(false);
     }
@@ -433,7 +446,7 @@ export function HungerNetAuthButtons({
   returnTo?: string;
 }) {
   const [error, setError] = useState("");
-  const startAuthorization = async (screenHint: "signin" | "signup") => {
+  const startAuthorization = async () => {
     try {
       const verifier = encodeBase64Url(crypto.getRandomValues(new Uint8Array(32))) + encodeBase64Url(crypto.getRandomValues(new Uint8Array(16)));
       const challengeBytes = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier));
@@ -448,7 +461,7 @@ export function HungerNetAuthButtons({
         state,
         code_challenge: codeChallenge,
         scope: "profile",
-        screen_hint: screenHint,
+        screen_hint: "signin",
         app_name: appName,
       }).toString();
       window.location.assign(authorizationUrl.toString());
@@ -459,14 +472,52 @@ export function HungerNetAuthButtons({
 
   return (
     <div className="auth-redirect-actions">
-      <button className="glass-button glass-button--primary glass-button--md" onClick={() => void startAuthorization("signin")} type="button">
-        Sign in with HungerNet
-      </button>
-      <button className="glass-button glass-button--secondary glass-button--md" onClick={() => void startAuthorization("signup")} type="button">
-        Sign up with HungerNet
+      <button className="glass-button glass-button--primary glass-button--md" onClick={() => void startAuthorization()} type="button">
+        Continue with HungerNet
       </button>
       {error && <p className="auth-error" role="alert">{error}</p>}
     </div>
+  );
+}
+
+export function FloatingAuthButton({
+  clientId,
+  appName,
+  accountsBaseUrl,
+  returnTo,
+}: {
+  clientId: string;
+  appName: string;
+  accountsBaseUrl?: string;
+  returnTo?: string;
+}) {
+  const { status, user, signOut } = useAuth();
+  const accountsUrl = accountsBaseUrl ?? (window.location.hostname === "localhost"
+    ? "http://localhost:4174"
+    : "https://accounts.hungernet.dev");
+
+  return (
+    <aside className="floating-auth" aria-label="HungerNet account">
+      {status === "loading" ? (
+        <span className="floating-auth-status" role="status">Checking account…</span>
+      ) : status === "authenticated" ? (
+        <div className="floating-auth-actions">
+          <a className="floating-auth-profile" href={new URL("/profile", accountsUrl).toString()}>
+            {user?.displayName || "My account"}
+          </a>
+          <button className="glass-button glass-button--secondary glass-button--md" onClick={() => void signOut()} type="button">
+            Sign out
+          </button>
+        </div>
+      ) : (
+        <HungerNetAuthButtons
+          clientId={clientId}
+          appName={appName}
+          accountsBaseUrl={accountsUrl}
+          returnTo={returnTo}
+        />
+      )}
+    </aside>
   );
 }
 

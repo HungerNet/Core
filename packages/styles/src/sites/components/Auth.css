@@ -6,6 +6,49 @@
   gap: var(--space-1);
 }
 
+.floating-auth {
+  position: fixed;
+  top: 5.35rem;
+  right: max(1rem, calc((100vw - 76rem) / 2 + 1rem));
+  z-index: 95;
+  max-width: calc(100vw - 2rem);
+}
+
+.floating-auth .auth-redirect-actions,
+.floating-auth-actions,
+.floating-auth-status {
+  padding: 0.35rem;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
+  background: var(--navbar-bg-mobile, rgba(10, 14, 39, 0.88));
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.floating-auth-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-1);
+}
+
+.floating-auth-profile {
+  max-width: 10rem;
+  overflow: hidden;
+  color: var(--text-primary);
+  font-size: 0.84rem;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.floating-auth-status {
+  display: inline-block;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+}
+
 .auth-redirect-actions .glass-button,
 .navbar-authenticated .glass-button {
   display: inline-flex;
@@ -80,6 +123,24 @@
 }
 
 @media (max-width: 768px) {
+  .floating-auth {
+    top: 5.2rem;
+    right: 0.75rem;
+  }
+
+  .floating-auth .auth-redirect-actions {
+    max-width: min(16rem, calc(100vw - 1.5rem));
+  }
+
+  .floating-auth .auth-redirect-actions .glass-button {
+    flex: 0 1 auto;
+  }
+
+  .floating-auth-actions {
+    flex-wrap: wrap;
+    max-width: calc(100vw - 1.5rem);
+  }
+
   .auth-redirect-actions {
     justify-content: flex-start;
   }

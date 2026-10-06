@@ -95,6 +95,25 @@ def test_workers_dev_wildcard_is_accepted_in_origin_configuration() -> None:
     assert configured.allowed_return_origins == [WORKERS_DEV_ORIGIN]
 
 
+def test_accounts_workers_origin_passes_cors_preflight() -> None:
+    from fastapi.testclient import TestClient
+
+    from app.main import app
+
+    origin = "https://accounts.millered001.workers.dev"
+    response = TestClient(app).options(
+        "/api/v1/auth/session",
+        headers={
+            "Origin": origin,
+            "Access-Control-Request-Method": "GET",
+            "Access-Control-Request-Headers": "content-type",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.headers["access-control-allow-origin"] == origin
+
+
 def test_configured_provider_list_skips_incomplete_providers(
     monkeypatch: pytest.MonkeyPatch,
     caplog: pytest.LogCaptureFixture,
