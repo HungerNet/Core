@@ -184,53 +184,158 @@ export function OAuthSignIn({
     }
   };
 
+  const providerLabels: Record<string, string> = {
+    google: "Google",
+    github: "GitHub",
+    discord: "Discord",
+  };
+
+  const panelTitle =
+    setupSecret ? "Set up your authenticator" :
+    mode === "register" ? "Create your account" :
+    mode === "setup" ? "Add MFA protection" :
+    "Welcome back";
+
   return (
-    <div style={{ display: "grid", gap: "1.25rem", marginTop: "1rem", maxWidth: "28rem" }}>
-      {setupSecret ? (
-        <form onSubmit={handleSubmit} style={{ display: "grid", gap: "0.75rem" }}>
-          <h3>Set up your authenticator</h3>
-          <p>Add this key to an authenticator app, then enter its six-digit code.</p>
-          <code>{setupSecret}</code>
-          <label>
-            Authenticator code
-            <input autoComplete="one-time-code" inputMode="numeric" maxLength={6} required value={code} onChange={(event) => setCode(event.target.value)} />
-          </label>
-          <button className="glass-button glass-button--primary glass-button--md" disabled={busy} type="submit">Verify and continue</button>
-        </form>
-      ) : (
-        <>
-          <form onSubmit={handleSubmit} style={{ display: "grid", gap: "0.75rem" }}>
-            <h3>{mode === "register" ? "Create an account" : mode === "setup" ? "Set up your authenticator" : "Sign in with email"}</h3>
-            {mode === "register" ? (
-              <>
-                <label>Email<input autoComplete="email" required type="email" value={email} onChange={(event) => setEmail(event.target.value)} /></label>
-                <label>Username<input autoComplete="username" minLength={3} maxLength={48} required value={username} onChange={(event) => setUsername(event.target.value)} /></label>
-              </>
-            ) : (
-              <label>Email or username<input autoComplete="username" required value={identifier} onChange={(event) => setIdentifier(event.target.value)} /></label>
-            )}
-            <label>Password<input autoComplete={mode === "register" ? "new-password" : "current-password"} minLength={mode === "register" ? 12 : undefined} required type="password" value={password} onChange={(event) => setPassword(event.target.value)} /></label>
-            {mode === "signin" && <label>Authenticator code<input autoComplete="one-time-code" inputMode="numeric" maxLength={6} pattern="[0-9]{6}" required value={code} onChange={(event) => setCode(event.target.value)} /></label>}
-            <button className="glass-button glass-button--primary glass-button--md" disabled={busy} type="submit">{mode === "register" ? "Create account" : mode === "setup" ? "Continue" : "Sign in"}</button>
-            {mode === "signin" && <button className="glass-button glass-button--md" onClick={() => { setError(""); setMode("setup"); }} type="button">Set up MFA</button>}
-            {mode !== "signin" && <button className="glass-button glass-button--md" onClick={() => { setError(""); setMode("signin"); }} type="button">Back to sign in</button>}
+    <div className="auth-shell">
+      <div className="auth-panel">
+        {setupSecret ? (
+          <form onSubmit={handleSubmit} className="auth-form">
+            <div className="auth-header">
+              <span className="auth-badge">Secure sign-in</span>
+              <h3 className="auth-title">{panelTitle}</h3>
+            </div>
+            <p className="auth-subtitle">Add this key to your authenticator app, then confirm the six-digit code below.</p>
+            <code className="auth-token">{setupSecret}</code>
+            <div className="auth-field">
+              <label htmlFor="auth-code">Authenticator code</label>
+              <input id="auth-code" autoComplete="one-time-code" inputMode="numeric" maxLength={6} required value={code} onChange={(event) => setCode(event.target.value)} />
+            </div>
+            <button className="glass-button glass-button--primary glass-button--md" disabled={busy} type="submit">Verify and continue</button>
           </form>
-          {providers.length > 0 && (
-            <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
-              {providers.map((provider) => (
-                <a
-                  key={provider}
-                  className="glass-button glass-button--md"
-                  href={`${apiUrl}/auth/oauth/${provider}/start?redirect_to=${encodeURIComponent(returnTo)}`}
+        ) : (
+          <>
+            <div className="auth-header">
+              <span className="auth-badge">HungerNet</span>
+              <h3 className="auth-title">{panelTitle}</h3>
+              <p className="auth-subtitle">
+                {mode === "register"
+                  ? "Create a first-party account and secure it with an authenticator app."
+                  : mode === "setup"
+                    ? "Verify your existing password and generate an MFA secret."
+                    : "Use your email, username, or one of the supported sign-in providers."}
+              </p>
+            </div>
+
+            <div className="auth-toggle-row" style={{ marginBottom: "1rem" }}>
+              {[
+                { value: "signin", label: "Sign in" },
+                { value: "register", label: "Create account" },
+              ].map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  className={`auth-toggle ${mode === option.value ? "is-active" : ""}`}
+                  onClick={() => {
+                    setError("");
+                    setMode(option.value as "signin" | "register");
+                  }}
                 >
-                  Continue with {provider === "github" ? "GitHub" : provider[0].toUpperCase() + provider.slice(1)}
-                </a>
+                  {option.label}
+                </button>
               ))}
             </div>
-          )}
-        </>
-      )}
-      {error && <p role="alert">{error}</p>}
+
+            <form onSubmit={handleSubmit} className="auth-form">
+              {mode === "register" ? (
+                <>
+                  <div className="auth-field">
+                    <label htmlFor="auth-email">Email</label>
+                    <input id="auth-email" autoComplete="email" required type="email" value={email} onChange={(event) => setEmail(event.target.value)} />
+                  </div>
+                  <div className="auth-field">
+                    <label htmlFor="auth-username">Username</label>
+                    <input id="auth-username" autoComplete="username" minLength={3} maxLength={48} required value={username} onChange={(event) => setUsername(event.target.value)} />
+                  </div>
+                </>
+              ) : (
+                <div className="auth-field">
+                  <label htmlFor="auth-identifier">Email or username</label>
+                  <input id="auth-identifier" autoComplete="username" required value={identifier} onChange={(event) => setIdentifier(event.target.value)} />
+                </div>
+              )}
+
+              <div className="auth-field">
+                <label htmlFor="auth-password">Password</label>
+                <input
+                  id="auth-password"
+                  autoComplete={mode === "register" ? "new-password" : "current-password"}
+                  minLength={mode === "register" ? 12 : undefined}
+                  required
+                  type="password"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                />
+              </div>
+
+              {mode === "signin" && (
+                <div className="auth-field">
+                  <label htmlFor="auth-code">Authenticator code</label>
+                  <input id="auth-code" autoComplete="one-time-code" inputMode="numeric" maxLength={6} pattern="[0-9]{6}" required value={code} onChange={(event) => setCode(event.target.value)} />
+                </div>
+              )}
+
+              <div className="auth-actions">
+                <button className="glass-button glass-button--primary glass-button--md" disabled={busy} type="submit">
+                  {mode === "register" ? "Create account" : mode === "setup" ? "Continue" : "Sign in"}
+                </button>
+                {mode === "signin" && (
+                  <button
+                    className="glass-button glass-button--secondary glass-button--md"
+                    onClick={() => {
+                      setError("");
+                      setMode("setup");
+                    }}
+                    type="button"
+                  >
+                    Set up MFA
+                  </button>
+                )}
+                {mode !== "signin" && (
+                  <button
+                    className="glass-button glass-button--secondary glass-button--md"
+                    onClick={() => {
+                      setError("");
+                      setMode("signin");
+                    }}
+                    type="button"
+                  >
+                    Back to sign in
+                  </button>
+                )}
+              </div>
+            </form>
+
+            {providers.length > 0 && (
+              <>
+                <div className="auth-divider">Or continue with</div>
+                <div className="auth-provider-list">
+                  {providers.map((provider) => (
+                    <a
+                      key={provider}
+                      className="auth-provider-link"
+                      href={`${apiUrl}/auth/oauth/${provider}/start?redirect_to=${encodeURIComponent(returnTo)}`}
+                    >
+                      {providerLabels[provider] ?? provider}
+                    </a>
+                  ))}
+                </div>
+              </>
+            )}
+          </>
+        )}
+        {error && <p className="auth-error" role="alert">{error}</p>}
+      </div>
     </div>
   );
 }
