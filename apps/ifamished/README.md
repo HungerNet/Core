@@ -22,12 +22,7 @@ pnpm --filter @hungernet/ifamished build
 - Root directory: `.`
 - Build command: `pnpm --filter @hungernet/ifamished build`
 - Output directory: `apps/ifamished/dist`
-- Environment variable: `VITE_API_BASE_URL`
 
-Example:
-
-```env
-VITE_API_BASE_URL=https://api.hungernet.dev/api/v1
-```
+The API and Accounts hosts are selected from the current origin using hardcoded domain constants; no build-time URL setting is required.
 
 This app is front-end only; keep any secret or sensitive configuration on the backend.

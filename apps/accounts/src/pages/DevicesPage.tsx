@@ -12,7 +12,7 @@ interface SessionRecord {
   current: boolean;
 }
 
-const api = createApiClient({ baseUrl: import.meta.env.VITE_API_BASE_URL || "/api/v1" });
+const api = createApiClient();
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));

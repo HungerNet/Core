@@ -11,7 +11,7 @@ interface ProjectRecord {
   body: string;
 }
 
-const api = createApiClient({ baseUrl: import.meta.env.VITE_API_BASE_URL || "/api/v1" });
+const api = createApiClient();
 
 export function ProjectsPage() {
   const [title, setTitle] = useState("");

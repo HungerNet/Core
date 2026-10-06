@@ -11,8 +11,7 @@ interface IdentityRecord {
 }
 
 const providers: Provider[] = ["google", "github", "discord"];
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "/api/v1";
-const api = createApiClient({ baseUrl: apiBaseUrl });
+const api = createApiClient();
 
 export function SecurityPage() {
   const [identities, setIdentities] = useState<IdentityRecord[]>([]);

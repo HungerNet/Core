@@ -106,7 +106,7 @@ export function App() {
           <GlassCard className="auth-landing-card">
             <div className="section-label">Sign in</div>
             <h2>Access your account</h2>
-            <OAuthSignIn apiBaseUrl={import.meta.env.VITE_API_BASE_URL || "/api/v1"} returnPath="/profile" />
+            <OAuthSignIn returnPath="/profile" />
           </GlassCard>
         </main>
       }

@@ -22,12 +22,7 @@ pnpm --filter @hungernet/hungersmp build
 - Root directory: `.`
 - Build command: `pnpm --filter @hungernet/hungersmp build`
 - Output directory: `apps/hungersmp/dist`
-- Environment variable: `VITE_API_BASE_URL`
 
-Example:
+The API and Accounts hosts are selected from the current origin using hardcoded domain constants; no build-time URL setting is required.
 
-```env
-VITE_API_BASE_URL=https://api.hungernet.dev/api/v1
-```
-
-Do not expose private API keys or session data in the frontend build. This app should only receive public URLs and API base configuration.
+Do not expose private API keys or session data in the frontend build.

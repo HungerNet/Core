@@ -16,7 +16,7 @@ if (!root) {
 createRoot(root).render(
   <StrictMode>
     <BrowserRouter>
-      <AuthProvider apiBaseUrl={import.meta.env.VITE_API_BASE_URL || "/api/v1"} clientId="admin">
+      <AuthProvider clientId="admin">
         <App />
       </AuthProvider>
     </BrowserRouter>

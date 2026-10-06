@@ -25,7 +25,7 @@ const socials = [
 export function App() {
   const location = useLocation();
   if (location.pathname === "/auth/callback") {
-    return <HungerNetAuthCallback clientId="optifineforfabric" apiBaseUrl={import.meta.env.VITE_API_BASE_URL || "/api/v1"} />;
+    return <HungerNetAuthCallback clientId="optifineforfabric" />;
   }
 
   const returnTo = `${location.pathname}${location.search}${location.hash}`;
@@ -49,6 +49,6 @@ export function App() {
       socials={socials}
       footerNote={`© ${new Date().getFullYear()} OptiFine for Fabric. Not affiliated with Mojang or OptiFine.`}
     />
-    <FloatingAuthButton clientId="optifineforfabric" appName="OptiFine for Fabric" accountsBaseUrl={import.meta.env.VITE_ACCOUNTS_URL} returnTo={returnTo} />
+    <FloatingAuthButton clientId="optifineforfabric" appName="OptiFine for Fabric" returnTo={returnTo} />
   </>;
 }

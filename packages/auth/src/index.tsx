@@ -1,13 +1,16 @@
 import {
   createContext,
   useContext,
-  useEffect,
   useMemo,
   useRef,
   useState,
   type ReactNode,
-} from "react";
-import { ApiClientError, createApiClient, resolveApiBaseUrl } from "@hungernet/api-client";
+import {
+  ApiClientError,
+  createApiClient,
+  const resolvedAccountsBaseUrl = resolveAccountsBaseUrl();
+  resolveApiBaseUrl,
+} from "@hungernet/api-client";
 import type { AuthSession, PublicProfile, User } from "@hungernet/types";
 
 export type AuthStatus = "loading" | "authenticated" | "unauthenticated";
@@ -24,7 +27,6 @@ export interface AuthContextValue extends AuthState {
 
 export interface AuthProviderProps {
   children: ReactNode;
-  apiBaseUrl?: string;
   clientId?: string;
 }
 
@@ -45,14 +47,13 @@ function mapSessionToUser(session: AuthSession | null): User | null {
   };
 }
 
-export function AuthProvider({ children, apiBaseUrl = "/api/v1", clientId }: AuthProviderProps) {
+export function AuthProvider({ children, clientId }: AuthProviderProps) {
   const client = useMemo(
     () =>
       createApiClient({
-        baseUrl: apiBaseUrl,
         credentials: "include",
       }),
-    [apiBaseUrl],
+    [],
   );
 
   const [state, setState] = useState<AuthState>({ status: "loading", user: null });
@@ -68,7 +69,7 @@ export function AuthProvider({ children, apiBaseUrl = "/api/v1", clientId }: Aut
 
       const accessToken = clientId ? sessionStorage.getItem(accessTokenKey(clientId)) : null;
       if (clientId && accessToken) {
-        const apiUrl = resolveApiBaseUrl(apiBaseUrl);
+        const apiUrl = resolveApiBaseUrl();
         const response = await fetch(`${apiUrl}/auth/userinfo`, {
           headers: { Authorization: `Bearer ${accessToken}` },
         });
@@ -130,15 +131,13 @@ export function useAuth() {
 }
 
 export function OAuthSignIn({
-  apiBaseUrl = "/api/v1",
   returnPath = "/",
   initialMode = "signin",
 }: {
-  apiBaseUrl?: string;
   returnPath?: string;
   initialMode?: "signin" | "register";
 }) {
-  const apiUrl = resolveApiBaseUrl(apiBaseUrl);
+  const apiUrl = resolveApiBaseUrl();
   const returnTo = new URL(returnPath, window.location.origin).toString();
   const [providers, setProviders] = useState<string[]>([]);
   const [mode, setMode] = useState<"signin" | "register" | "setup">(initialMode);
@@ -175,7 +174,7 @@ export function OAuthSignIn({
     event.preventDefault();
     setError("");
     setBusy(true);
-    const client = createApiClient({ baseUrl: apiBaseUrl, credentials: "include" });
+    const client = createApiClient({ credentials: "include" });
     try {
       if (setupSecret) {
         await client.post("/auth/mfa/verify", {
@@ -425,27 +424,8 @@ function requestKey(clientId: string) {
   return `hungernet.authorization_request:${clientId}`;
 }
 
-const WORKERS_DEV_HOST_PATTERN =
-  /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+millered001\.workers\.dev$/i;
-
-export function resolveAccountsBaseUrl(
-  configuredBaseUrl?: string,
-  origin = window.location.origin,
-): string {
-  try {
-    const parsedOrigin = new URL(origin);
-    if (
-      parsedOrigin.protocol === "https:" &&
-      WORKERS_DEV_HOST_PATTERN.test(parsedOrigin.hostname)
-    ) {
-      return "https://accounts.millered001.workers.dev";
-    }
-    if (configuredBaseUrl) return configuredBaseUrl;
-    if (parsedOrigin.hostname === "localhost") return "http://localhost:4174";
-  } catch {
-    if (configuredBaseUrl) return configuredBaseUrl;
-  }
-  return "https://accounts.hungernet.dev";
+export function resolveAccountsBaseUrl(): string {
+  return getDomainConfig().accounts;
 }
 
 function encodeBase64Url(bytes: Uint8Array) {
@@ -515,19 +495,17 @@ export function HungerNetAuthButtons({
 export function FloatingAuthButton({
   clientId,
   appName,
-  accountsBaseUrl,
   returnTo,
 }: {
   clientId: string;
   appName: string;
-  accountsBaseUrl?: string;
   returnTo?: string;
 }) {
   const { status, user, signOut } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const [error, setError] = useState("");
   const controlRef = useRef<HTMLDivElement>(null);
-  const accountsUrl = resolveAccountsBaseUrl(accountsBaseUrl);
+  const accountsUrl = resolveAccountsBaseUrl();
   const resolvedReturnTo = returnTo ?? `${window.location.pathname}${window.location.search}${window.location.hash}`;
 
   useEffect(() => {
@@ -593,10 +571,8 @@ export function FloatingAuthButton({
 
 export function HungerNetAuthCallback({
   clientId,
-  apiBaseUrl = "/api/v1",
 }: {
   clientId: string;
-  apiBaseUrl?: string;
 }) {
   const [error, setError] = useState("");
 
@@ -619,7 +595,7 @@ export function HungerNetAuthCallback({
           throw new Error("You cancelled the HungerNet authorization request.");
         }
         if (!code) throw new Error("The HungerNet authorization response is incomplete.");
-        const apiUrl = resolveApiBaseUrl(apiBaseUrl);
+        const apiUrl = resolveApiBaseUrl();
         const response = await fetch(`${apiUrl}/auth/token`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -641,7 +617,7 @@ export function HungerNetAuthCallback({
       }
     };
     void completeAuthorization();
-  }, [apiBaseUrl, clientId]);
+  }, [clientId]);
 
   return (
     <main className="auth-callback-shell">

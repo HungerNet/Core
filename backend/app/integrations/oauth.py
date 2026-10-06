@@ -8,7 +8,7 @@ from urllib.parse import urlencode, urlsplit
 import httpx
 import jwt
 
-from app.core.config import WORKERS_DEV_ORIGIN, settings
+from app.core.config import OAUTH_CALLBACK_ENDPOINT, RETURN_ORIGINS, settings
 
 
 class OAuthProviderError(Exception):
@@ -37,8 +37,8 @@ class ProviderConfig:
 
 def _shared_oauth_configuration_is_complete() -> bool:
     try:
-        callback = urlsplit(settings.oauth_callback_base_url.strip())
-        origins = [urlsplit(origin) for origin in settings.allowed_return_origins]
+        callback = urlsplit(OAUTH_CALLBACK_ENDPOINT.strip())
+        origins = [urlsplit(origin) for origin in RETURN_ORIGINS]
     except ValueError:
         return False
     if (
@@ -50,20 +50,17 @@ def _shared_oauth_configuration_is_complete() -> bool:
         or callback.fragment
     ):
         return False
-    if not settings.allowed_return_origins:
+    if not RETURN_ORIGINS:
         return False
     return all(
-        configured_origin == WORKERS_DEV_ORIGIN
-        or (
-            origin.scheme == "https"
-            and bool(origin.netloc)
-            and not origin.username
-            and not origin.password
-            and origin.path in {"", "/"}
-            and not origin.query
-            and not origin.fragment
-        )
-        for configured_origin, origin in zip(settings.allowed_return_origins, origins)
+        origin.scheme == "https"
+        and bool(origin.netloc)
+        and not origin.username
+        and not origin.password
+        and origin.path in {"", "/"}
+        and not origin.query
+        and not origin.fragment
+        for origin in origins
     )
 
 

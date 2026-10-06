@@ -90,7 +90,7 @@ export function App() {
   const location = useLocation();
 
   if (location.pathname === "/auth/callback") {
-    return <HungerNetAuthCallback clientId="admin" apiBaseUrl={import.meta.env.VITE_API_BASE_URL || "/api/v1"} />;
+    return <HungerNetAuthCallback clientId="admin" />;
   }
 
   if (status === "loading") {
@@ -112,7 +112,7 @@ export function App() {
         <GlassCard className="auth-landing-card">
           <div className="section-label">Authentication</div>
           <h2>Access the control room</h2>
-          <HungerNetAuthButtons clientId="admin" appName="HungerNet Admin" accountsBaseUrl={import.meta.env.VITE_ACCOUNTS_URL} />
+          <HungerNetAuthButtons clientId="admin" appName="HungerNet Admin" />
         </GlassCard>
       </main>
     );

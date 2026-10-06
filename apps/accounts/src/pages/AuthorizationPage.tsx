@@ -22,7 +22,7 @@ export function AuthorizationPage() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const apiUrl = resolveApiBaseUrl(import.meta.env.VITE_API_BASE_URL || "/api/v1");
+  const apiUrl = resolveApiBaseUrl();
 
   useEffect(() => {
     let active = true;
@@ -54,7 +54,7 @@ export function AuthorizationPage() {
     setBusy(true);
     setError("");
     try {
-      const client = createApiClient({ baseUrl: apiUrl, credentials: "include" });
+      const client = createApiClient({ credentials: "include" });
       const payload = await client.post<{ redirect_to: string }>("/auth/authorize", {
         client_id: clientId,
         redirect_uri: redirectUri,
@@ -96,7 +96,6 @@ export function AuthorizationPage() {
               <p>{details.app_name} is requesting access to your HungerNet profile. Sign in or create an account to review the request.</p>
             </div>
             <OAuthSignIn
-              apiBaseUrl={import.meta.env.VITE_API_BASE_URL || "/api/v1"}
               returnPath={`${location.pathname}${location.search}`}
               initialMode={screenHint === "signup" ? "register" : "signin"}
             />

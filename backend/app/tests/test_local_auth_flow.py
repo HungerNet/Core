@@ -65,7 +65,6 @@ def _request(
 async def test_registration_requires_totp_and_sets_workers_cookie_attributes(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setattr(settings, "session_cookie_domain", ".hungernet.dev")
     monkeypatch.setattr(settings, "session_cookie_secure", True)
     monkeypatch.setattr(settings, "session_cookie_same_site", "lax")
     engine = create_async_engine("sqlite+aiosqlite://")
@@ -160,7 +159,6 @@ async def test_invalid_totp_does_not_activate_account() -> None:
 
 @pytest.mark.asyncio
 async def test_workers_origin_gets_cross_site_csrf_cookie(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(settings, "session_cookie_domain", ".hungernet.dev")
     monkeypatch.setattr(settings, "session_cookie_secure", True)
     monkeypatch.setattr(settings, "session_cookie_same_site", "lax")
     response = Response()

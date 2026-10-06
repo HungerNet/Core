@@ -1,6 +1,6 @@
 # VPS Deployment
 
-`docker-compose.yml` runs PostgreSQL, Redis-backed rate limiting, the FastAPI image, a one-shot Alembic migration service, and Caddy. Caddy provisions TLS for `api.hungernet.dev` and `auth.hungernet.dev`; both hostnames proxy to the API. PostgreSQL, Redis, and FastAPI are not published directly on host ports.
+`docker-compose.yml` runs PostgreSQL, Redis-backed rate limiting, the FastAPI image, a one-shot Alembic migration service, and Caddy. Caddy provisions TLS for `api.hungernet.dev`, which proxies to the API. PostgreSQL, Redis, and FastAPI are not published directly on host ports.
 
 ## First-time VPS setup
 
@@ -20,15 +20,13 @@ Required GitHub environment secrets:
 Required VPS environment variables (configure in the protected VPS environment file, not in source control):
 
 - `POSTGRES_PASSWORD`, `DATABASE_URL`, and `JWT_SECRET` (at least 32 random characters)
-- `CORS_ALLOWED_ORIGINS` as a JSON array of exact HTTPS production frontend origins, including `https://accounts.millered001.workers.dev`, plus `https://*.millered001.workers.dev`
 - `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, `DISCORD_CLIENT_ID`, and `DISCORD_CLIENT_SECRET`
-- `ALLOWED_RETURN_ORIGINS` as a JSON array of exact HTTPS production return origins, including `https://accounts.millered001.workers.dev`, plus `https://*.millered001.workers.dev`
-- Optional `POSTGRES_DB`, `POSTGRES_USER`, `API_V1_PREFIX`, `JWT_ALGORITHM`, `JWT_EXPIRY_MINUTES`, `TRUST_HOST`, `SESSION_COOKIE_DOMAIN`, and rate-limit values
+- Optional `POSTGRES_DB`, `POSTGRES_USER`, `JWT_ALGORITHM`, `JWT_EXPIRY_MINUTES`, and rate-limit values
 
-Use the same password in `POSTGRES_PASSWORD` and `DATABASE_URL`. The database URL must use `postgresql+asyncpg://...@db:5432/...`; URL-encode any reserved characters in the password. CORS origins must be a JSON array; the only supported wildcard is the constrained `*.millered001.workers.dev` subdomain pattern. Redeploy the API after changing CORS settings.
+Use the same password in `POSTGRES_PASSWORD` and `DATABASE_URL`. The database URL must use `postgresql+asyncpg://...@db:5432/...`; URL-encode any reserved characters in the password. CORS and OAuth return origins are hardcoded exact lists in backend source. Redeploy the API after changing those lists.
 
 ## Deployment sequence
 
 The workflow runs on every push to `main` and can also be started manually. It builds and pushes `ghcr.io/<owner>/<repo>/api:<commit-sha>`, logs the VPS into GHCR, copies the Compose/Caddy files, pulls the image, runs `alembic upgrade head`, then restarts and waits for the API health check. A failed migration prevents the API restart.
 
-OAuth provider credentials, return origins, and frontend CORS origins are validated when `ENVIRONMENT=production`; unset or empty OAuth secrets fail startup. The Redis service is private to the Compose network and is required for rate-limited request handling.
+OAuth provider credentials are validated when `ENVIRONMENT=production`; unset or empty OAuth secrets fail startup. The Redis service is private to the Compose network and is required for rate-limited request handling.

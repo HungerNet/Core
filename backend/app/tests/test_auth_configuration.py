@@ -1,8 +1,11 @@
 import pytest
 from pydantic import SecretStr
 
+import app.integrations.oauth as oauth_module
 from app.core.config import (
-    WORKERS_DEV_ORIGIN,
+    CORS_ORIGINS,
+    RETURN_ORIGINS,
+    WORKERS_DEV_ACCOUNTS_ORIGIN,
     Settings,
     is_allowed_origin,
     settings,
@@ -32,23 +35,19 @@ def test_provider_requires_credentials_and_shared_redirect_configuration(
 ) -> None:
     monkeypatch.setattr(settings, client_id_field, "client-id")
     monkeypatch.setattr(settings, secret_field, SecretStr("client-secret"))
-    monkeypatch.setattr(settings, "oauth_callback_base_url", "https://auth.example.test/api/v1")
-    monkeypatch.setattr(
-        settings,
-        "allowed_return_origins",
-        ["https://accounts.example.test", WORKERS_DEV_ORIGIN],
-    )
+    monkeypatch.setattr(oauth_module, "OAUTH_CALLBACK_ENDPOINT", "https://auth.example.test/api/v1")
+    monkeypatch.setattr(oauth_module, "RETURN_ORIGINS", ("https://accounts.example.test",))
     assert validator()
 
     monkeypatch.setattr(settings, client_id_field, " ")
     assert not validator()
 
     monkeypatch.setattr(settings, client_id_field, "client-id")
-    monkeypatch.setattr(settings, "oauth_callback_base_url", "http://auth.example.test/api/v1")
+    monkeypatch.setattr(oauth_module, "OAUTH_CALLBACK_ENDPOINT", "http://auth.example.test/api/v1")
     assert not validator()
 
-    monkeypatch.setattr(settings, "oauth_callback_base_url", "https://auth.example.test/api/v1")
-    monkeypatch.setattr(settings, "allowed_return_origins", [])
+    monkeypatch.setattr(oauth_module, "OAUTH_CALLBACK_ENDPOINT", "https://auth.example.test/api/v1")
+    monkeypatch.setattr(oauth_module, "RETURN_ORIGINS", ())
     assert not validator()
 
 
@@ -58,7 +57,6 @@ def test_missing_oauth_credentials_do_not_block_production_settings() -> None:
         environment="production",
         jwt_secret="production-secret-that-is-long-enough-123456",
         session_cookie_secure=True,
-        cors_allowed_origins=["https://accounts.example.test"],
     )
 
     assert configured.google_client_id is None
@@ -69,30 +67,25 @@ def test_missing_oauth_credentials_do_not_block_production_settings() -> None:
 @pytest.mark.parametrize(
     ("origin", "expected"),
     [
-        ("https://preview.millered001.workers.dev", True),
-        ("https://nested.preview.millered001.workers.dev", True),
+        ("https://accounts.millered001.workers.dev", True),
+        ("https://admin.millered001.workers.dev", True),
+        ("https://preview.millered001.workers.dev", False),
+        ("https://nested.preview.millered001.workers.dev", False),
         ("http://preview.millered001.workers.dev", False),
         ("https://millered001.workers.dev", False),
         ("https://preview.millered001.workers.dev.attacker.test", False),
         ("https://preview.millered001.workers.dev:8443", False),
     ],
 )
-def test_workers_dev_origins_are_scoped_to_https_subdomains(origin: str, expected: bool) -> None:
-    assert is_allowed_origin(origin, ["https://accounts.hungernet.dev"]) is expected
+def test_origins_must_match_hardcoded_allowlist(origin: str, expected: bool) -> None:
+    assert is_allowed_origin(origin, CORS_ORIGINS) is expected
 
 
-def test_workers_dev_wildcard_is_accepted_in_origin_configuration() -> None:
-    configured = Settings(
-        _env_file=None,
-        environment="production",
-        jwt_secret="production-secret-that-is-long-enough-123456",
-        session_cookie_secure=True,
-        cors_allowed_origins=[WORKERS_DEV_ORIGIN],
-        allowed_return_origins=[WORKERS_DEV_ORIGIN],
-    )
-
-    assert configured.cors_allowed_origins == [WORKERS_DEV_ORIGIN]
-    assert configured.allowed_return_origins == [WORKERS_DEV_ORIGIN]
+def test_all_normal_and_workers_hosts_are_hardcoded() -> None:
+    assert WORKERS_DEV_ACCOUNTS_ORIGIN in CORS_ORIGINS
+    assert set(RETURN_ORIGINS) == set(CORS_ORIGINS)
+    assert "https://admin.hungernet.dev" in RETURN_ORIGINS
+    assert "https://admin.millered001.workers.dev" in RETURN_ORIGINS
 
 
 def test_accounts_workers_origin_passes_cors_preflight() -> None:
@@ -123,8 +116,8 @@ def test_configured_provider_list_skips_incomplete_providers(
     monkeypatch.setattr(settings, "google_client_secret", None)
     monkeypatch.setattr(settings, "github_client_id", "client-id")
     monkeypatch.setattr(settings, "github_client_secret", SecretStr("client-secret"))
-    monkeypatch.setattr(settings, "oauth_callback_base_url", "https://auth.example.test/api/v1")
-    monkeypatch.setattr(settings, "allowed_return_origins", ["https://accounts.example.test"])
+    monkeypatch.setattr(oauth_module, "OAUTH_CALLBACK_ENDPOINT", "https://auth.example.test/api/v1")
+    monkeypatch.setattr(oauth_module, "RETURN_ORIGINS", ("https://accounts.example.test",))
 
     assert configured_oauth_providers(log_warnings=True) == ["github"]
     assert "oauth_provider_disabled" in caplog.text

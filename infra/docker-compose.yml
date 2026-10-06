@@ -1,12 +1,9 @@
 x-api-environment: &api-environment
   ENVIRONMENT: ${ENVIRONMENT:-production}
-  API_V1_PREFIX: ${API_V1_PREFIX:-/api/v1}
   DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in the VPS environment file}
   JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in the VPS environment file}
   JWT_ALGORITHM: ${JWT_ALGORITHM:-HS256}
   JWT_EXPIRY_MINUTES: ${JWT_EXPIRY_MINUTES:-60}
-  TRUST_HOST: ${TRUST_HOST:-https://auth.hungernet.dev}
-  OAUTH_CALLBACK_BASE_URL: ${OAUTH_CALLBACK_BASE_URL:-https://auth.hungernet.dev/api/v1}
   ALLOWED_OAUTH_PROVIDERS: '["google", "github", "discord"]'
   GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
   GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
@@ -14,13 +11,10 @@ x-api-environment: &api-environment
   GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-}
   DISCORD_CLIENT_ID: ${DISCORD_CLIENT_ID:-}
   DISCORD_CLIENT_SECRET: ${DISCORD_CLIENT_SECRET:-}
-  CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-["https://accounts.hungernet.dev","https://admin.hungernet.dev","https://hungernet.dev","https://hungersmp.com","https://ifamished.com","https://optifineforfabric.com","https://accounts.millered001.workers.dev","https://*.millered001.workers.dev"]}
-  ALLOWED_RETURN_ORIGINS: ${ALLOWED_RETURN_ORIGINS:-["https://accounts.hungernet.dev","https://admin.hungernet.dev","https://hungernet.dev","https://hungersmp.com","https://ifamished.com","https://optifineforfabric.com","https://accounts.millered001.workers.dev","https://*.millered001.workers.dev"]}
   SESSION_COOKIE_NAME: ${SESSION_COOKIE_NAME:-hungernet_session}
   CSRF_COOKIE_NAME: ${CSRF_COOKIE_NAME:-hungernet_csrf}
   SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-true}
   SESSION_COOKIE_SAME_SITE: ${SESSION_COOKIE_SAME_SITE:-lax}
-  SESSION_COOKIE_DOMAIN: ${SESSION_COOKIE_DOMAIN:-.hungernet.dev}
   REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
   RATE_LIMIT_ENABLED: ${RATE_LIMIT_ENABLED:-true}
   RATE_LIMIT_REQUESTS: ${RATE_LIMIT_REQUESTS:-60}

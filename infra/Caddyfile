@@ -1,4 +1,4 @@
-api.hungernet.dev, auth.hungernet.dev {
+api.hungernet.dev {
 	encode zstd gzip
 	header {
 		X-Content-Type-Options nosniff

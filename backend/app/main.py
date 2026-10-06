@@ -10,9 +10,8 @@ from starlette.responses import JSONResponse
 
 from app.api.v1.router import router as v1_router
 from app.core.config import (
-    WORKERS_DEV_ACCOUNTS_ORIGIN,
-    WORKERS_DEV_ORIGIN,
-    WORKERS_DEV_ORIGIN_REGEX,
+    API_ROUTE_PREFIX,
+    CORS_ORIGINS,
     settings,
 )
 from app.core.middleware import (
@@ -47,15 +46,11 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-app.include_router(v1_router, prefix=settings.api_v1_prefix)
+app.include_router(v1_router, prefix=API_ROUTE_PREFIX)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=list(dict.fromkeys([
-        *[origin for origin in settings.cors_allowed_origins if origin != WORKERS_DEV_ORIGIN],
-        WORKERS_DEV_ACCOUNTS_ORIGIN,
-    ])),
-    allow_origin_regex=WORKERS_DEV_ORIGIN_REGEX,
+    allow_origins=list(CORS_ORIGINS),
     allow_credentials=True,
     allow_methods=["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type", "X-CSRF-Token", "X-Request-ID"],

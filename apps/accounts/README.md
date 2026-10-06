@@ -29,12 +29,7 @@ pnpm --filter @hungernet/accounts build
 - Root directory: `.`
 - Build command: `pnpm --filter @hungernet/accounts build`
 - Output directory: `apps/accounts/dist`
-- Environment variable: `VITE_API_BASE_URL`
 
-Set `VITE_API_BASE_URL` to the public API origin, for example:
-
-```env
-VITE_API_BASE_URL=https://api.hungernet.dev/api/v1
-```
+The API and Accounts hosts are selected from the current origin using hardcoded domain constants; no build-time URL setting is required.
 
 No secrets belong in this app or in the repository. Keep all OAuth credentials in the backend deployment environment or a secret manager.

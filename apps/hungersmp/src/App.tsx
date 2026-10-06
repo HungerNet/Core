@@ -20,7 +20,7 @@ const socials = [{ label: "Discord", href: "https://discord.gg/KQHZcWMFtf" }];
 export function App() {
   const location = useLocation();
   if (location.pathname === "/auth/callback") {
-    return <HungerNetAuthCallback clientId="hungersmp" apiBaseUrl={import.meta.env.VITE_API_BASE_URL || "/api/v1"} />;
+    return <HungerNetAuthCallback clientId="hungersmp" />;
   }
 
   const returnTo = `${location.pathname}${location.search}${location.hash}`;
@@ -42,6 +42,6 @@ export function App() {
       socials={socials}
       footerNote={`© ${new Date().getFullYear()} HungerNet. Not affiliated with Mojang.`}
     />
-    <FloatingAuthButton clientId="hungersmp" appName="Hunger SMP" accountsBaseUrl={import.meta.env.VITE_ACCOUNTS_URL} returnTo={returnTo} />
+    <FloatingAuthButton clientId="hungersmp" appName="Hunger SMP" returnTo={returnTo} />
   </>;
 }

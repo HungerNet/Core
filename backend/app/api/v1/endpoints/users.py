@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import secrets
 from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
@@ -8,7 +7,14 @@ from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config import settings
+from app.core.config import (
+    API_ROUTE_PREFIX,
+    NORMAL_SHARED_COOKIE_DOMAIN,
+    OAUTH_CALLBACK_ENDPOINT,
+    RETURN_ORIGINS,
+    is_workers_dev_origin,
+    settings,
+)
 from app.core.deps import (
     get_current_user,
     get_current_user_id,
@@ -17,11 +23,16 @@ from app.core.deps import (
     require_permission,
     require_recent_auth,
 )
-from app.core.security import hash_token, verify_session_token
+from app.core.security import verify_session_token
 from app.db.models import AuditEvent, Identity, Session, User
 from app.integrations.oauth import OAuthProviderError, authorization_url
 from app.schemas.public import PublicProfileResponse
-from app.schemas.user import LinkedIdentityResponse, SessionDeviceResponse, UserMeResponse, UserUpdateRequest
+from app.schemas.user import (
+    LinkedIdentityResponse,
+    SessionDeviceResponse,
+    UserMeResponse,
+    UserUpdateRequest,
+)
 from app.services.auth_service import AuthFlowError, AuthService
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -151,8 +162,8 @@ async def start_identity_link(
     if claims is None or claims.get("sub") != user_id:
         raise HTTPException(status_code=401, detail="A valid current session is required to link identities")
 
-    redirect_uri = f"{settings.oauth_callback_base_url.rstrip('/')}/auth/oauth/{provider}/callback"
-    return_to = f"{settings.allowed_return_origins[0]}/security"
+    redirect_uri = f"{OAUTH_CALLBACK_ENDPOINT.rstrip('/')}/auth/oauth/{provider}/callback"
+    return_to = f"{RETURN_ORIGINS[0]}/security"
     try:
         transaction, state, challenge = await AuthService.begin_oauth(
             db,
@@ -179,8 +190,12 @@ async def start_identity_link(
         secure=settings.session_cookie_secure,
         httponly=True,
         samesite="lax",
-        domain=settings.session_cookie_domain,
-        path=f"{settings.api_v1_prefix}/auth/oauth/{provider}/callback",
+        domain=(
+            None
+            if is_workers_dev_origin(request.headers.get("origin", ""))
+            else NORMAL_SHARED_COOKIE_DOMAIN
+        ),
+        path=f"{API_ROUTE_PREFIX}/auth/oauth/{provider}/callback",
     )
     return {"authorization_url": url}
 
@@ -261,7 +276,12 @@ async def revoke_session(
     current_token = request.cookies.get(settings.session_cookie_name)
     current_claims = verify_session_token(current_token) if current_token else None
     if current_claims and current_claims.get("sid") == session_id:
-        response.delete_cookie(settings.session_cookie_name, domain=settings.session_cookie_domain, path="/")
+        cookie_domain = (
+            None
+            if is_workers_dev_origin(request.headers.get("origin", ""))
+            else NORMAL_SHARED_COOKIE_DOMAIN
+        )
+        response.delete_cookie(settings.session_cookie_name, domain=cookie_domain, path="/")
     return response
 
 

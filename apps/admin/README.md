@@ -30,12 +30,7 @@ pnpm --filter @hungernet/admin build
 - Root directory: `.`
 - Build command: `pnpm --filter @hungernet/admin build`
 - Output directory: `apps/admin/dist`
-- Environment variable: `VITE_API_BASE_URL`
 
-Example:
-
-```env
-VITE_API_BASE_URL=https://api.hungernet.dev/api/v1
-```
+The API and Accounts hosts are selected from the current origin using hardcoded domain constants; no build-time URL setting is required.
 
 This app should only consume the authenticated platform API; do not add credentials or private tokens to the frontend bundle.

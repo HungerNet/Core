@@ -16,7 +16,17 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.core.config import is_allowed_origin, is_workers_dev_origin, settings
+from app.core.config import (
+    API_ROUTE_PREFIX,
+    APP_CALLBACKS,
+    CORS_ORIGINS,
+    NORMAL_SHARED_COOKIE_DOMAIN,
+    OAUTH_CALLBACK_ENDPOINT,
+    RETURN_ORIGINS,
+    is_allowed_origin,
+    is_workers_dev_origin,
+    settings,
+)
 from app.core.deps import bearer_scheme, get_current_user_id, get_db, require_csrf
 from app.core.security import (
     generate_session_token,
@@ -69,20 +79,10 @@ class AppTokenRequest(BaseModel):
 
 
 def _registered_app(client_id: str, redirect_uri: str) -> str:
-    callbacks = settings.oauth_app_redirect_uris.get(client_id)
+    callbacks = APP_CALLBACKS.get(client_id)
     if client_id not in APP_NAMES or callbacks is None:
         raise HTTPException(status_code=400, detail="Unknown HungerNet application")
-    try:
-        parsed_redirect = urlsplit(redirect_uri)
-        is_workers_callback = (
-            is_workers_dev_origin(f"{parsed_redirect.scheme}://{parsed_redirect.netloc}")
-            and parsed_redirect.path == "/auth/callback"
-            and not parsed_redirect.query
-            and not parsed_redirect.fragment
-        )
-    except ValueError:
-        is_workers_callback = False
-    if redirect_uri not in callbacks and not is_workers_callback:
+    if redirect_uri not in callbacks:
         raise HTTPException(
             status_code=400,
             detail="Redirect URL is not registered for this application",
@@ -108,7 +108,7 @@ def _require_trusted_auth_origin(request: Request = None) -> None:
     if request is None:
         return
     origin = request.headers.get("origin")
-    if origin and not is_allowed_origin(origin, settings.cors_allowed_origins):
+    if origin and not is_allowed_origin(origin, CORS_ORIGINS):
         raise HTTPException(status_code=403, detail="Untrusted request origin")
 
 
@@ -117,7 +117,7 @@ def _auth_cookie_policy(
     *,
     same_site: str | None = None,
 ) -> tuple[str | None, str]:
-    cookie_domain = settings.session_cookie_domain
+    cookie_domain = NORMAL_SHARED_COOKIE_DOMAIN
     cookie_same_site = same_site or settings.session_cookie_same_site
     if origin and is_workers_dev_origin(origin):
         cookie_domain = None
@@ -309,7 +309,7 @@ async def authorized_user_info(
     if (
         claims is None
         or claims.get("scope") != "profile"
-        or client_id not in settings.oauth_app_redirect_uris
+        or client_id not in APP_CALLBACKS
     ):
         raise HTTPException(status_code=401, detail="A profile access token is required")
     session = await db.scalar(
@@ -499,7 +499,7 @@ async def oauth_start(
     provider = provider.lower()
     if provider not in configured_oauth_providers():
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Unsupported OAuth provider")
-    fallback = settings.allowed_return_origins[0] if settings.allowed_return_origins else ""
+    fallback = RETURN_ORIGINS[0]
     destination = redirect_to or f"{fallback}/profile"
     parsed = urlsplit(destination)
     origin = f"{parsed.scheme}://{parsed.netloc}"
@@ -508,11 +508,11 @@ async def oauth_start(
         or not parsed.netloc
         or parsed.username
         or parsed.password
-        or not is_allowed_origin(origin, settings.allowed_return_origins)
+        or not is_allowed_origin(origin, RETURN_ORIGINS)
     ):
         raise HTTPException(status_code=400, detail="Return URL is not allowlisted")
 
-    redirect_uri = f"{settings.oauth_callback_base_url.rstrip('/')}/auth/oauth/{provider}/callback"
+    redirect_uri = f"{OAUTH_CALLBACK_ENDPOINT.rstrip('/')}/auth/oauth/{provider}/callback"
     try:
         transaction, state, challenge = await AuthService.begin_oauth(
             db,
@@ -540,7 +540,7 @@ async def oauth_start(
         httponly=True,
         samesite="lax",
         domain=cookie_domain,
-        path=f"{settings.api_v1_prefix}/auth/oauth/{provider}/callback",
+        path=f"{API_ROUTE_PREFIX}/auth/oauth/{provider}/callback",
     )
     return response
 
@@ -602,7 +602,7 @@ async def oauth_callback(
     response.delete_cookie(
         cookie_name,
         domain=cookie_domain,
-        path=f"{settings.api_v1_prefix}/auth/oauth/{provider}/callback",
+        path=f"{API_ROUTE_PREFIX}/auth/oauth/{provider}/callback",
         secure=settings.session_cookie_secure,
         httponly=True,
         samesite="lax",

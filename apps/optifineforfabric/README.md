@@ -22,12 +22,7 @@ pnpm --filter @hungernet/optifineforfabric build
 - Root directory: `.`
 - Build command: `pnpm --filter @hungernet/optifineforfabric build`
 - Output directory: `apps/optifineforfabric/dist`
-- Environment variable: `VITE_API_BASE_URL`
 
-Example:
-
-```env
-VITE_API_BASE_URL=https://api.hungernet.dev/api/v1
-```
+The API and Accounts hosts are selected from the current origin using hardcoded domain constants; no build-time URL setting is required.
 
 The Modrinth integration is intentionally kept in the shared client layer so it is not duplicated across multiple app code paths.

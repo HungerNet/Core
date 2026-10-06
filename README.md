@@ -100,9 +100,6 @@ JWT_SECRET=replace-with-a-long-random-secret
 JWT_ALGORITHM=HS256
 JWT_EXPIRY_MINUTES=60
 REDIS_URL=redis://localhost:6379/0
-CORS_ALLOWED_ORIGINS=["http://localhost:4173","http://localhost:4174","http://localhost:4180","http://localhost:4181","http://localhost:4182","http://localhost:4183","https://accounts.hungernet.dev","https://admin.hungernet.dev","https://hungernet.dev","https://hungersmp.com","https://ifamished.com","https://optifineforfabric.com","https://*.millered001.workers.dev"]
-ALLOWED_RETURN_ORIGINS=["http://localhost:4173","http://localhost:4174","http://localhost:4180","http://localhost:4181","http://localhost:4182","http://localhost:4183","https://accounts.hungernet.dev","https://admin.hungernet.dev","https://hungernet.dev","https://hungersmp.com","https://ifamished.com","https://optifineforfabric.com","https://*.millered001.workers.dev"]
-OAUTH_APP_REDIRECT_URIS={"admin":["https://admin.hungernet.dev/auth/callback","http://localhost:4173/auth/callback"],"hungernet":["https://hungernet.dev/auth/callback","http://localhost:4181/auth/callback"],"hungersmp":["https://hungersmp.com/auth/callback","http://localhost:4182/auth/callback"],"ifamished":["https://ifamished.com/auth/callback","http://localhost:4180/auth/callback"],"optifineforfabric":["https://optifineforfabric.com/auth/callback","http://localhost:4183/auth/callback"]}
 SESSION_COOKIE_SECURE=false
 SESSION_COOKIE_SAME_SITE=lax
 
@@ -118,15 +115,7 @@ POSTGRES_USER=hungernet
 POSTGRES_PASSWORD=local-development-only
 ```
 
-### Frontend app variables
-
-Each frontend app should set its build-time API URL separately, for example:
-
-```env
-VITE_API_BASE_URL=http://localhost:8000/api/v1
-```
-
-For production or staging, set the exact public API origin instead of localhost.
+Frontend API and Accounts hosts are selected from the current site origin using hardcoded domain constants. Backend CORS, return origins, and OAuth callbacks are fixed in source; no domain environment settings are required.
 
 ## Publishing and deployment
 
@@ -158,7 +147,8 @@ Example for the account app:
 
 - Build command: `pnpm --filter @hungernet/accounts build`
 - Output directory: `apps/accounts/dist`
-- Environment variable: `VITE_API_BASE_URL=https://api.example.com/api/v1`
+
+API and Accounts hosts are selected from the current origin using hardcoded source constants; no build-time URL setting is needed.
 
 ## Validation and release sanity checks
 
