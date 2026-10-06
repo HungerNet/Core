@@ -1,5 +1,5 @@
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
-import { SiteHeader } from "@hungernet/ui";
+import { Footer, SiteHeader } from "@hungernet/ui";
 import { HungerNetAuthButtons, HungerNetAuthCallback, useAuth } from "@hungernet/auth";
 import { DownloadPage, DownloadVersionPage, FeaturesPage, HelpPage, HomePage, InstallPage } from "./pages";
 
@@ -32,6 +32,14 @@ export function App() {
       <Route path="/help" element={<HelpPage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes></main>
-    <footer className="site-footer hn-container"><span>© {new Date().getFullYear()} OptiFine for Fabric. Not affiliated with Mojang or OptiFine.</span><div><a href="https://github.com/iFamishedX/optifine-for-fabric">GitHub</a><a href="https://modrinth.com/project/optifine-for-fabric">Modrinth</a><a href="https://discord.gg/aNUYADauTJ">Discord</a></div></footer>
+    <Footer
+      brand="OptiFine for Fabric"
+      socials={[
+        { label: "GitHub", href: "https://github.com/iFamishedX/optifine-for-fabric", icon: "github" },
+        { label: "Modrinth", href: "https://modrinth.com/project/optifine-for-fabric", icon: "modrinth" },
+        { label: "Discord", href: "https://discord.gg/aNUYADauTJ", icon: "discord" },
+      ]}
+      footerNote={`© ${new Date().getFullYear()} OptiFine for Fabric. Not affiliated with Mojang or OptiFine.`}
+    />
   </div>;
 }

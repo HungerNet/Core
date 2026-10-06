@@ -1,5 +1,5 @@
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
-import { SiteHeader } from "@hungernet/ui";
+import { Footer, SiteHeader } from "@hungernet/ui";
 import { HungerNetAuthButtons, HungerNetAuthCallback, useAuth } from "@hungernet/auth";
 import { HomePage, HostingPage, ProjectsPage, ToolsPage, EmailGuidePage, SrvGeneratorPage, PublicProfilePage } from "./pages";
 
@@ -34,6 +34,10 @@ export function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </main>
-    <footer className="site-footer hn-container"><span>© {new Date().getFullYear()} HungerNet. All rights reserved.</span><a href="https://discord.gg/KQHZcWMFtf">Discord</a></footer>
+    <Footer
+      brand="HungerNet"
+      socials={[{ label: "Discord", href: "https://discord.gg/KQHZcWMFtf", icon: "discord" }]}
+      footerNote={`© ${new Date().getFullYear()} HungerNet. All rights reserved.`}
+    />
   </div>;
 }

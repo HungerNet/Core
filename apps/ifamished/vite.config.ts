@@ -7,4 +7,4 @@ export default defineConfig({
   server: { port: 4180 },
   preview: { port: 4180 },
   build: { outDir: "dist", emptyOutDir: true },
-});
+}); 

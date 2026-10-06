@@ -1,5 +1,7 @@
 export { Button } from "./Button";
 export type { ButtonProps, ButtonSize, ButtonVariant } from "./Button";
+export { Footer } from "./Footer";
+export type { FooterProps, FooterSocialLink } from "./Footer";
 export { GlassButton } from "./GlassButton";
 export type { GlassButtonProps, GlassButtonSize, GlassButtonVariant } from "./GlassButton";
 export { GlassCard } from "./GlassCard";

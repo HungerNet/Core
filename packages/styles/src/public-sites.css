@@ -404,3 +404,224 @@
   .public-site-shell .site-hero__mark,
   .public-site-shell .site-hero__portrait { animation: none; }
 }
+
+:root:is([data-site="ifamished"], [data-site="hungernet"], [data-site="hungersmp"], [data-site="optifine"]) {
+  --content-width: 94rem;
+  --site-glass: rgba(9, 17, 28, 0.76);
+  --site-border: rgba(218, 240, 255, 0.15);
+  --site-shadow: 0 26px 64px rgba(0, 0, 0, 0.28);
+  scroll-padding-top: 7rem;
+}
+
+:root:is([data-site="ifamished"], [data-site="hungernet"], [data-site="hungersmp"], [data-site="optifine"]) body {
+  background: var(--site-bg);
+}
+
+:root:is([data-site="ifamished"], [data-site="hungernet"], [data-site="hungersmp"], [data-site="optifine"]) body::before {
+  inset: -12%;
+  background:
+    radial-gradient(ellipse 54% 48% at 17% 19%, color-mix(in srgb, var(--color-primary) 16%, transparent), transparent 72%),
+    radial-gradient(ellipse 48% 44% at 83% 27%, color-mix(in srgb, var(--color-secondary) 11%, transparent), transparent 72%),
+    radial-gradient(ellipse 52% 46% at 61% 88%, color-mix(in srgb, var(--site-tertiary) 9%, transparent), transparent 74%),
+    linear-gradient(150deg, var(--site-bg) 8%, var(--site-mid) 56%, var(--site-end));
+  background-size: 145% 145%, 138% 138%, 132% 132%, 100% 100%;
+  animation: public-atmosphere-drift 32s ease-in-out infinite alternate;
+}
+
+:root:is([data-site="ifamished"], [data-site="hungernet"], [data-site="hungersmp"], [data-site="optifine"]) body::after {
+  opacity: 0.2;
+  background-size: 56px 56px;
+  mask-image: linear-gradient(to bottom, black, transparent 72%);
+}
+
+.public-site-shell [id] { scroll-margin-top: 7rem; }
+
+.public-site-shell .site-header {
+  min-height: 4.5rem;
+  padding-inline: clamp(1rem, 2.2vw, 2rem);
+  border-color: rgba(218, 240, 255, 0.18);
+  background: linear-gradient(115deg, rgba(255, 255, 255, 0.065), rgba(255, 255, 255, 0.012)), var(--site-glass);
+  box-shadow: 0 12px 38px rgba(0, 0, 0, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.public-site-shell .site-nav a {
+  padding-inline: 0.9rem;
+  transition: color 180ms ease, transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1), background-color 180ms ease;
+}
+
+.public-site-shell .site-nav a[aria-current="page"] {
+  background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+}
+
+.public-site-shell .site-hero {
+  border-color: rgba(225, 244, 255, 0.16);
+  background: linear-gradient(128deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.012) 58%), var(--site-glass);
+  box-shadow: var(--site-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(28px) saturate(150%);
+  -webkit-backdrop-filter: blur(28px) saturate(150%);
+}
+
+.public-site-shell .site-hero::before {
+  background:
+    radial-gradient(ellipse at 82% 22%, color-mix(in srgb, var(--color-primary) 11%, transparent), transparent 48%),
+    linear-gradient(125deg, transparent 25%, color-mix(in srgb, var(--color-secondary) 6%, transparent) 67%, transparent 88%);
+  background-size: 130% 130%, 220% 100%;
+  animation: public-hero-sheen 18s ease-in-out infinite alternate;
+}
+
+.public-site-shell .site-hero h1 .gradient-text {
+  background: linear-gradient(105deg, #fff 3%, color-mix(in srgb, var(--color-primary) 78%, white) 62%, color-mix(in srgb, var(--color-secondary) 70%, white));
+  background-clip: text;
+  -webkit-background-clip: text;
+}
+
+.public-site-shell .site-card,
+.public-site-shell .download-card {
+  border-color: rgba(218, 240, 255, 0.14);
+  border-radius: 0.85rem;
+  background: linear-gradient(140deg, rgba(255, 255, 255, 0.065), rgba(255, 255, 255, 0.012) 64%), var(--site-glass);
+  box-shadow: 0 16px 44px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.085);
+  backdrop-filter: blur(22px) saturate(145%);
+  -webkit-backdrop-filter: blur(22px) saturate(145%);
+  transition: transform 280ms cubic-bezier(0.2, 0.8, 0.2, 1), border-color 220ms ease, box-shadow 280ms ease, background-color 220ms ease;
+}
+
+.public-site-shell .site-card::after,
+.public-site-shell .download-card::after {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(112deg, transparent 22%, rgba(255, 255, 255, 0.055) 48%, transparent 72%);
+  content: "";
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-18%);
+  transition: opacity 240ms ease, transform 500ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.public-site-shell .site-card:hover::after,
+.public-site-shell .download-card:hover::after {
+  opacity: 1;
+  transform: translateX(18%);
+}
+
+.public-site-shell .site-grid > .site-card,
+.public-site-shell .download-grid > .download-card {
+  animation: public-card-arrive 560ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.public-site-shell .site-grid > :nth-child(2),
+.public-site-shell .download-grid > :nth-child(2) { animation-delay: 70ms; }
+.public-site-shell .site-grid > :nth-child(3),
+.public-site-shell .download-grid > :nth-child(3) { animation-delay: 140ms; }
+.public-site-shell .site-grid > :nth-child(4),
+.public-site-shell .download-grid > :nth-child(4) { animation-delay: 210ms; }
+
+.public-site-shell .site-button {
+  appearance: none;
+  -webkit-appearance: none;
+  border-radius: 0.72rem;
+  background: linear-gradient(120deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.012));
+  transition: transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1), border-color 180ms ease, box-shadow 220ms ease, background-position 320ms ease;
+}
+
+.public-site-shell .site-button.primary {
+  color: #08141a;
+  background: linear-gradient(112deg, color-mix(in srgb, var(--color-primary) 88%, white), color-mix(in srgb, var(--color-primary-strong) 78%, white));
+  background-size: 150% 100%;
+  box-shadow: 0 8px 22px color-mix(in srgb, var(--color-primary) 17%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+.public-site-shell button,
+.public-site-shell input,
+.public-site-shell select,
+.public-site-shell textarea {
+  font: inherit;
+}
+
+.public-site-shell button {
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+}
+
+.public-site-shell .site-field input,
+.public-site-shell .site-field select,
+.public-site-shell .site-field textarea {
+  appearance: none;
+  -webkit-appearance: none;
+  min-height: 2.9rem;
+  border: 1px solid rgba(218, 240, 255, 0.16);
+  border-radius: 0.7rem;
+  background-color: rgba(5, 12, 20, 0.68);
+  color: var(--color-text-strong);
+  transition: border-color 180ms ease, box-shadow 180ms ease, background-color 180ms ease;
+}
+
+.public-site-shell .site-field select {
+  padding-right: 2.5rem;
+  color-scheme: dark;
+}
+
+.public-site-shell .site-field:has(select) { position: relative; }
+
+.public-site-shell .site-field:has(select)::after {
+  position: absolute;
+  right: 1rem;
+  bottom: 1.05rem;
+  width: 0.48rem;
+  height: 0.48rem;
+  border-right: 1.5px solid var(--color-muted);
+  border-bottom: 1.5px solid var(--color-muted);
+  content: "";
+  pointer-events: none;
+  transform: rotate(45deg);
+}
+
+.public-site-shell .site-field select option { background: #0c1724; color: #ecf7ff; }
+.public-site-shell .site-field input:focus-visible,
+.public-site-shell .site-field select:focus-visible,
+.public-site-shell .site-field textarea:focus-visible { border-color: color-mix(in srgb, var(--color-primary) 68%, white); background-color: rgba(5, 12, 20, 0.86); box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 17%, transparent); outline: none; }
+.public-site-shell .site-field input[aria-invalid="true"],
+.public-site-shell .site-field select[aria-invalid="true"] { border-color: var(--color-danger); }
+
+.public-site-shell .site-footer {
+  align-items: flex-start;
+  gap: 1.5rem;
+  margin-top: 2.5rem;
+  padding-block: 1.6rem 2rem;
+  border-top-color: rgba(218, 240, 255, 0.13);
+  animation: public-footer-arrive 500ms ease both;
+}
+
+.public-site-shell .footer-inner { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; width: 100%; }
+.public-site-shell .footer-brand { color: var(--color-text-strong); font-family: var(--font-display); font-size: 1rem; font-weight: 700; }
+.public-site-shell .footer-social { display: flex; align-items: center; flex-wrap: wrap; gap: 0.55rem; }
+.public-site-shell .footer-social a { display: inline-flex; align-items: center; gap: 0.45rem; min-height: 2.3rem; padding: 0.45rem 0.68rem; border: 1px solid transparent; border-radius: 0.65rem; color: var(--color-muted); transition: color 180ms ease, background-color 180ms ease, border-color 180ms ease, transform 200ms ease; }
+.public-site-shell .footer-social a:hover { border-color: var(--site-border); background: rgba(255, 255, 255, 0.045); color: var(--color-text-strong); transform: translateY(-2px); }
+.public-site-shell .footer-social svg { flex: 0 0 auto; color: var(--color-primary); }
+.public-site-shell .footer-copy { width: 100%; margin-top: 0.35rem; color: var(--color-muted); font-size: 0.8rem; }
+
+@keyframes public-atmosphere-drift {
+  from { background-position: 0 0, 100% 0, 40% 100%, 0 0; }
+  to { background-position: 18% 10%, 82% 16%, 56% 80%, 0 0; }
+}
+@keyframes public-hero-sheen { from { background-position: 0 0, 0 0; } to { background-position: 100% 100%, 100% 0; } }
+@keyframes public-card-arrive { from { opacity: 0; filter: blur(3px); } to { opacity: 1; filter: blur(0); } }
+@keyframes public-footer-arrive { from { opacity: 0; transform: translateY(0.35rem); } to { opacity: 1; transform: translateY(0); } }
+
+@media (hover: hover) {
+  .public-site-shell .site-button.primary:hover { background-position: 100% 0; }
+}
+
+@media (max-width: 640px) {
+  .public-site-shell .site-header { padding-inline: 0.85rem; }
+  .public-site-shell .footer-inner { align-items: flex-start; flex-direction: column; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root:is([data-site="ifamished"], [data-site="hungernet"], [data-site="hungersmp"], [data-site="optifine"]) body::before,
+  .public-site-shell .site-hero::before,
+  .public-site-shell .site-grid > .site-card,
+  .public-site-shell .download-grid > .download-card,
+  .public-site-shell .site-footer { animation: none; }
+}

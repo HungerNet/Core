@@ -1,5 +1,5 @@
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
-import { SiteHeader } from "@hungernet/ui";
+import { Footer, SiteHeader } from "@hungernet/ui";
 import { HungerNetAuthButtons, HungerNetAuthCallback, useAuth } from "@hungernet/auth";
 import { AboutPage, ContactPage, HomePage, ProjectsPage } from "./pages";
 
@@ -33,10 +33,15 @@ export function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
-      <footer className="site-footer hn-container">
-        <span>© {new Date().getFullYear()} iFamished. All rights reserved.</span>
-        <div>{["GitHub", "Modrinth", "Discord"].map((label, index) => <a key={label} href={["https://github.com/iFamished", "https://modrinth.com/user/iFamished", "https://discord.com/users/iFamished"][index]}>{label}</a>)}</div>
-      </footer>
+      <Footer
+        brand="iFamished"
+        socials={[
+          { label: "GitHub", href: "https://github.com/iFamished", icon: "github" },
+          { label: "Modrinth", href: "https://modrinth.com/user/iFamished", icon: "modrinth" },
+          { label: "Discord", href: "https://discord.com/users/iFamished", icon: "discord" },
+        ]}
+        footerNote={`© ${new Date().getFullYear()} iFamished. All rights reserved.`}
+      />
     </div>
   );
 }

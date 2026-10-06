@@ -1,5 +1,5 @@
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
-import { SiteHeader } from "@hungernet/ui";
+import { Footer, SiteHeader } from "@hungernet/ui";
 import { HungerNetAuthButtons, HungerNetAuthCallback, useAuth } from "@hungernet/auth";
 import { AnnouncementsPage, FAQPage, HomePage, InfoPage, ProjectsPage, RulesPage } from "./pages";
 
@@ -33,6 +33,10 @@ export function App() {
       <Route path="/announcements" element={<AnnouncementsPage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes></main>
-    <footer className="site-footer hn-container"><span>© {new Date().getFullYear()} HungerNet. Not affiliated with Mojang.</span><a href="https://discord.gg/KQHZcWMFtf">Discord</a></footer>
+    <Footer
+      brand="Hunger SMP"
+      socials={[{ label: "Discord", href: "https://discord.gg/KQHZcWMFtf", icon: "discord" }]}
+      footerNote={`© ${new Date().getFullYear()} Hunger SMP. Not affiliated with Mojang.`}
+    />
   </div>;
 }
