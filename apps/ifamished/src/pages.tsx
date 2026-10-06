@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { GlassCard } from "@hungernet/ui";
+import { GlassCard, Icon } from "@hungernet/ui";
 import { usePageTitle } from "@hungernet/ui";
 
 const projects = [
@@ -34,7 +34,24 @@ const contactLinks = [
 export function HomePage() {
   usePageTitle("iFamished");
   return <div className="site-page">
-    <GlassCard className="site-hero"><p className="section-label">Developer · Creator · Infrastructure Engineer</p><h1>iFamished</h1><p className="site-copy">Building modern Minecraft tools, performance mods, and server infrastructure, blending engineering discipline with community-driven creativity.</p><div className="tag-list">{["Python", "Docker", "Cloudflare", "Linux", "Minecraft"].map((tag) => <span className="site-tag" key={tag}>{tag}</span>)}</div><div className="site-actions"><Link className="site-button primary" to="/projects">Projects</Link><Link className="site-button" to="/about">About Me</Link><Link className="site-button" to="/contact">Contact</Link></div><div className="site-grid" style={{ marginTop: "2rem" }}>{[["5+ yrs", "Experience"], ["750K+", "Downloads"], ["30+", "Projects"], ["∞", "Ideas"]].map(([value, label]) => <div key={label}><strong>{value}</strong><p className="muted">{label}</p></div>)}</div></GlassCard>
+    <GlassCard className="site-hero">
+      <div className="site-hero__copy">
+        <p className="section-label">Developer · Creator · Infrastructure Engineer</p>
+        <h1><span className="gradient-text">iFamished</span></h1>
+        <p className="site-copy">Building modern Minecraft tools, performance mods, and server infrastructure, blending engineering discipline with community-driven creativity.</p>
+        <div className="tag-list">{["Python", "Docker", "Cloudflare", "Linux", "Minecraft"].map((tag) => <span className="site-tag" key={tag}>{tag}</span>)}</div>
+        <div className="site-actions">
+          <Link className="site-button primary" to="/projects"><Icon name="spark" size={16} />Projects</Link>
+          <Link className="site-button" to="/about">About Me</Link>
+          <Link className="site-button" to="/contact">Contact</Link>
+        </div>
+        <div className="site-hero__stats">{[["5+ yrs", "Experience"], ["750K+", "Downloads"], ["30+", "Projects"], ["∞", "Ideas"]].map(([value, label]) => <div className="site-hero__stat" key={label}><strong>{value}</strong><span>{label}</span></div>)}</div>
+      </div>
+      <div className="site-hero__visual">
+        <img className="site-hero__portrait" src="/images/profile.png" alt="iFamished Minecraft avatar" />
+        <span className="site-hero__caption">Engineering meets creativity</span>
+      </div>
+    </GlassCard>
     <section><h2>Engineering meets creativity.</h2><p className="muted">A hybrid of software engineering, Minecraft ecosystem tooling, and community-driven innovation.</p><div className="site-grid" style={{ marginTop: "1rem" }}>{[["Development Work", "Multiloader tooling for Fabric, Paper, Purpur, Quilt, and NeoForge."], ["Minecraft Projects", "Mods, datapacks, client enhancements, and OptiFine alternatives."], ["Server Infrastructure", "Automation, performance tuning, and open-source SMP tooling."], ["Community Involvement", "Semi-anarchy servers, PvP, open-source releases, and community projects."]].map(([title, text]) => <GlassCard className="site-card" key={title}><h3>{title}</h3><p>{text}</p></GlassCard>)}</div></section>
     <GlassCard className="site-card"><h2>Explore my work</h2><p>From performance mods to server infrastructure, here’s what I’ve been building.</p><div className="site-actions"><Link className="site-button primary" to="/projects">View Projects</Link><Link className="site-button" to="/contact">Get in Touch</Link></div></GlassCard>
   </div>;

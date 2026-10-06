@@ -12,10 +12,10 @@ const navItems = [
 ];
 
 export function App() {
-  const { status, user } = useAuth();
+  const { status } = useAuth();
   const location = useLocation();
   if (location.pathname === "/auth/callback") return <HungerNetAuthCallback clientId="optifineforfabric" apiBaseUrl={import.meta.env.VITE_API_BASE_URL || "/api/v1"} />;
-  return <>
+  return <div className="public-site-shell">
     <SiteHeader
       brand="OptiFine for Fabric"
       navItems={navItems}
@@ -33,5 +33,5 @@ export function App() {
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes></main>
     <footer className="site-footer hn-container"><span>© {new Date().getFullYear()} OptiFine for Fabric. Not affiliated with Mojang or OptiFine.</span><div><a href="https://github.com/iFamishedX/optifine-for-fabric">GitHub</a><a href="https://modrinth.com/project/optifine-for-fabric">Modrinth</a><a href="https://discord.gg/aNUYADauTJ">Discord</a></div></footer>
-  </>;
+  </div>;
 }

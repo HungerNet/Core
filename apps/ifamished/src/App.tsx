@@ -11,12 +11,12 @@ const navItems = [
 ];
 
 export function App() {
-  const { status, user } = useAuth();
+  const { status } = useAuth();
   const location = useLocation();
   if (location.pathname === "/auth/callback") return <HungerNetAuthCallback clientId="ifamished" apiBaseUrl={import.meta.env.VITE_API_BASE_URL || "/api/v1"} />;
 
   return (
-    <>
+    <div className="public-site-shell">
       <SiteHeader
         brand="iFamished"
         navItems={navItems}
@@ -37,6 +37,6 @@ export function App() {
         <span>© {new Date().getFullYear()} iFamished. All rights reserved.</span>
         <div>{["GitHub", "Modrinth", "Discord"].map((label, index) => <a key={label} href={["https://github.com/iFamished", "https://modrinth.com/user/iFamished", "https://discord.com/users/iFamished"][index]}>{label}</a>)}</div>
       </footer>
-    </>
+    </div>
   );
 }

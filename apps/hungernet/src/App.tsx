@@ -11,10 +11,10 @@ const navItems = [
 ];
 
 export function App() {
-  const { status, user } = useAuth();
+  const { status } = useAuth();
   const location = useLocation();
   if (location.pathname === "/auth/callback") return <HungerNetAuthCallback clientId="hungernet" apiBaseUrl={import.meta.env.VITE_API_BASE_URL || "/api/v1"} />;
-  return <>
+  return <div className="public-site-shell">
     <SiteHeader
       brand="HungerNet"
       navItems={navItems}
@@ -35,5 +35,5 @@ export function App() {
       </Routes>
     </main>
     <footer className="site-footer hn-container"><span>© {new Date().getFullYear()} HungerNet. All rights reserved.</span><a href="https://discord.gg/KQHZcWMFtf">Discord</a></footer>
-  </>;
+  </div>;
 }

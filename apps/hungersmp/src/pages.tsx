@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { createApiClient } from "@hungernet/api-client";
 import type { AnnouncementSummary, ProjectRecord, ProjectSummary } from "@hungernet/types";
-import { CopyField, FaqAccordion, GlassCard, usePageTitle } from "@hungernet/ui";
+import { CopyField, FaqAccordion, GlassCard, Icon, usePageTitle } from "@hungernet/ui";
 
 const faqItems = [
   ["How do I join?", "Add mc.hungersmp.com to your server list and connect."],
@@ -24,13 +24,13 @@ const comparisons = ["Clear, simple rules", "Active Discord community", "Stable 
 const defaultProject: ProjectSummary = { id: "hunger-smp", slug: "hunger-smp", name: "The Hunger SMP", description: "A long-term, community-driven anarchy SMP focused on vanilla+ gameplay, performance, and player freedom.", url: "https://modrinth.com/server/the-hunger-smp" };
 
 function JoinActions() {
-  return <div className="site-actions"><CopyField value="mc.hungersmp.com" label="Copy IP" /><a className="site-button" href="lunarclient://play?serverAddress=mc.hungersmp.com">Play with Lunar Client</a><Link className="site-button" to="/info">Server Info</Link></div>;
+  return <div className="site-actions"><CopyField value="mc.hungersmp.com" label="Copy IP" /><a className="site-button" href="lunarclient://play?serverAddress=mc.hungersmp.com">Play with Lunar Client</a><Link className="site-button" to="/info"><Icon name="info" size={16} />Server Info</Link></div>;
 }
 
 export function HomePage() {
   usePageTitle("Hunger SMP");
   const highlights = [["Community Driven", "A long-term anarchy SMP focused on community and player-driven content."], ["Fair Play", "No pay-to-win and no admin abuse; pure anarchy gameplay."], ["Expansive World", "Overhauled terrain generation, custom structures, and no capped world border."], ["Vanilla+ Enhancements", "Light quality-of-life tweaks without changing core gameplay."]];
-  return <div className="site-page"><GlassCard className="site-hero"><p className="section-label">Survival Multiplayer</p><h1>Hunger SMP</h1><p className="site-copy">A long-term, community-driven anarchy SMP.</p><div className="tag-list">{["Anarchy", "Vanilla+", "Community", "Survival", "SMP"].map((tag) => <span className="site-tag" key={tag}>{tag}</span>)}</div><JoinActions /><div className="site-grid" style={{ marginTop:"2rem" }}>{[["24 / 7", "Uptime"], ["50ms", "Latency"], ["Anarchy", "Freedom"], ["Active", "Community"]].map(([value,label]) => <div key={label}><strong>{value}</strong><p className="site-meta">{label}</p></div>)}</div></GlassCard><section><h2>A server built for anarchy freedom.</h2><p className="site-meta">Vanilla+ enhancements, anarchy, and community-driven content.</p><div className="site-grid" style={{ marginTop:"1rem" }}>{highlights.map(([title,description]) => <GlassCard className="site-card" key={title}><h3>{title}</h3><p>{description}</p></GlassCard>)}</div></section><GlassCard className="site-card"><h2>Ready to join?</h2><p>Connect now or read more about the server.</p><JoinActions /></GlassCard></div>;
+  return <div className="site-page"><GlassCard className="site-hero"><div className="site-hero__copy"><p className="section-label">Survival Multiplayer</p><h1><span className="gradient-text">Hunger SMP</span></h1><p className="site-copy">A long-term, community-driven anarchy SMP.</p><div className="tag-list">{["Anarchy", "Vanilla+", "Community", "Survival", "SMP"].map((tag) => <span className="site-tag" key={tag}>{tag}</span>)}</div><JoinActions /><div className="site-hero__stats">{[["24 / 7", "Uptime"], ["50ms", "Latency"], ["Anarchy", "Freedom"], ["Active", "Community"]].map(([value,label]) => <div className="site-hero__stat" key={label}><strong>{value}</strong><span>{label}</span></div>)}</div></div><div className="site-hero__visual"><img className="site-hero__mark" src="/favicons/android-chrome-512x512.png" alt="Hunger SMP crossed swords mark" /><span className="site-hero__caption">Vanilla+ · survival · no whitelist</span></div></GlassCard><section><h2>A server built for anarchy freedom.</h2><p className="site-meta">Vanilla+ enhancements, anarchy, and community-driven content.</p><div className="site-grid" style={{ marginTop:"1rem" }}>{highlights.map(([title,description]) => <GlassCard className="site-card" key={title}><h3>{title}</h3><p>{description}</p></GlassCard>)}</div></section><GlassCard className="site-card"><h2>Ready to join?</h2><p>Connect now or read more about the server.</p><JoinActions /></GlassCard></div>;
 }
 
 export function InfoPage() {
