@@ -21,15 +21,24 @@ def _b64url_decode(data: str) -> bytes:
     return base64.urlsafe_b64decode((data + pad).encode("ascii"))
 
 
-def generate_session_token(subject: str, session_id: str, *, scope: str = "session") -> str:
+def generate_session_token(
+    subject: str,
+    session_id: str,
+    *,
+    scope: str = "session",
+    audience: str | None = None,
+    expires_minutes: int | None = None,
+) -> str:
     now = datetime.now(UTC)
     payload = {
         "sub": subject,
         "sid": session_id,
         "scope": scope,
         "iat": int(now.timestamp()),
-        "exp": int((now + timedelta(minutes=settings.jwt_expiry_minutes)).timestamp()),
+        "exp": int((now + timedelta(minutes=expires_minutes or settings.jwt_expiry_minutes)).timestamp()),
     }
+    if audience:
+        payload["aud"] = audience
 
     header = {"alg": settings.jwt_algorithm, "typ": "JWT"}
     encoded_header = _b64url_encode(json.dumps(header, separators=(",", ":")).encode("utf-8"))

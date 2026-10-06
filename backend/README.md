@@ -31,6 +31,7 @@ Required environment variables include:
 - `REDIS_URL`
 - `CORS_ALLOWED_ORIGINS` as a JSON array of exact origins
 - `ALLOWED_RETURN_ORIGINS` as a JSON array of exact HTTPS origins
+- `OAUTH_APP_REDIRECT_URIS` as a JSON object mapping app client IDs to exact callback URLs
 - `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`
 - `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET`
 - `DISCORD_CLIENT_ID` and `DISCORD_CLIENT_SECRET`
@@ -61,5 +62,8 @@ uv run uvicorn app.main:app --host 0.0.0.0 --port 8000
 - Never put OAuth client secrets in Git or a checked-in `.env` file.
 - Never log bearer tokens, cookies, provider codes, session identifiers, or emails unless explicitly redacted.
 - Restrict return paths to exact same-origin allowlists.
+- Keep every deployed app origin in `CORS_ALLOWED_ORIGINS` and register only its exact `/auth/callback` URL in `OAUTH_APP_REDIRECT_URIS`.
+- App authorization uses short-lived, one-use PKCE codes; app tokens are limited to the public profile `userinfo` endpoint.
+- Set `SESSION_COOKIE_DOMAIN=.hungernet.dev` in production so Accounts and Admin subdomains share the signed-in session; keep cookies host-only in local development.
 - Enforce permission checks in backend routers and services instead of trusting browser state.
 - Keep an untracked local `.env` for development only; do not reuse it in production.

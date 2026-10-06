@@ -5,6 +5,7 @@ import { SettingsLayout } from "../components/SettingsLayout";
 
 interface ProfileRecord {
   username: string;
+  email: string | null;
   display_name: string;
   bio: string | null;
   avatar_url: string | null;
@@ -14,6 +15,7 @@ const api = createApiClient({ baseUrl: import.meta.env.VITE_API_BASE_URL || "/ap
 
 export function ProfilePage() {
   const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [bio, setBio] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
@@ -26,6 +28,7 @@ export function ProfilePage() {
     void api.get<ProfileRecord>("/users/me")
       .then((profile) => {
         setUsername(profile.username);
+        setEmail(profile.email ?? "");
         setDisplayName(profile.display_name);
         setBio(profile.bio ?? "");
         setAvatarUrl(profile.avatar_url ?? "");
@@ -41,11 +44,13 @@ export function ProfilePage() {
     try {
       const profile = await api.patch<ProfileRecord>("/users/me", {
         username,
+        ...(email.trim() ? { email: email.trim() } : {}),
         display_name: displayName,
         bio: bio || null,
         avatar_url: avatarUrl || null,
       });
       setUsername(profile.username);
+      setEmail(profile.email ?? "");
       setDisplayName(profile.display_name);
       setBio(profile.bio ?? "");
       setAvatarUrl(profile.avatar_url ?? "");
@@ -72,6 +77,11 @@ export function ProfilePage() {
             <div className="input-field">
               <label htmlFor="profile-display-name">Display name</label>
               <InputBox id="profile-display-name" value={displayName} onChange={setDisplayName} placeholder="Display name" />
+            </div>
+            <div className="input-field">
+              <label htmlFor="profile-email">Email address</label>
+              <InputBox id="profile-email" type="email" autoComplete="email" value={email} onChange={setEmail} placeholder="you@example.com" />
+              <span className="site-meta">Changing your email requires a recent sign-in.</span>
             </div>
           </div>
         </GlassCard>

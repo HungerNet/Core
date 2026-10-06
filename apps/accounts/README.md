@@ -4,7 +4,7 @@ This app is the platform account dashboard for profile editing, session/device m
 
 ## Included flows
 
-- Profile read/update for username, bio, and avatar metadata
+- Profile read/update for username, email, bio, and avatar metadata
 - OAuth provider linking for Google, GitHub, and Discord
 - Session/device listing and revocation
 - Authenticated route handling via the shared `@hungernet/auth` package

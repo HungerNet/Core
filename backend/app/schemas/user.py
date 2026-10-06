@@ -29,6 +29,7 @@ class UserMeResponse(BaseModel):
 class UserUpdateRequest(BaseModel):
     display_name: str | None = Field(default=None, min_length=1, max_length=120)
     username: str | None = Field(default=None, min_length=3, max_length=64)
+    email: str | None = Field(default=None, max_length=254)
     bio: str | None = Field(default=None, max_length=500)
     avatar_url: AnyHttpUrl | None = None
     profile_visibility: str | None = Field(default=None, pattern="^(public|private)$")
@@ -46,6 +47,14 @@ class UserUpdateRequest(BaseModel):
         normalized = value.strip().lower() if value else ""
         if not re.fullmatch(r"[a-z0-9][a-z0-9_-]{2,63}", normalized):
             raise ValueError("Username must be 3-64 letters, numbers, hyphens, or underscores")
+        return normalized
+
+    @field_validator("email")
+    @classmethod
+    def normalize_email(cls, value: str | None) -> str:
+        normalized = value.strip().lower() if value else ""
+        if not re.fullmatch(r"[^\s@]+@[^\s@]+\.[^\s@]+", normalized):
+            raise ValueError("Enter a valid email address")
         return normalized
 
     @field_validator("profile_visibility")

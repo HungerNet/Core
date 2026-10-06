@@ -14,7 +14,7 @@ if (!root) throw new Error("Missing root element");
 createRoot(root).render(
   <StrictMode>
     <BrowserRouter>
-      <AuthProvider apiBaseUrl={import.meta.env.VITE_API_BASE_URL || "/api/v1"}>
+      <AuthProvider apiBaseUrl={import.meta.env.VITE_API_BASE_URL || "/api/v1"} clientId="hungernet">
         <App />
       </AuthProvider>
     </BrowserRouter>

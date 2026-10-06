@@ -13,4 +13,6 @@ export type { FaqAccordionProps } from "./FaqAccordion";
 export { Icon } from "./Icon";
 export type { IconName, IconProps } from "./Icon";
 export { ScrollToTop } from "./ScrollToTop";
+export { SiteHeader } from "./SiteHeader";
+export type { SiteHeaderProps, SiteNavItem } from "./SiteHeader";
 export { usePageTitle } from "./usePageTitle";

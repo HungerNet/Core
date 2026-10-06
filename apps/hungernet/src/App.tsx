@@ -1,5 +1,6 @@
-import { Link, Navigate, NavLink, Route, Routes } from "react-router-dom";
-import { useAuth } from "@hungernet/auth";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
+import { SiteHeader } from "@hungernet/ui";
+import { HungerNetAuthButtons, HungerNetAuthCallback, useAuth } from "@hungernet/auth";
 import { HomePage, HostingPage, ProjectsPage, ToolsPage, EmailGuidePage, SrvGeneratorPage, PublicProfilePage } from "./pages";
 
 const navItems = [
@@ -11,12 +12,16 @@ const navItems = [
 
 export function App() {
   const { status, user } = useAuth();
+  const location = useLocation();
+  if (location.pathname === "/auth/callback") return <HungerNetAuthCallback clientId="hungernet" apiBaseUrl={import.meta.env.VITE_API_BASE_URL || "/api/v1"} />;
   return <>
-    <header className="site-header hn-container">
-      <Link className="site-brand" to="/">HungerNet<span aria-hidden="true">.</span></Link>
-      <nav className="site-nav" aria-label="Main navigation">{navItems.map((item) => <NavLink key={item.to} to={item.to} end={item.end}>{item.label}</NavLink>)}</nav>
-      <a className="account-link" href="https://accounts.hungernet.dev/profile">{status === "authenticated" ? user?.displayName ?? "Account" : "Account"}</a>
-    </header>
+    <SiteHeader
+      brand="HungerNet"
+      navItems={navItems}
+      accountAction={status === "authenticated"
+        ? <a className="account-link" href={`${import.meta.env.VITE_ACCOUNTS_URL || "https://accounts.hungernet.dev"}/profile`}>Manage account</a>
+        : <HungerNetAuthButtons clientId="hungernet" appName="HungerNet" accountsBaseUrl={import.meta.env.VITE_ACCOUNTS_URL} />}
+    />
     <main className="hn-container">
       <Routes>
         <Route path="/" element={<HomePage />} />

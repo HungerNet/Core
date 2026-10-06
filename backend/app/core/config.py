@@ -22,6 +22,13 @@ class Settings(BaseSettings):
     discord_client_secret: SecretStr | None = None
     oauth_callback_base_url: str = "https://auth.hungernet.dev/api/v1"
     allowed_return_origins: list[str] = Field(default_factory=lambda: ["https://accounts.hungernet.dev"])
+    oauth_app_redirect_uris: dict[str, list[str]] = Field(default_factory=lambda: {
+        "admin": ["https://admin.hungernet.dev/auth/callback", "http://localhost:4173/auth/callback"],
+        "hungernet": ["https://hungernet.dev/auth/callback", "http://localhost:4181/auth/callback"],
+        "hungersmp": ["https://hungersmp.com/auth/callback", "http://localhost:4182/auth/callback"],
+        "ifamished": ["https://ifamished.com/auth/callback", "http://localhost:4180/auth/callback"],
+        "optifineforfabric": ["https://optifineforfabric.com/auth/callback", "http://localhost:4183/auth/callback"],
+    })
     cors_allowed_origins: list[str] = Field(default_factory=list)
     session_cookie_name: str = "hungernet_session"
     csrf_cookie_name: str = "hungernet_csrf"

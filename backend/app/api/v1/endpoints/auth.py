@@ -1,12 +1,16 @@
 from __future__ import annotations
 
+import base64
+import hashlib
+import re
 import secrets
-from datetime import UTC, datetime
-from urllib.parse import quote, urlsplit
+from datetime import UTC, datetime, timedelta
+from urllib.parse import quote, urlencode, urlsplit
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
 from fastapi.responses import RedirectResponse
 from fastapi.security import HTTPAuthorizationCredentials
+from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -15,13 +19,14 @@ from sqlalchemy.orm import selectinload
 from app.core.config import settings
 from app.core.deps import bearer_scheme, get_current_user_id, get_db, require_csrf
 from app.core.security import (
+    generate_session_token,
     hash_token,
     new_totp_secret,
     verify_password,
     verify_session_token,
     verify_totp,
 )
-from app.db.models import Role, Session, User
+from app.db.models import OAuthTransaction, Role, Session, User
 from app.integrations.oauth import (
     OAuthProviderError,
     authorization_url,
@@ -39,6 +44,40 @@ from app.services.auth_service import AuthFlowError, AuthService
 from app.services.permission_service import PermissionService
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+APP_NAMES = {
+    "admin": "HungerNet Admin",
+    "hungernet": "HungerNet",
+    "hungersmp": "Hunger SMP",
+    "ifamished": "iFamished",
+    "optifineforfabric": "OptiFine for Fabric",
+}
+
+
+class AppAuthorizationRequest(BaseModel):
+    client_id: str = Field(min_length=1, max_length=48)
+    redirect_uri: str = Field(min_length=1, max_length=500)
+    state: str = Field(min_length=32, max_length=128)
+    code_challenge: str = Field(min_length=43, max_length=43)
+
+
+class AppTokenRequest(BaseModel):
+    client_id: str = Field(min_length=1, max_length=48)
+    redirect_uri: str = Field(min_length=1, max_length=500)
+    code: str = Field(min_length=32, max_length=128)
+    code_verifier: str = Field(min_length=43, max_length=128)
+
+
+def _registered_app(client_id: str, redirect_uri: str) -> str:
+    callbacks = settings.oauth_app_redirect_uris.get(client_id)
+    if client_id not in APP_NAMES or callbacks is None:
+        raise HTTPException(status_code=400, detail="Unknown HungerNet application")
+    if redirect_uri not in callbacks:
+        raise HTTPException(
+            status_code=400,
+            detail="Redirect URL is not registered for this application",
+        )
+    return APP_NAMES[client_id]
 
 
 async def _local_user(db: AsyncSession, identifier: str) -> User | None:
@@ -95,6 +134,174 @@ async def _create_login_response(
 @router.get("/providers")
 async def oauth_providers() -> dict[str, list[str]]:
     return {"providers": configured_oauth_providers()}
+
+
+@router.get("/authorize")
+async def authorization_details(
+    client_id: str = Query(min_length=1, max_length=48),
+    redirect_uri: str = Query(min_length=1, max_length=500),
+    scope: str = Query(default="profile", max_length=64),
+) -> dict[str, str]:
+    if scope != "profile":
+        raise HTTPException(status_code=400, detail="Unsupported authorization scope")
+    return {
+        "client_id": client_id,
+        "app_name": _registered_app(client_id, redirect_uri),
+        "redirect_uri": redirect_uri,
+        "scope": scope,
+    }
+
+
+@router.post("/authorize", dependencies=[Depends(require_csrf)])
+async def authorize_application(
+    payload: AppAuthorizationRequest,
+    request: Request,
+    user_id: str = Depends(get_current_user_id),
+    db: AsyncSession = Depends(get_db),
+) -> dict[str, str]:
+    _registered_app(payload.client_id, payload.redirect_uri)
+    if not re.fullmatch(r"[A-Za-z0-9_-]{43}", payload.code_challenge):
+        raise HTTPException(status_code=400, detail="Invalid PKCE challenge")
+    if not re.fullmatch(r"[A-Za-z0-9_-]{32,128}", payload.state):
+        raise HTTPException(status_code=400, detail="Invalid authorization state")
+
+    token = request.cookies.get(settings.session_cookie_name)
+    if not token:
+        authorization = request.headers.get("authorization", "").split(maxsplit=1)
+        if len(authorization) == 2 and authorization[0].lower() == "bearer":
+            token = authorization[1]
+    claims = verify_session_token(token) if token else None
+    if (
+        claims is None
+        or claims.get("scope", "session") != "session"
+        or claims.get("sub") != user_id
+    ):
+        raise HTTPException(status_code=401, detail="A valid HungerNet session is required")
+
+    session = await db.scalar(
+        select(Session).where(
+            Session.id == claims["sid"],
+            Session.user_id == user_id,
+            Session.revoked_at.is_(None),
+            Session.expires_at > datetime.now(UTC),
+        )
+    )
+    if session is None:
+        raise HTTPException(status_code=401, detail="HungerNet session is no longer active")
+
+    code = secrets.token_urlsafe(32)
+    db.add(
+        OAuthTransaction(
+            state_hash=hash_token(code),
+            provider=f"app:{payload.client_id}",
+            redirect_uri=payload.redirect_uri,
+            return_to=payload.redirect_uri,
+            code_verifier=payload.code_challenge,
+            nonce=payload.state,
+            purpose="authorize",
+            user_id=user_id,
+            session_id=session.id,
+            expires_at=datetime.now(UTC) + timedelta(minutes=5),
+        )
+    )
+    await db.commit()
+    query = urlencode({"code": code, "state": payload.state})
+    return {"redirect_to": f"{payload.redirect_uri}?{query}"}
+
+
+@router.post("/token")
+async def exchange_authorization_code(
+    payload: AppTokenRequest,
+    db: AsyncSession = Depends(get_db),
+) -> dict[str, str | int]:
+    _registered_app(payload.client_id, payload.redirect_uri)
+    if not re.fullmatch(r"[A-Za-z0-9_-]{43,128}", payload.code_verifier):
+        raise HTTPException(status_code=400, detail="Invalid PKCE verifier")
+    digest = hashlib.sha256(payload.code_verifier.encode("ascii")).digest()
+    challenge = base64.urlsafe_b64encode(digest)
+    challenge = challenge.rstrip(b"=").decode("ascii")
+    transaction = await db.scalar(
+        select(OAuthTransaction)
+        .where(
+            OAuthTransaction.state_hash == hash_token(payload.code),
+            OAuthTransaction.provider == f"app:{payload.client_id}",
+            OAuthTransaction.purpose == "authorize",
+            OAuthTransaction.redirect_uri == payload.redirect_uri,
+            OAuthTransaction.consumed_at.is_(None),
+            OAuthTransaction.expires_at > datetime.now(UTC),
+        )
+        .with_for_update()
+    )
+    if transaction is None or not secrets.compare_digest(transaction.code_verifier, challenge):
+        raise HTTPException(status_code=400, detail="Authorization code is invalid or expired")
+    if not transaction.user_id or not transaction.session_id:
+        raise HTTPException(status_code=400, detail="Authorization code is incomplete")
+    session = await db.scalar(
+        select(Session).where(
+            Session.id == transaction.session_id,
+            Session.user_id == transaction.user_id,
+            Session.revoked_at.is_(None),
+            Session.expires_at > datetime.now(UTC),
+        )
+    )
+    user = await db.scalar(
+        select(User).where(User.id == transaction.user_id, User.is_active.is_(True))
+    )
+    if session is None or user is None:
+        raise HTTPException(status_code=401, detail="HungerNet session is no longer active")
+
+    transaction.consumed_at = datetime.now(UTC)
+    await db.commit()
+    access_token = generate_session_token(
+        user.id,
+        session.id,
+        scope="profile",
+        audience=payload.client_id,
+        expires_minutes=settings.jwt_expiry_minutes,
+    )
+    return {
+        "access_token": access_token,
+        "token_type": "Bearer",
+        "expires_in": settings.jwt_expiry_minutes * 60,
+        "scope": "profile",
+    }
+
+
+@router.get("/userinfo")
+async def authorized_user_info(
+    credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
+    db: AsyncSession = Depends(get_db),
+) -> dict[str, str | None]:
+    token = (
+        credentials.credentials
+        if credentials and credentials.scheme.lower() == "bearer"
+        else None
+    )
+    claims = verify_session_token(token) if token else None
+    client_id = claims.get("aud") if claims else None
+    if (
+        claims is None
+        or claims.get("scope") != "profile"
+        or client_id not in settings.oauth_app_redirect_uris
+    ):
+        raise HTTPException(status_code=401, detail="A profile access token is required")
+    session = await db.scalar(
+        select(Session).where(
+            Session.id == claims["sid"],
+            Session.user_id == claims["sub"],
+            Session.revoked_at.is_(None),
+            Session.expires_at > datetime.now(UTC),
+        )
+    )
+    user = await db.scalar(select(User).where(User.id == claims["sub"], User.is_active.is_(True)))
+    if session is None or user is None:
+        raise HTTPException(status_code=401, detail="HungerNet session is no longer active")
+    return {
+        "id": user.id,
+        "username": user.username,
+        "display_name": user.display_name,
+        "avatar_url": user.avatar_url,
+    }
 
 
 @router.post("/register", status_code=status.HTTP_201_CREATED)
@@ -205,7 +412,7 @@ async def get_session_status(
         return SessionStatusResponse()
 
     payload = verify_session_token(token)
-    if payload is None:
+    if payload is None or payload.get("scope", "session") != "session":
         return SessionStatusResponse()
     session = await db.scalar(
         select(Session).where(

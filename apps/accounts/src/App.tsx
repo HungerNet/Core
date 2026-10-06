@@ -1,6 +1,7 @@
-import { Navigate, NavLink, Route, Routes } from "react-router-dom";
+import { Navigate, NavLink, Route, Routes, useLocation } from "react-router-dom";
 import { Button, GlassCard } from "@hungernet/ui";
 import { OAuthSignIn, RequireAuth, useAuth } from "@hungernet/auth";
+import { AuthorizationPage } from "./pages/AuthorizationPage";
 
 import { ProfilePage } from "./pages/ProfilePage";
 import { SecurityPage } from "./pages/SecurityPage";
@@ -87,6 +88,9 @@ function AccountShell() {
 
 export function App() {
   const { status } = useAuth();
+  const location = useLocation();
+
+  if (location.pathname === "/authorize") return <AuthorizationPage />;
 
   if (status === "loading") {
     return (

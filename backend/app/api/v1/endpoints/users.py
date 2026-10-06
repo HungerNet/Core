@@ -48,11 +48,13 @@ async def read_current_user(user: User = Depends(get_current_user)) -> UserMeRes
     dependencies=[Depends(require_csrf), Depends(require_permission("platform.profile.update"))],
 )
 async def update_current_user(
+    request: Request,
     payload: UserUpdateRequest,
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> UserMeResponse:
     updates = payload.model_dump(exclude_unset=True)
+    email_changed = "email" in updates and updates["email"] != user.email
     if "username" in updates and updates["username"]:
         normalized = updates["username"].strip().lower()
         conflict = await db.scalar(
@@ -61,10 +63,35 @@ async def update_current_user(
         if conflict:
             raise HTTPException(status_code=409, detail="Username is already in use")
         updates["username"] = normalized
+    if "email" in updates:
+        normalized_email = updates["email"]
+        if normalized_email != user.email:
+            await require_recent_auth(request, user.id)
+            conflict = await db.scalar(
+                select(User.id).where(
+                    func.lower(User.email) == normalized_email,
+                    User.id != user.id,
+                )
+            )
+            if conflict:
+                raise HTTPException(status_code=409, detail="Email is already in use")
+            updates["email"] = normalized_email
+        else:
+            updates.pop("email")
     if "avatar_url" in updates and updates["avatar_url"] is not None:
         updates["avatar_url"] = str(updates["avatar_url"])
     for field, value in updates.items():
         setattr(user, field, value)
+    if email_changed:
+        db.add(
+            AuditEvent(
+                actor_user_id=user.id,
+                action="user.email_updated",
+                target_type="user",
+                target_id=user.id,
+                details="Account email address updated",
+            )
+        )
     try:
         await db.commit()
     except IntegrityError as error:

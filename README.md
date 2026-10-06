@@ -100,8 +100,9 @@ JWT_SECRET=replace-with-a-long-random-secret
 JWT_ALGORITHM=HS256
 JWT_EXPIRY_MINUTES=60
 REDIS_URL=redis://localhost:6379/0
-CORS_ALLOWED_ORIGINS=["http://localhost:4173","http://localhost:4174","http://localhost:4181","http://localhost:4182","http://localhost:4183"]
-ALLOWED_RETURN_ORIGINS=["http://localhost:4173","http://localhost:4174","http://localhost:4181","http://localhost:4182","http://localhost:4183"]
+CORS_ALLOWED_ORIGINS=["http://localhost:4173","http://localhost:4174","http://localhost:4180","http://localhost:4181","http://localhost:4182","http://localhost:4183"]
+ALLOWED_RETURN_ORIGINS=["http://localhost:4173","http://localhost:4174","http://localhost:4180","http://localhost:4181","http://localhost:4182","http://localhost:4183"]
+OAUTH_APP_REDIRECT_URIS={"admin":["https://admin.hungernet.dev/auth/callback","http://localhost:4173/auth/callback"],"hungernet":["https://hungernet.dev/auth/callback","http://localhost:4181/auth/callback"],"hungersmp":["https://hungersmp.com/auth/callback","http://localhost:4182/auth/callback"],"ifamished":["https://ifamished.com/auth/callback","http://localhost:4180/auth/callback"],"optifineforfabric":["https://optifineforfabric.com/auth/callback","http://localhost:4183/auth/callback"]}
 SESSION_COOKIE_SECURE=false
 SESSION_COOKIE_SAME_SITE=lax
 

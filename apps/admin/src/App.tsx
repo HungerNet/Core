@@ -1,6 +1,6 @@
-import { Navigate, NavLink, Route, Routes } from "react-router-dom";
+import { Navigate, NavLink, Route, Routes, useLocation } from "react-router-dom";
 import { Button, GlassCard } from "@hungernet/ui";
-import { OAuthSignIn, RequirePermission } from "@hungernet/auth";
+import { HungerNetAuthButtons, HungerNetAuthCallback, RequirePermission } from "@hungernet/auth";
 import { useAuth } from "@hungernet/auth";
 
 import { UserListPage } from "./pages/UserListPage";
@@ -93,6 +93,11 @@ function AdminShell() {
 
 export function App() {
   const { status, user } = useAuth();
+  const location = useLocation();
+
+  if (location.pathname === "/auth/callback") {
+    return <HungerNetAuthCallback clientId="admin" apiBaseUrl={import.meta.env.VITE_API_BASE_URL || "/api/v1"} />;
+  }
 
   if (status === "loading") {
     return (
@@ -113,7 +118,7 @@ export function App() {
         <GlassCard className="auth-landing-card">
           <div className="section-label">Authentication</div>
           <h2>Access the control room</h2>
-          <OAuthSignIn apiBaseUrl={import.meta.env.VITE_API_BASE_URL || "/api/v1"} returnPath="/" />
+          <HungerNetAuthButtons clientId="admin" appName="HungerNet Admin" accountsBaseUrl={import.meta.env.VITE_ACCOUNTS_URL} />
         </GlassCard>
       </main>
     );
