@@ -10,7 +10,13 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from starlette.requests import Request
 from starlette.responses import Response
 
-from app.api.v1.endpoints.auth import issue_csrf_token, login, register, verify_mfa
+from app.api.v1.endpoints.auth import (
+    get_session_status,
+    issue_csrf_token,
+    login,
+    register,
+    verify_mfa,
+)
 from app.core.config import settings
 from app.db import models  # noqa: F401
 from app.db.base import Base
@@ -26,19 +32,27 @@ def _totp_code(secret: str) -> str:
     return f"{value % 1_000_000:06d}"
 
 
-def _request(origin: str | None = None) -> Request:
+def _request(
+    origin: str | None = None,
+    *,
+    cookie: str | None = None,
+    method: str = "POST",
+) -> Request:
     headers = [(b"user-agent", b"auth test")]
     if origin:
         headers.append((b"origin", origin.encode()))
+    if cookie:
+        headers.append((b"cookie", cookie.encode()))
+    path = "/api/v1/auth/session" if method == "GET" else "/api/v1/auth/login"
     return Request(
         {
             "type": "http",
             "asgi": {"version": "3.0"},
             "http_version": "1.1",
-            "method": "POST",
+            "method": method,
             "scheme": "https",
-            "path": "/api/v1/auth/login",
-            "raw_path": b"/api/v1/auth/login",
+            "path": path,
+            "raw_path": path.encode(),
             "query_string": b"",
             "headers": headers,
             "client": ("127.0.0.1", 1234),
@@ -96,8 +110,18 @@ async def test_registration_requires_totp_and_sets_workers_cookie_attributes(
         assert user.totp_enabled
 
         login_response = Response()
-        await login(payload, _request(), login_response, db)
+        origin = "https://accounts.millered001.workers.dev"
+        await login(payload, _request(origin), login_response, db)
         assert "hungernet_session=" in login_response.headers["set-cookie"]
+        session_cookie = login_response.headers["set-cookie"].split(";", 1)[0]
+        session = await get_session_status(
+            _request(origin, cookie=session_cookie, method="GET"),
+            None,
+            db,
+        )
+        assert session.authenticated
+        assert session.user is not None
+        assert session.user.username == "member_one"
 
     await engine.dispose()
 

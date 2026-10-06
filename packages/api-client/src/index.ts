@@ -6,6 +6,7 @@ export interface ApiClientOptions {
 
 const WORKERS_DEV_HOST_PATTERN =
   /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+millered001\.workers\.dev$/i;
+const WORKERS_ACCOUNTS_HOST = "accounts.millered001.workers.dev";
 const WORKERS_DEV_API_BASE_URL = "https://api.hacklets.dev";
 
 export function resolveApiBaseUrl(
@@ -30,6 +31,7 @@ export function resolveApiBaseUrl(
     if (!matchesWorkersDomain) return configuredBaseUrl;
 
     const apiPath = new URL(configuredBaseUrl, parsedOrigin).pathname.replace(/\/+$/, "");
+    if (hostname === WORKERS_ACCOUNTS_HOST) return apiPath || "/api/v1";
     return `${WORKERS_DEV_API_BASE_URL}${apiPath}`;
   } catch {
     return configuredBaseUrl;

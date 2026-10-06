@@ -1,14 +1,19 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "accounts",
+  "main": "./worker.ts",
   "compatibility_date": "2026-06-20",
   "observability": {
     "enabled": true
   },
-    "assets": {
+  "assets": {
     "directory": "./dist",
+    "binding": "ASSETS",
     "not_found_handling": "single-page-application"
-    },
+  },
+  "vars": {
+    "HUNGERNET_API_ORIGIN": "https://api.hacklets.dev"
+  },
   "compatibility_flags": [
     "nodejs_compat"
   ]
