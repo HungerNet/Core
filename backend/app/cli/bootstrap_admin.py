@@ -115,8 +115,12 @@ def promote(
 
     try:
         result = asyncio.run(_promote_user(username, reason))
-    except SQLAlchemyError:
-        typer.echo("Failed to promote user because the database operation failed.", err=True)
+    except SQLAlchemyError as error:
+        detail = getattr(error, "orig", error)
+        typer.echo(
+            f"Failed to promote user because the database operation failed: {detail}",
+            err=True,
+        )
         raise typer.Exit(code=1) from None
 
     if result == "missing":
