@@ -27,7 +27,6 @@ export function App() {
 
   return <>
     <Navbar brand="Hunger SMP" brandDotColor="#4f44ef" navItems={navItems} />
-    <FloatingAuthButton clientId="hungersmp" appName="Hunger SMP" accountsBaseUrl={import.meta.env.VITE_ACCOUNTS_URL} returnTo={returnTo} />
     <ScrollToTop />
     <div className="container">
       <Routes>
@@ -43,5 +42,6 @@ export function App() {
       socials={socials}
       footerNote={`© ${new Date().getFullYear()} HungerNet. Not affiliated with Mojang.`}
     />
+    <FloatingAuthButton clientId="hungersmp" appName="Hunger SMP" accountsBaseUrl={import.meta.env.VITE_ACCOUNTS_URL} returnTo={returnTo} />
   </>;
 }

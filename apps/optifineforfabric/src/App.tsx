@@ -32,7 +32,6 @@ export function App() {
 
   return <>
     <Navbar brand="OptiFine for Fabric" brandDotColor="#38bdf8" navItems={navItems} />
-    <FloatingAuthButton clientId="optifineforfabric" appName="OptiFine for Fabric" accountsBaseUrl={import.meta.env.VITE_ACCOUNTS_URL} returnTo={returnTo} />
     <ScrollToTop />
     <div className="container">
       <Routes>
@@ -50,5 +49,6 @@ export function App() {
       socials={socials}
       footerNote={`© ${new Date().getFullYear()} OptiFine for Fabric. Not affiliated with Mojang or OptiFine.`}
     />
+    <FloatingAuthButton clientId="optifineforfabric" appName="OptiFine for Fabric" accountsBaseUrl={import.meta.env.VITE_ACCOUNTS_URL} returnTo={returnTo} />
   </>;
 }

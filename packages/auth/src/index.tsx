@@ -3,6 +3,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -455,6 +456,31 @@ function randomState() {
   return Array.from(crypto.getRandomValues(new Uint8Array(32)), (value) => value.toString(16).padStart(2, "0")).join("");
 }
 
+async function beginAuthorization(
+  clientId: string,
+  appName: string,
+  accountsBaseUrl: string,
+  returnTo = `${window.location.pathname}${window.location.search}${window.location.hash}`,
+) {
+  const verifier = encodeBase64Url(crypto.getRandomValues(new Uint8Array(32))) + encodeBase64Url(crypto.getRandomValues(new Uint8Array(16)));
+  const challengeBytes = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier));
+  const codeChallenge = encodeBase64Url(new Uint8Array(challengeBytes));
+  const state = randomState();
+  const redirectUri = new URL("/auth/callback", window.location.origin).toString();
+  sessionStorage.setItem(requestKey(clientId), JSON.stringify({ state, verifier, returnTo }));
+  const authorizationUrl = new URL("/authorize", accountsBaseUrl);
+  authorizationUrl.search = new URLSearchParams({
+    client_id: clientId,
+    redirect_uri: redirectUri,
+    state,
+    code_challenge: codeChallenge,
+    scope: "profile",
+    screen_hint: "signin",
+    app_name: appName,
+  }).toString();
+  window.location.assign(authorizationUrl.toString());
+}
+
 export function HungerNetAuthButtons({
   clientId,
   appName,
@@ -470,23 +496,7 @@ export function HungerNetAuthButtons({
   const resolvedAccountsBaseUrl = resolveAccountsBaseUrl(accountsBaseUrl);
   const startAuthorization = async () => {
     try {
-      const verifier = encodeBase64Url(crypto.getRandomValues(new Uint8Array(32))) + encodeBase64Url(crypto.getRandomValues(new Uint8Array(16)));
-      const challengeBytes = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier));
-      const codeChallenge = encodeBase64Url(new Uint8Array(challengeBytes));
-      const state = randomState();
-      const redirectUri = new URL("/auth/callback", window.location.origin).toString();
-      sessionStorage.setItem(requestKey(clientId), JSON.stringify({ state, verifier, returnTo }));
-      const authorizationUrl = new URL("/authorize", resolvedAccountsBaseUrl);
-      authorizationUrl.search = new URLSearchParams({
-        client_id: clientId,
-        redirect_uri: redirectUri,
-        state,
-        code_challenge: codeChallenge,
-        scope: "profile",
-        screen_hint: "signin",
-        app_name: appName,
-      }).toString();
-      window.location.assign(authorizationUrl.toString());
+      await beginAuthorization(clientId, appName, resolvedAccountsBaseUrl, returnTo);
     } catch {
       setError("Secure sign-in could not be started in this browser.");
     }
@@ -514,30 +524,70 @@ export function FloatingAuthButton({
   returnTo?: string;
 }) {
   const { status, user, signOut } = useAuth();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [error, setError] = useState("");
+  const controlRef = useRef<HTMLDivElement>(null);
   const accountsUrl = resolveAccountsBaseUrl(accountsBaseUrl);
+  const resolvedReturnTo = returnTo ?? `${window.location.pathname}${window.location.search}${window.location.hash}`;
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMenuOpen(false);
+    };
+    const closeOnOutsidePointer = (event: PointerEvent) => {
+      if (!controlRef.current?.contains(event.target as Node)) setMenuOpen(false);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    document.addEventListener("pointerdown", closeOnOutsidePointer);
+    return () => {
+      window.removeEventListener("keydown", closeOnEscape);
+      document.removeEventListener("pointerdown", closeOnOutsidePointer);
+    };
+  }, [menuOpen]);
+
+  const handleClick = () => {
+    if (status === "authenticated") {
+      setMenuOpen((open) => !open);
+      return;
+    }
+    if (status !== "unauthenticated") return;
+    setError("");
+    void beginAuthorization(clientId, appName, accountsUrl, resolvedReturnTo).catch(() => {
+      setError("Secure sign-in could not be started in this browser.");
+    });
+  };
 
   return (
-    <aside className="floating-auth" aria-label="HungerNet account">
-      {status === "loading" ? (
-        <span className="floating-auth-status" role="status">Checking account…</span>
-      ) : status === "authenticated" ? (
-        <div className="floating-auth-actions">
-          <a className="floating-auth-profile" href={new URL("/profile", accountsUrl).toString()}>
-            {user?.displayName || "My account"}
+    <div className="floating-auth" ref={controlRef}>
+      <button
+        className="floating-auth-trigger"
+        type="button"
+        aria-label={status === "authenticated" ? "Open account menu" : status === "loading" ? "Checking account" : "Sign in with HungerNet"}
+        aria-haspopup={status === "authenticated" ? "menu" : undefined}
+        aria-expanded={status === "authenticated" ? menuOpen : undefined}
+        disabled={status === "loading"}
+        onClick={handleClick}
+        title={status === "authenticated" ? "Account" : "Sign in"}
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="8" r="3.5" />
+          <path d="M5.5 20a6.5 6.5 0 0 1 13 0" />
+        </svg>
+      </button>
+      {status === "authenticated" && menuOpen && (
+        <div className="floating-auth-menu" role="menu" aria-label="Account options">
+          <span className="floating-auth-name">{user?.displayName || "My account"}</span>
+          <a role="menuitem" href={new URL("/profile", accountsUrl).toString()}>
+            Manage account
           </a>
-          <button className="glass-button glass-button--secondary glass-button--md" onClick={() => void signOut()} type="button">
+          <button role="menuitem" type="button" onClick={() => { setMenuOpen(false); void signOut(); }}>
             Sign out
           </button>
         </div>
-      ) : (
-        <HungerNetAuthButtons
-          clientId={clientId}
-          appName={appName}
-          accountsBaseUrl={accountsUrl}
-          returnTo={returnTo}
-        />
       )}
-    </aside>
+      {error && <p className="floating-auth-error" role="alert">{error}</p>}
+    </div>
   );
 }
 

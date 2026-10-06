@@ -29,7 +29,6 @@ export function App() {
 
   return <>
     <Navbar brand="iFamished" brandDotColor="#22d3ee" navItems={navItems} />
-    <FloatingAuthButton clientId="ifamished" appName="iFamished" accountsBaseUrl={import.meta.env.VITE_ACCOUNTS_URL} returnTo={returnTo} />
     <ScrollToTop />
     <div className="container">
       <Routes>
@@ -45,5 +44,6 @@ export function App() {
       socials={socials}
       footerNote={`© ${new Date().getFullYear()} iFamished. All rights reserved.`}
     />
+    <FloatingAuthButton clientId="ifamished" appName="iFamished" accountsBaseUrl={import.meta.env.VITE_ACCOUNTS_URL} returnTo={returnTo} />
   </>;
 }
