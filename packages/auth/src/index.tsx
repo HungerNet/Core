@@ -78,6 +78,7 @@ export function AuthProvider({ children, clientId }: AuthProviderProps) {
             id: string;
             display_name: string;
             avatar_url: string | null;
+            permissions?: string[];
           };
           setState({
             status: "authenticated",
@@ -87,7 +88,7 @@ export function AuthProvider({ children, clientId }: AuthProviderProps) {
               avatarUrl: profile.avatar_url,
               status: "active",
               createdAt: new Date().toISOString(),
-              permissions: [],
+              permissions: profile.permissions ?? [],
             },
           });
           return;

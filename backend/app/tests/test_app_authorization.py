@@ -21,7 +21,7 @@ from app.api.v1.endpoints.auth import (
 )
 from app.db import models  # noqa: F401
 from app.db.base import Base
-from app.db.models import User
+from app.db.models import Permission, Role, User
 from app.services.auth_service import AuthService
 
 
@@ -60,6 +60,17 @@ async def test_registered_app_authorization_uses_pkce_and_profile_scope() -> Non
 
     async with session_factory() as db:
         user = User(username="member_one", email="member@example.test", display_name="Member One")
+        admin_permission = Permission(
+            key="platform.admin.users.read",
+            description="Read platform admin users",
+        )
+        admin_role = Role(
+            key="platform.admin",
+            name="Platform Admin",
+            is_system=True,
+            permissions=[admin_permission],
+        )
+        user.roles.append(admin_role)
         db.add(user)
         await db.flush()
         session_token, _ = await AuthService.issue_session(db, user=user, device_label="test")
@@ -124,6 +135,7 @@ async def test_registered_app_authorization_uses_pkce_and_profile_scope() -> Non
             "username": "member_one",
             "display_name": "Member One",
             "avatar_url": None,
+            "permissions": ["platform.admin.users.read"],
         }
         session = await get_session_status(
             _request(),

@@ -298,7 +298,7 @@ async def exchange_authorization_code(
 async def authorized_user_info(
     credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
     db: AsyncSession = Depends(get_db),
-) -> dict[str, str | None]:
+) -> dict[str, str | None | list[str]]:
     token = (
         credentials.credentials
         if credentials and credentials.scheme.lower() == "bearer"
@@ -320,7 +320,14 @@ async def authorized_user_info(
             Session.expires_at > datetime.now(UTC),
         )
     )
-    user = await db.scalar(select(User).where(User.id == claims["sub"], User.is_active.is_(True)))
+    user = await db.scalar(
+        select(User)
+        .where(User.id == claims["sub"], User.is_active.is_(True))
+        .options(
+            selectinload(User.roles).selectinload(Role.permissions),
+            selectinload(User.permissions),
+        )
+    )
     if session is None or user is None:
         raise HTTPException(status_code=401, detail="HungerNet session is no longer active")
     return {
@@ -328,6 +335,7 @@ async def authorized_user_info(
         "username": user.username,
         "display_name": user.display_name,
         "avatar_url": user.avatar_url,
+        "permissions": PermissionService.effective_permissions(user),
     }
 
 
