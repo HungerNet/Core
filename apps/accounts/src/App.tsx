@@ -14,39 +14,73 @@ const navItems = [
 
 function AccountShell() {
   const { user, signOut } = useAuth();
+  const displayName = user?.displayName ?? "Member";
 
   return (
-    <div className="page" style={{ gap: "1.5rem" }}>
-      <header className="glass-card" style={{ padding: "1rem 1.25rem", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div>
-          <div className="section-label">Account</div>
-          <h1 style={{ marginTop: "0.25rem", fontSize: "1.5rem" }}>My settings</h1>
+    <div className="app-shell">
+      <div className="accent-grid" aria-hidden="true" />
+
+      <div className="app-panel">
+        <header className="top-bar glass-card">
+          <div className="brand-block">
+            <div className="section-label">Account</div>
+            <h1>My settings</h1>
+          </div>
+
+          <div className="top-actions">
+            <span className="status-chip">online</span>
+            <span className="muted user-pill">{displayName}</span>
+            <Button onClick={() => void signOut()}>Sign out</Button>
+          </div>
+        </header>
+
+        <div className="hero-row">
+          <div className="spotlight-card glass-card">
+            <div className="spotlight-kicker">Welcome back</div>
+            <h2>{displayName}</h2>
+            <p>Keep your identity, security, and device access running smoothly across HungerNet.</p>
+
+            <nav aria-label="Account navigation" className="nav-cluster">
+              {navItems.map((item) => (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  className={({ isActive }) => ["nav-pill", isActive ? "nav-pill--active" : ""].join(" ")}
+                >
+                  {item.label}
+                </NavLink>
+              ))}
+            </nav>
+          </div>
+
+          <div className="stat-grid">
+            <div className="stat-card glass-card">
+              <span className="stat-label">Profile</span>
+              <strong>94%</strong>
+              <small>complete</small>
+            </div>
+            <div className="stat-card glass-card">
+              <span className="stat-label">Security</span>
+              <strong>2FA</strong>
+              <small>active</small>
+            </div>
+            <div className="stat-card glass-card">
+              <span className="stat-label">Sessions</span>
+              <strong>3</strong>
+              <small>connected</small>
+            </div>
+          </div>
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flexWrap: "wrap" }}>
-          <span className="muted">{user?.displayName ?? "User"}</span>
-          <Button onClick={() => void signOut()}>Sign out</Button>
+        <div className="route-panel glass-card">
+          <Routes>
+            <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/security" element={<SecurityPage />} />
+            <Route path="/devices" element={<DevicesPage />} />
+            <Route path="*" element={<Navigate to="/profile" replace />} />
+          </Routes>
         </div>
-      </header>
-
-      <nav aria-label="Account navigation" style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
-        {navItems.map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            className={({ isActive }) => ["glass-button", isActive ? "glass-button--primary" : "glass-button--secondary", "glass-button--md"].join(" ")}
-          >
-            {item.label}
-          </NavLink>
-        ))}
-      </nav>
-
-      <Routes>
-        <Route path="/profile" element={<ProfilePage />} />
-        <Route path="/security" element={<SecurityPage />} />
-        <Route path="/devices" element={<DevicesPage />} />
-        <Route path="*" element={<Navigate to="/profile" replace />} />
-      </Routes>
+      </div>
     </div>
   );
 }
@@ -56,8 +90,10 @@ export function App() {
 
   if (status === "loading") {
     return (
-      <main className="hn-container page">
-        <GlassCard style={{ padding: "2rem" }}>
+      <main className="app-shell page-loading-shell">
+        <div className="accent-grid" aria-hidden="true" />
+        <GlassCard className="loading-card">
+          <div className="loading-orb" aria-hidden="true" />
           <p>Loading account session…</p>
         </GlassCard>
       </main>
@@ -65,7 +101,18 @@ export function App() {
   }
 
   return (
-    <RequireAuth fallback={<main className="hn-container page"><GlassCard style={{ padding: "2rem" }}><h2>Sign in required</h2><OAuthSignIn apiBaseUrl={import.meta.env.VITE_API_BASE_URL || "/api/v1"} returnPath="/profile" /></GlassCard></main>}>
+    <RequireAuth
+      fallback={
+        <main className="app-shell page-loading-shell">
+          <div className="accent-grid" aria-hidden="true" />
+          <GlassCard className="auth-landing-card">
+            <div className="section-label">Sign in</div>
+            <h2>Access your account</h2>
+            <OAuthSignIn apiBaseUrl={import.meta.env.VITE_API_BASE_URL || "/api/v1"} returnPath="/profile" />
+          </GlassCard>
+        </main>
+      }
+    >
       <AccountShell />
     </RequireAuth>
   );

@@ -18,41 +18,75 @@ const navItems = [
 
 function AdminShell() {
   const { user, signOut } = useAuth();
+  const displayName = user?.displayName ?? "Operator";
 
   return (
-    <div className="page" style={{ gap: "1.5rem" }}>
-      <header className="glass-card" style={{ padding: "1rem 1.25rem", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div>
-          <div className="section-label">Admin</div>
-          <h1 style={{ fontSize: "1.5rem", marginTop: "0.25rem" }}>HungerNet Dashboard</h1>
+    <div className="app-shell">
+      <div className="accent-grid accent-grid--warm" aria-hidden="true" />
+
+      <div className="app-panel">
+        <header className="top-bar glass-card">
+          <div className="brand-block">
+            <div className="section-label">Admin</div>
+            <h1>HungerNet dashboard</h1>
+          </div>
+
+          <div className="top-actions">
+            <span className="status-chip status-chip--warn">live</span>
+            <span className="muted user-pill">{displayName}</span>
+            <Button onClick={() => void signOut()}>Sign out</Button>
+          </div>
+        </header>
+
+        <div className="hero-row">
+          <div className="spotlight-card glass-card spotlight-card--warm">
+            <div className="spotlight-kicker">Operations center</div>
+            <h2>{displayName}</h2>
+            <p>Monitor access, permissions, projects, and account health from one control surface.</p>
+
+            <nav aria-label="Admin navigation" className="nav-cluster">
+              {navItems.map((item) => (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  className={({ isActive }) => ["nav-pill", isActive ? "nav-pill--active" : ""].join(" ")}
+                >
+                  {item.label}
+                </NavLink>
+              ))}
+            </nav>
+          </div>
+
+          <div className="stat-grid">
+            <div className="stat-card glass-card">
+              <span className="stat-label">Users</span>
+              <strong>1,284</strong>
+              <small>total</small>
+            </div>
+            <div className="stat-card glass-card">
+              <span className="stat-label">Incidents</span>
+              <strong>03</strong>
+              <small>open</small>
+            </div>
+            <div className="stat-card glass-card">
+              <span className="stat-label">Uptime</span>
+              <strong>99.9%</strong>
+              <small>healthy</small>
+            </div>
+          </div>
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-          <span className="muted">{user?.displayName ?? "Guest"}</span>
-          <Button onClick={() => void signOut()}>Sign out</Button>
+        <div className="route-panel glass-card">
+          <Routes>
+            <Route path="/users" element={<UserListPage />} />
+            <Route path="/users/:id" element={<UserDetailPage />} />
+            <Route path="/roles" element={<RolesPage />} />
+            <Route path="/projects" element={<ProjectsPage />} />
+            <Route path="/audit" element={<AuditPage />} />
+            <Route path="*" element={<Navigate to="/users" replace />} />
+          </Routes>
         </div>
-      </header>
-
-      <nav aria-label="Admin navigation" style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
-        {navItems.map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            className={({ isActive }) => ["glass-button", isActive ? "glass-button--primary" : "glass-button--secondary", "glass-button--md"].join(" ")}
-          >
-            {item.label}
-          </NavLink>
-        ))}
-      </nav>
-
-      <Routes>
-        <Route path="/users" element={<UserListPage />} />
-        <Route path="/users/:id" element={<UserDetailPage />} />
-        <Route path="/roles" element={<RolesPage />} />
-        <Route path="/projects" element={<ProjectsPage />} />
-        <Route path="/audit" element={<AuditPage />} />
-        <Route path="*" element={<Navigate to="/users" replace />} />
-      </Routes>
+      </div>
     </div>
   );
 }
@@ -62,8 +96,10 @@ export function App() {
 
   if (status === "loading") {
     return (
-      <main className="hn-container page">
-        <GlassCard style={{ padding: "2rem" }}>
+      <main className="app-shell page-loading-shell">
+        <div className="accent-grid accent-grid--warm" aria-hidden="true" />
+        <GlassCard className="loading-card">
+          <div className="loading-orb" aria-hidden="true" />
           <p>Loading admin session…</p>
         </GlassCard>
       </main>
@@ -72,9 +108,11 @@ export function App() {
 
   if (!user) {
     return (
-      <main className="hn-container page">
-        <GlassCard style={{ padding: "2rem" }}>
-          <h2>Authentication required</h2>
+      <main className="app-shell page-loading-shell">
+        <div className="accent-grid accent-grid--warm" aria-hidden="true" />
+        <GlassCard className="auth-landing-card">
+          <div className="section-label">Authentication</div>
+          <h2>Access the control room</h2>
           <OAuthSignIn apiBaseUrl={import.meta.env.VITE_API_BASE_URL || "/api/v1"} returnPath="/" />
         </GlassCard>
       </main>
@@ -82,7 +120,19 @@ export function App() {
   }
 
   return (
-    <RequirePermission permission="platform.admin.users.read" fallback={<main className="hn-container page"><GlassCard style={{ padding: "2rem" }}><h2>Admin access required</h2><p className="muted">Your account does not have permission to open this dashboard.</p></GlassCard></main>}>
+    <RequirePermission
+      permission="platform.admin.users.read"
+      fallback={
+        <main className="app-shell page-loading-shell">
+          <div className="accent-grid accent-grid--warm" aria-hidden="true" />
+          <GlassCard className="auth-landing-card">
+            <div className="section-label">Restricted</div>
+            <h2>Admin access required</h2>
+            <p className="muted">Your account does not have permission to open this dashboard.</p>
+          </GlassCard>
+        </main>
+      }
+    >
       <AdminShell />
     </RequirePermission>
   );

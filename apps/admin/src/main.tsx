@@ -5,6 +5,8 @@ import { AuthProvider } from "@hungernet/auth";
 import "@hungernet/styles";
 import { App } from "./App";
 
+document.documentElement.dataset.site = "admin";
+
 const root = document.getElementById("root");
 
 if (!root) {
