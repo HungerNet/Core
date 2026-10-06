@@ -1,6 +1,7 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
+import { AuthProvider } from "@hungernet/auth";
 import "../../../packages/styles/src/legacy/styles/index.css";
 import "../../../packages/styles/src/legacy/styles/themes/premium/galaxy.css";
 import "./legacy/styles/background.css";
@@ -12,6 +13,10 @@ if (!root) throw new Error("Missing root element");
 
 createRoot(root).render(
   <StrictMode>
-    <BrowserRouter><App /></BrowserRouter>
+    <BrowserRouter>
+      <AuthProvider apiBaseUrl={import.meta.env.VITE_API_BASE_URL || "/api/v1"} clientId="optifineforfabric">
+        <App />
+      </AuthProvider>
+    </BrowserRouter>
   </StrictMode>,
 );

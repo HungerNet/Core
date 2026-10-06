@@ -1,0 +1,91 @@
+.auth-redirect-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.auth-redirect-actions .glass-button,
+.navbar-authenticated .glass-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.5rem;
+  padding: 0.55rem 0.8rem;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+  background: var(--glass-bg);
+  color: var(--text-primary);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: transform 180ms var(--ease), background 180ms var(--ease), border-color 180ms var(--ease);
+}
+
+.auth-redirect-actions .glass-button:hover,
+.navbar-authenticated .glass-button:hover {
+  transform: translateY(-1px);
+  background: var(--glass-bg-strong);
+  border-color: var(--accent-1);
+}
+
+.auth-redirect-actions .glass-button--primary {
+  background: linear-gradient(135deg, var(--btn-primary-start), var(--btn-primary-end));
+  border-color: var(--btn-border);
+}
+
+.navbar-authenticated .account-link {
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.auth-error {
+  flex-basis: 100%;
+  color: #ff8585;
+  font-size: 0.82rem;
+}
+
+.auth-callback-shell {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: var(--space-2);
+  min-height: 70vh;
+  padding: var(--space-4);
+  color: var(--text-primary);
+  text-align: center;
+}
+
+.auth-callback-shell h1 {
+  font-size: 1.5rem;
+}
+
+.auth-callback-shell p {
+  max-width: 36rem;
+  color: var(--text-secondary);
+}
+
+.auth-callback-shell .loading-orb {
+  width: 2.5rem;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+  box-shadow: 0 0 1.5rem var(--accent-glow-1);
+  animation: glowPulse 1.8s ease-in-out infinite alternate;
+}
+
+@media (max-width: 768px) {
+  .auth-redirect-actions {
+    justify-content: flex-start;
+  }
+
+  .auth-redirect-actions .glass-button {
+    flex: 1 1 9rem;
+    white-space: normal;
+  }
+}

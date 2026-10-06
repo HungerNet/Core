@@ -11,9 +11,10 @@ export interface SiteHeaderProps {
   brand: string;
   navItems: SiteNavItem[];
   accountAction: ReactNode;
+  className?: string;
 }
 
-export function SiteHeader({ brand, navItems, accountAction }: SiteHeaderProps) {
+export function SiteHeader({ brand, navItems, accountAction, className = "" }: SiteHeaderProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const navRef = useRef<HTMLElement>(null);
   const indicatorRef = useRef<HTMLSpanElement>(null);
@@ -27,8 +28,15 @@ export function SiteHeader({ brand, navItems, accountAction }: SiteHeaderProps) 
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape") setMenuOpen(false);
     };
+    const closeOnOutsideClick = (event: PointerEvent) => {
+      if (!navRef.current?.parentElement?.contains(event.target as Node)) setMenuOpen(false);
+    };
     window.addEventListener("keydown", closeOnEscape);
-    return () => window.removeEventListener("keydown", closeOnEscape);
+    document.addEventListener("pointerdown", closeOnOutsideClick);
+    return () => {
+      window.removeEventListener("keydown", closeOnEscape);
+      document.removeEventListener("pointerdown", closeOnOutsideClick);
+    };
   }, []);
 
   useEffect(() => {
@@ -71,7 +79,7 @@ export function SiteHeader({ brand, navItems, accountAction }: SiteHeaderProps) 
   }, [location.pathname, menuOpen]);
 
   return (
-    <header className={`site-header${menuOpen ? " is-open" : ""}`}>
+    <header className={`site-header ${className}${menuOpen ? " is-open" : ""}`}>
       <Link className="site-brand" to="/" onClick={() => setMenuOpen(false)}>
         <span className="site-brand-dot" aria-hidden="true" />
         <span>{brand}</span>

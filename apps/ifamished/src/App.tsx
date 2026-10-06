@@ -1,5 +1,6 @@
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { Footer, Navbar, ScrollToTop } from "@hungernet/ui/legacy";
+import { HungerNetAuthButtons, HungerNetAuthCallback, useAuth } from "@hungernet/auth";
 import About from "./legacy/pages/About";
 import Contact from "./legacy/pages/Contact";
 import Home from "./legacy/pages/Home";
@@ -19,8 +20,30 @@ const socials = [
 ];
 
 export function App() {
+  const { status, user, signOut } = useAuth();
+  const location = useLocation();
+  if (location.pathname === "/auth/callback") {
+    return <HungerNetAuthCallback clientId="ifamished" apiBaseUrl={import.meta.env.VITE_API_BASE_URL || "/api/v1"} />;
+  }
+
+  const returnTo = `${location.pathname}${location.search}${location.hash}`;
+  const rightSlot = status === "authenticated" ? (
+    <div className="navbar-authenticated">
+      <a className="account-link" href={`${import.meta.env.VITE_ACCOUNTS_URL || "https://accounts.hungernet.dev"}/profile`}>
+        {user?.displayName || "Manage account"}
+      </a>
+      <button className="glass-button glass-button--secondary glass-button--md" onClick={() => void signOut()} type="button">
+        Sign out
+      </button>
+    </div>
+  ) : status === "loading" ? (
+    <span className="auth-status" role="status">Checking session…</span>
+  ) : (
+    <HungerNetAuthButtons clientId="ifamished" appName="iFamished" accountsBaseUrl={import.meta.env.VITE_ACCOUNTS_URL} returnTo={returnTo} />
+  );
+
   return <>
-    <Navbar brand="iFamished" brandDotColor="#22d3ee" navItems={navItems} />
+    <Navbar brand="iFamished" brandDotColor="#22d3ee" navItems={navItems} rightSlot={rightSlot} />
     <ScrollToTop />
     <div className="container">
       <Routes>

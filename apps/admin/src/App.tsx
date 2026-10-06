@@ -1,5 +1,5 @@
-import { Navigate, NavLink, Route, Routes, useLocation } from "react-router-dom";
-import { Button, GlassCard } from "@hungernet/ui";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
+import { Button, GlassCard, SiteHeader } from "@hungernet/ui";
 import { HungerNetAuthButtons, HungerNetAuthCallback, RequirePermission } from "@hungernet/auth";
 import { useAuth } from "@hungernet/auth";
 
@@ -23,6 +23,12 @@ function AdminShell() {
   return (
     <div className="app-shell">
       <div className="accent-grid accent-grid--warm" aria-hidden="true" />
+      <SiteHeader
+        className="platform-header"
+        brand="HungerNet Admin"
+        navItems={navItems}
+        accountAction={<Button onClick={() => void signOut()}>Sign out</Button>}
+      />
 
       <div className="app-panel">
         <header className="top-bar glass-card">
@@ -34,7 +40,6 @@ function AdminShell() {
           <div className="top-actions">
             <span className="status-chip status-chip--warn">live</span>
             <span className="muted user-pill">{displayName}</span>
-            <Button onClick={() => void signOut()}>Sign out</Button>
           </div>
         </header>
 
@@ -44,17 +49,6 @@ function AdminShell() {
             <h2>{displayName}</h2>
             <p>Monitor access, permissions, projects, and account health from one control surface.</p>
 
-            <nav aria-label="Admin navigation" className="nav-cluster">
-              {navItems.map((item) => (
-                <NavLink
-                  key={item.to}
-                  to={item.to}
-                  className={({ isActive }) => ["nav-pill", isActive ? "nav-pill--active" : ""].join(" ")}
-                >
-                  {item.label}
-                </NavLink>
-              ))}
-            </nav>
           </div>
 
           <div className="stat-grid">

@@ -502,6 +502,97 @@
   .site-header .auth-redirect-actions { flex-wrap: nowrap; }
   .site-header .auth-redirect-actions .glass-button { white-space: nowrap; }
 
+  .platform-header.site-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin: 0 0 1.25rem;
+    padding: 0.7rem 1rem;
+  }
+
+  .platform-header .site-brand {
+    gap: 0.65rem;
+    font-weight: 800;
+  }
+
+  .platform-header .site-brand-dot {
+    width: 0.6rem;
+    height: 0.6rem;
+    border-radius: 50%;
+    background: var(--color-primary);
+    box-shadow: 0 0 0.9rem var(--color-primary-glow);
+  }
+
+  .platform-header .site-nav {
+    position: relative;
+    display: flex;
+    flex: 1 1 auto;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    min-width: 0;
+  }
+
+  .platform-header .site-nav a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.5rem;
+    padding: 0.55rem 0.8rem;
+    border-radius: 999px;
+    color: var(--color-muted);
+    font-size: 0.88rem;
+    font-weight: 650;
+    white-space: nowrap;
+  }
+
+  .platform-header .site-nav a:hover,
+  .platform-header .site-nav a[aria-current="page"] {
+    background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+    color: var(--color-text-strong);
+  }
+
+  .platform-header .site-nav-indicator {
+    position: absolute;
+    bottom: 0.1rem;
+    left: 0;
+    height: 2px;
+    border-radius: 2px;
+    background: var(--color-primary);
+    box-shadow: 0 0 0.7rem var(--color-primary-glow);
+    opacity: 0;
+    pointer-events: none;
+    transition: width 200ms ease, transform 200ms ease, opacity 120ms ease;
+  }
+
+  .platform-header .site-nav-toggle {
+    display: none;
+    width: 2.6rem;
+    height: 2.6rem;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 4px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-small);
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--color-text);
+    cursor: pointer;
+  }
+
+  .platform-header .site-nav-toggle span {
+    width: 1rem;
+    height: 2px;
+    border-radius: 2px;
+    background: currentColor;
+    transition: transform 180ms ease, opacity 180ms ease;
+  }
+
+  .platform-header .site-nav-toggle.is-open span:first-child { transform: translateY(6px) rotate(45deg); }
+  .platform-header .site-nav-toggle.is-open span:nth-child(2) { opacity: 0; }
+  .platform-header .site-nav-toggle.is-open span:last-child { transform: translateY(-6px) rotate(-45deg); }
+  .platform-header .account-actions { display: flex; flex: 0 0 auto; align-items: center; justify-content: flex-end; }
+
   @media (max-width: 720px) {
     .site-header .auth-redirect-actions { width: 100%; justify-content: flex-start; }
     .authorization-actions > button { flex: 1; }
@@ -672,6 +763,38 @@
     .site-header { position: relative; top: auto; flex-wrap: wrap; }
     .site-nav { order: 3; width: 100%; }
     .account-actions { margin-left: auto; }
+    .platform-header.site-header {
+      position: relative;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto auto;
+      gap: 0.55rem;
+    }
+    .platform-header .site-brand { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+    .platform-header .site-nav-toggle { display: flex; }
+    .platform-header .site-nav {
+      position: absolute;
+      top: calc(100% + 0.55rem);
+      right: 0;
+      left: 0;
+      z-index: 22;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0.25rem;
+      padding: 0.5rem;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-medium);
+      background: var(--color-surface-elevated);
+      box-shadow: var(--shadow-soft);
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(-0.4rem);
+      transition: opacity 180ms ease, visibility 180ms ease, transform 180ms ease;
+    }
+    .platform-header .site-nav.is-open { opacity: 1; visibility: visible; transform: translateY(0); }
+    .platform-header .site-nav a { justify-content: flex-start; width: 100%; }
+    .platform-header .site-nav-indicator { display: none; }
+    .platform-header .account-actions { grid-column: 3; margin-left: 0; }
   }
 
   @media (max-width: 600px) {

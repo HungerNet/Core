@@ -15,21 +15,23 @@ export default function Navbar({
   rightSlot,
 }: NavbarProps) {
   const [open, setOpen] = useState(false)
+  const navbarRef = useRef<HTMLElement>(null)
+  const linksRef = useRef<HTMLUListElement>(null)
   const underlineRef = useRef<HTMLSpanElement>(null)
   const location = useLocation()
 
-  const toggleMenu = () => setOpen((v) => !v)
+  const toggleMenu = () => setOpen((value) => !value)
   const closeMenu = () => setOpen(false)
 
-  // ---- Underline positioning logic (fixed) ----
   const updateUnderline = () => {
-    const active = document.querySelector(".navbar-link.active")
+    const active = linksRef.current?.querySelector<HTMLElement>(".navbar-link.active")
+    const links = linksRef.current
     const underline = underlineRef.current
 
-    if (!active || !underline || !active.parentElement?.parentElement) return
+    if (!active || !links || !underline) return
 
     const rect = active.getBoundingClientRect()
-    const parentRect = active.parentElement.parentElement.getBoundingClientRect()
+    const parentRect = links.getBoundingClientRect()
 
     underline.style.width = `${rect.width}px`
     underline.style.transform = `translateX(${rect.left - parentRect.left}px)`
@@ -37,32 +39,54 @@ export default function Navbar({
   }
 
   useEffect(() => {
-    // Wait for fonts + layout stabilization
-    document.fonts.ready.then(() => {
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          updateUnderline()
-        })
-      })
-    })
-  }, [location.pathname])
-
-  // Recalculate underline on resize (fixes DPI scaling + zoom)
-  useEffect(() => {
-    const handleResize = () => {
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          updateUnderline()
-        })
+    let mounted = true
+    let firstFrame = 0
+    let secondFrame = 0
+    const scheduleUpdate = () => {
+      cancelAnimationFrame(firstFrame)
+      cancelAnimationFrame(secondFrame)
+      firstFrame = requestAnimationFrame(() => {
+        secondFrame = requestAnimationFrame(updateUnderline)
       })
     }
 
-    window.addEventListener("resize", handleResize)
-    return () => window.removeEventListener("resize", handleResize)
+    void document.fonts.ready.then(() => {
+      if (mounted) scheduleUpdate()
+    })
+    scheduleUpdate()
+    window.addEventListener("resize", scheduleUpdate)
+
+    return () => {
+      mounted = false
+      cancelAnimationFrame(firstFrame)
+      cancelAnimationFrame(secondFrame)
+      window.removeEventListener("resize", scheduleUpdate)
+    }
+  }, [location.pathname])
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") closeMenu()
+    }
+    const handlePointerDown = (event: PointerEvent) => {
+      if (!navbarRef.current?.contains(event.target as Node)) closeMenu()
+    }
+
+    window.addEventListener("keydown", handleKeyDown)
+    document.addEventListener("pointerdown", handlePointerDown)
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown)
+      document.removeEventListener("pointerdown", handlePointerDown)
+    }
   }, [])
 
+  useEffect(() => {
+    closeMenu()
+  }, [location.pathname])
+
   return (
-    <nav className="navbar">
+    <nav className="navbar" ref={navbarRef} aria-label="Main navigation">
       <div className="navbar-inner">
         <Link to="/" className="navbar-brand" onClick={closeMenu}>
           <span
@@ -77,7 +101,8 @@ export default function Navbar({
           type="button"
           className={`navbar-toggle ${open ? "open" : ""}`}
           onClick={toggleMenu}
-          aria-label="Toggle navigation"
+          aria-label={open ? "Close navigation" : "Open navigation"}
+          aria-controls="legacy-site-navigation"
           aria-expanded={open}
         >
           <span />
@@ -85,8 +110,14 @@ export default function Navbar({
           <span />
         </button>
 
-        <ul className={`navbar-links ${open ? "open" : ""}`}>
-          <span className="navbar-underline" ref={underlineRef} />
+        <ul
+          id="legacy-site-navigation"
+          className={`navbar-links ${open ? "open" : ""}`}
+          ref={linksRef}
+        >
+          <li aria-hidden="true">
+            <span className="navbar-underline" ref={underlineRef} />
+          </li>
 
           {navItems.map((item) => (
             <li key={item.to}>

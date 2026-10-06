@@ -1,5 +1,5 @@
-import { Navigate, NavLink, Route, Routes, useLocation } from "react-router-dom";
-import { Button, GlassCard } from "@hungernet/ui";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
+import { Button, GlassCard, SiteHeader } from "@hungernet/ui";
 import { OAuthSignIn, RequireAuth, useAuth } from "@hungernet/auth";
 import { AuthorizationPage } from "./pages/AuthorizationPage";
 
@@ -20,6 +20,12 @@ function AccountShell() {
   return (
     <div className="app-shell">
       <div className="accent-grid" aria-hidden="true" />
+      <SiteHeader
+        className="platform-header"
+        brand="HungerNet Accounts"
+        navItems={navItems}
+        accountAction={<Button onClick={() => void signOut()}>Sign out</Button>}
+      />
 
       <div className="app-panel">
         <header className="top-bar glass-card">
@@ -31,7 +37,6 @@ function AccountShell() {
           <div className="top-actions">
             <span className="status-chip">online</span>
             <span className="muted user-pill">{displayName}</span>
-            <Button onClick={() => void signOut()}>Sign out</Button>
           </div>
         </header>
 
@@ -41,17 +46,6 @@ function AccountShell() {
             <h2>{displayName}</h2>
             <p>Keep your identity, security, and device access running smoothly across HungerNet.</p>
 
-            <nav aria-label="Account navigation" className="nav-cluster">
-              {navItems.map((item) => (
-                <NavLink
-                  key={item.to}
-                  to={item.to}
-                  className={({ isActive }) => ["nav-pill", isActive ? "nav-pill--active" : ""].join(" ")}
-                >
-                  {item.label}
-                </NavLink>
-              ))}
-            </nav>
           </div>
 
           <div className="stat-grid">
