@@ -100,8 +100,8 @@ JWT_SECRET=replace-with-a-long-random-secret
 JWT_ALGORITHM=HS256
 JWT_EXPIRY_MINUTES=60
 REDIS_URL=redis://localhost:6379/0
-CORS_ALLOWED_ORIGINS=["http://localhost:4173","http://localhost:4174","http://localhost:4180","http://localhost:4181","http://localhost:4182","http://localhost:4183"]
-ALLOWED_RETURN_ORIGINS=["http://localhost:4173","http://localhost:4174","http://localhost:4180","http://localhost:4181","http://localhost:4182","http://localhost:4183"]
+CORS_ALLOWED_ORIGINS=["http://localhost:4173","http://localhost:4174","http://localhost:4180","http://localhost:4181","http://localhost:4182","http://localhost:4183","https://accounts.hungernet.dev","https://admin.hungernet.dev","https://hungernet.dev","https://hungersmp.com","https://ifamished.com","https://optifineforfabric.com","https://*.millered001.workers.dev"]
+ALLOWED_RETURN_ORIGINS=["http://localhost:4173","http://localhost:4174","http://localhost:4180","http://localhost:4181","http://localhost:4182","http://localhost:4183","https://accounts.hungernet.dev","https://admin.hungernet.dev","https://hungernet.dev","https://hungersmp.com","https://ifamished.com","https://optifineforfabric.com","https://*.millered001.workers.dev"]
 OAUTH_APP_REDIRECT_URIS={"admin":["https://admin.hungernet.dev/auth/callback","http://localhost:4173/auth/callback"],"hungernet":["https://hungernet.dev/auth/callback","http://localhost:4181/auth/callback"],"hungersmp":["https://hungersmp.com/auth/callback","http://localhost:4182/auth/callback"],"ifamished":["https://ifamished.com/auth/callback","http://localhost:4180/auth/callback"],"optifineforfabric":["https://optifineforfabric.com/auth/callback","http://localhost:4183/auth/callback"]}
 SESSION_COOKIE_SECURE=false
 SESSION_COOKIE_SAME_SITE=lax
@@ -178,8 +178,8 @@ This is the minimum verification gate for the monorepo.
 
 - Never publish secrets in Git, Dockerfiles, logs, or build artifacts.
 - Keep `.env` ignored and untracked.
-- Use exact CORS origins and exact return origins only.
-- Do not use wildcard OAuth callback or CORS settings in production.
+- Use exact production CORS and return origins; the constrained `*.millered001.workers.dev` pattern is also supported.
+- Worker preview OAuth callbacks are limited to `/auth/callback`; keep other callback URLs exact.
 - Keep JWT secrets, provider secrets, and session cookies outside version control.
 
 See the backend instructions in [backend/README.md](backend/README.md) and the deployment details in [infra/README.md](infra/README.md).

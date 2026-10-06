@@ -1,6 +1,22 @@
-from pydantic import Field, model_validator
-from pydantic import SecretStr
+import re
+
+from pydantic import Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+WORKERS_DEV_ORIGIN = "https://*.millered001.workers.dev"
+WORKERS_DEV_ORIGIN_REGEX = (
+    r"(?i)^https://(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+"
+    r"millered001\.workers\.dev$"
+)
+_WORKERS_DEV_ORIGIN_PATTERN = re.compile(WORKERS_DEV_ORIGIN_REGEX)
+
+
+def is_workers_dev_origin(origin: str) -> bool:
+    return _WORKERS_DEV_ORIGIN_PATTERN.fullmatch(origin) is not None
+
+
+def is_allowed_origin(origin: str, allowed_origins: list[str]) -> bool:
+    return origin in allowed_origins or is_workers_dev_origin(origin)
 
 
 class Settings(BaseSettings):
@@ -21,7 +37,15 @@ class Settings(BaseSettings):
     discord_client_id: str | None = None
     discord_client_secret: SecretStr | None = None
     oauth_callback_base_url: str = "https://auth.hungernet.dev/api/v1"
-    allowed_return_origins: list[str] = Field(default_factory=lambda: ["https://accounts.hungernet.dev"])
+    allowed_return_origins: list[str] = Field(default_factory=lambda: [
+        "https://accounts.hungernet.dev",
+        "https://admin.hungernet.dev",
+        "https://hungernet.dev",
+        "https://hungersmp.com",
+        "https://ifamished.com",
+        "https://optifineforfabric.com",
+        WORKERS_DEV_ORIGIN,
+    ])
     oauth_app_redirect_uris: dict[str, list[str]] = Field(default_factory=lambda: {
         "admin": ["https://admin.hungernet.dev/auth/callback", "http://localhost:4173/auth/callback"],
         "hungernet": ["https://hungernet.dev/auth/callback", "http://localhost:4181/auth/callback"],
@@ -54,8 +78,13 @@ class Settings(BaseSettings):
             raise ValueError("SESSION_COOKIE_SAME_SITE must be lax, strict, or none")
         if self.session_cookie_same_site.lower() == "none" and not self.session_cookie_secure:
             raise ValueError("SameSite=None cookies require secure transport")
-        if any("*" in origin for origin in self.cors_allowed_origins):
-            raise ValueError("CORS_ALLOWED_ORIGINS must contain exact origins; wildcards are not supported")
+        origin_lists = [self.cors_allowed_origins, self.allowed_return_origins]
+        if any(
+            "*" in origin and origin != WORKERS_DEV_ORIGIN
+            for origins in origin_lists
+            for origin in origins
+        ):
+            raise ValueError("Only the Millered workers.dev origin wildcard is supported")
         if self.environment.lower() == "production":
             if not self.cors_allowed_origins:
                 raise ValueError("CORS_ALLOWED_ORIGINS must be configured in production")

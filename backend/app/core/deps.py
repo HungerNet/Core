@@ -7,7 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.core.config import settings
+from app.core.config import is_allowed_origin, settings
 from app.core.security import hash_token, verify_session_token
 from app.db.models import Role, Session, User
 from app.db.session import get_db_session
@@ -95,7 +95,7 @@ async def require_csrf(request: Request) -> None:
     origin = request.headers.get("origin")
     csrf_cookie = request.cookies.get(settings.csrf_cookie_name)
     csrf_header = request.headers.get("x-csrf-token")
-    if origin not in settings.cors_allowed_origins:
+    if origin is None or not is_allowed_origin(origin, settings.cors_allowed_origins):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Untrusted request origin")
     if not csrf_cookie or not csrf_header or not secrets_compare(csrf_cookie, csrf_header):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="CSRF validation failed")

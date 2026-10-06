@@ -6,7 +6,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { createApiClient } from "@hungernet/api-client";
+import { createApiClient, resolveApiBaseUrl } from "@hungernet/api-client";
 import type { AuthSession, PublicProfile, User } from "@hungernet/types";
 
 export type AuthStatus = "loading" | "authenticated" | "unauthenticated";
@@ -67,7 +67,7 @@ export function AuthProvider({ children, apiBaseUrl = "/api/v1", clientId }: Aut
 
       const accessToken = clientId ? sessionStorage.getItem(accessTokenKey(clientId)) : null;
       if (clientId && accessToken) {
-        const apiUrl = new URL(apiBaseUrl, window.location.origin).toString().replace(/\/+$/, "");
+        const apiUrl = resolveApiBaseUrl(apiBaseUrl);
         const response = await fetch(`${apiUrl}/auth/userinfo`, {
           headers: { Authorization: `Bearer ${accessToken}` },
         });
@@ -137,7 +137,7 @@ export function OAuthSignIn({
   returnPath?: string;
   initialMode?: "signin" | "register";
 }) {
-  const apiUrl = new URL(apiBaseUrl, window.location.origin).toString().replace(/\/+$/, "");
+  const apiUrl = resolveApiBaseUrl(apiBaseUrl);
   const returnTo = new URL(returnPath, window.location.origin).toString();
   const [providers, setProviders] = useState<string[]>([]);
   const [mode, setMode] = useState<"signin" | "register" | "setup">(initialMode);
@@ -498,7 +498,7 @@ export function HungerNetAuthCallback({
           throw new Error("You cancelled the HungerNet authorization request.");
         }
         if (!code) throw new Error("The HungerNet authorization response is incomplete.");
-        const apiUrl = new URL(apiBaseUrl, window.location.origin).toString().replace(/\/+$/, "");
+        const apiUrl = resolveApiBaseUrl(apiBaseUrl);
         const response = await fetch(`${apiUrl}/auth/token`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },

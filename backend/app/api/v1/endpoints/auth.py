@@ -16,7 +16,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.core.config import settings
+from app.core.config import is_allowed_origin, is_workers_dev_origin, settings
 from app.core.deps import bearer_scheme, get_current_user_id, get_db, require_csrf
 from app.core.security import (
     generate_session_token,
@@ -72,7 +72,17 @@ def _registered_app(client_id: str, redirect_uri: str) -> str:
     callbacks = settings.oauth_app_redirect_uris.get(client_id)
     if client_id not in APP_NAMES or callbacks is None:
         raise HTTPException(status_code=400, detail="Unknown HungerNet application")
-    if redirect_uri not in callbacks:
+    try:
+        parsed_redirect = urlsplit(redirect_uri)
+        is_workers_callback = (
+            is_workers_dev_origin(f"{parsed_redirect.scheme}://{parsed_redirect.netloc}")
+            and parsed_redirect.path == "/auth/callback"
+            and not parsed_redirect.query
+            and not parsed_redirect.fragment
+        )
+    except ValueError:
+        is_workers_callback = False
+    if redirect_uri not in callbacks and not is_workers_callback:
         raise HTTPException(
             status_code=400,
             detail="Redirect URL is not registered for this application",
@@ -98,7 +108,7 @@ def _require_trusted_auth_origin(request: Request = None) -> None:
     if request is None:
         return
     origin = request.headers.get("origin")
-    if origin and origin not in settings.cors_allowed_origins:
+    if origin and not is_allowed_origin(origin, settings.cors_allowed_origins):
         raise HTTPException(status_code=403, detail="Untrusted request origin")
 
 
@@ -475,7 +485,13 @@ async def oauth_start(
     destination = redirect_to or f"{fallback}/profile"
     parsed = urlsplit(destination)
     origin = f"{parsed.scheme}://{parsed.netloc}"
-    if parsed.scheme != "https" or not parsed.netloc or parsed.username or parsed.password or origin not in settings.allowed_return_origins:
+    if (
+        parsed.scheme != "https"
+        or not parsed.netloc
+        or parsed.username
+        or parsed.password
+        or not is_allowed_origin(origin, settings.allowed_return_origins)
+    ):
         raise HTTPException(status_code=400, detail="Return URL is not allowlisted")
 
     redirect_uri = f"{settings.oauth_callback_base_url.rstrip('/')}/auth/oauth/{provider}/callback"

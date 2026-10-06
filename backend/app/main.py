@@ -1,16 +1,20 @@
-from contextlib import asynccontextmanager
 import logging
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
-from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.cors import CORSMiddleware
 from redis.asyncio import Redis
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.responses import JSONResponse
 
 from app.api.v1.router import router as v1_router
-from app.core.config import settings
-from app.core.middleware import RedisRateLimitMiddleware, RequestContextMiddleware, SecurityHeadersMiddleware
+from app.core.config import WORKERS_DEV_ORIGIN, WORKERS_DEV_ORIGIN_REGEX, settings
+from app.core.middleware import (
+    RedisRateLimitMiddleware,
+    RequestContextMiddleware,
+    SecurityHeadersMiddleware,
+)
 from app.core.observability import configure_logging
 from app.integrations.oauth import configured_oauth_providers
 
@@ -40,14 +44,14 @@ app = FastAPI(
 
 app.include_router(v1_router, prefix=settings.api_v1_prefix)
 
-if settings.cors_allowed_origins:
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=settings.cors_allowed_origins,
-        allow_credentials=True,
-        allow_methods=["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
-        allow_headers=["Authorization", "Content-Type", "X-CSRF-Token", "X-Request-ID"],
-    )
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[origin for origin in settings.cors_allowed_origins if origin != WORKERS_DEV_ORIGIN],
+    allow_origin_regex=WORKERS_DEV_ORIGIN_REGEX,
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "X-CSRF-Token", "X-Request-ID"],
+)
 
 app.add_middleware(RedisRateLimitMiddleware)
 app.add_middleware(SecurityHeadersMiddleware)

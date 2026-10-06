@@ -29,8 +29,8 @@ Required environment variables include:
 - `DATABASE_URL`
 - `JWT_SECRET` (32+ random characters)
 - `REDIS_URL`
-- `CORS_ALLOWED_ORIGINS` as a JSON array of exact origins
-- `ALLOWED_RETURN_ORIGINS` as a JSON array of exact HTTPS origins
+- `CORS_ALLOWED_ORIGINS` as a JSON array of exact origins plus the supported `https://*.millered001.workers.dev` pattern
+- `ALLOWED_RETURN_ORIGINS` as a JSON array of exact HTTPS origins plus the supported workers.dev pattern
 - `OAUTH_APP_REDIRECT_URIS` as a JSON object mapping app client IDs to exact callback URLs
 - `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`
 - `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET`
@@ -53,7 +53,7 @@ uv run uvicorn app.main:app --host 0.0.0.0 --port 8000
 
 - Keep PostgreSQL and Redis private to the Docker network or a private subnet.
 - Publish only the reverse proxy or Cloudflare entry point.
-- Use exact origin allowlists, not wildcard CORS.
+- Keep CORS origins exact except for the constrained `*.millered001.workers.dev` preview-domain pattern.
 - Run migrations before deploys and fail the release if the migration does not complete.
 - In production, set `docs_url=None` and `redoc_url=None` unless public interactive API docs are intentionally desired.
 
@@ -61,8 +61,8 @@ uv run uvicorn app.main:app --host 0.0.0.0 --port 8000
 
 - Never put OAuth client secrets in Git or a checked-in `.env` file.
 - Never log bearer tokens, cookies, provider codes, session identifiers, or emails unless explicitly redacted.
-- Restrict return paths to exact same-origin allowlists.
-- Keep every deployed app origin in `CORS_ALLOWED_ORIGINS` and register only its exact `/auth/callback` URL in `OAUTH_APP_REDIRECT_URIS`.
+- Restrict return paths to allowlisted origins; workers.dev preview callbacks are limited to `/auth/callback`.
+- Keep every production app origin in `CORS_ALLOWED_ORIGINS` and register exact production callback URLs in `OAUTH_APP_REDIRECT_URIS`.
 - App authorization uses short-lived, one-use PKCE codes; app tokens are limited to the public profile `userinfo` endpoint.
 - Set `SESSION_COOKIE_DOMAIN=.hungernet.dev` in production so Accounts and Admin subdomains share the signed-in session; keep cookies host-only in local development.
 - Enforce permission checks in backend routers and services instead of trusting browser state.

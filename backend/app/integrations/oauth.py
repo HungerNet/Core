@@ -1,14 +1,14 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 import logging
+from dataclasses import dataclass
 from typing import Any
 from urllib.parse import urlencode, urlsplit
 
 import httpx
 import jwt
 
-from app.core.config import settings
+from app.core.config import WORKERS_DEV_ORIGIN, settings
 
 
 class OAuthProviderError(Exception):
@@ -53,14 +53,17 @@ def _shared_oauth_configuration_is_complete() -> bool:
     if not settings.allowed_return_origins:
         return False
     return all(
-        origin.scheme == "https"
-        and bool(origin.netloc)
-        and not origin.username
-        and not origin.password
-        and origin.path in {"", "/"}
-        and not origin.query
-        and not origin.fragment
-        for origin in origins
+        configured_origin == WORKERS_DEV_ORIGIN
+        or (
+            origin.scheme == "https"
+            and bool(origin.netloc)
+            and not origin.username
+            and not origin.password
+            and origin.path in {"", "/"}
+            and not origin.query
+            and not origin.fragment
+        )
+        for configured_origin, origin in zip(settings.allowed_return_origins, origins)
     )
 
 

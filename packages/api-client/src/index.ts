@@ -1,6 +1,39 @@
 export interface ApiClientOptions {
   baseUrl?: string;
   credentials?: RequestCredentials;
+  origin?: string;
+}
+
+const WORKERS_DEV_HOST_PATTERN =
+  /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+millered001\.workers\.dev$/i;
+const WORKERS_DEV_API_BASE_URL = "https://api.hacklets.dev";
+
+export function resolveApiBaseUrl(
+  configuredBaseUrl = "/api/v1",
+  origin?: string,
+): string {
+  const runtimeOrigin = origin ?? (typeof location === "undefined" ? undefined : location.origin);
+  if (!runtimeOrigin) return configuredBaseUrl;
+
+  try {
+    const parsedOrigin = new URL(runtimeOrigin);
+    const hostname = parsedOrigin.hostname.toLowerCase();
+    const matchesWorkersDomain =
+      parsedOrigin.protocol === "https:" &&
+      WORKERS_DEV_HOST_PATTERN.test(hostname) &&
+      !parsedOrigin.username &&
+      !parsedOrigin.password &&
+      !parsedOrigin.port &&
+      parsedOrigin.pathname === "/" &&
+      !parsedOrigin.search &&
+      !parsedOrigin.hash;
+    if (!matchesWorkersDomain) return configuredBaseUrl;
+
+    const apiPath = new URL(configuredBaseUrl, parsedOrigin).pathname.replace(/\/+$/, "");
+    return `${WORKERS_DEV_API_BASE_URL}${apiPath}`;
+  } catch {
+    return configuredBaseUrl;
+  }
 }
 
 export type ApiErrorCode =
@@ -63,12 +96,14 @@ async function parseJsonResponse<T>(response: Response): Promise<T> {
 export function createApiClient({
   baseUrl = "/api/v1",
   credentials = "include",
+  origin,
 }: ApiClientOptions = {}) {
+  const resolvedBaseUrl = resolveApiBaseUrl(baseUrl, origin);
   let csrfToken: string | undefined;
 
   const getCsrfToken = async () => {
     if (csrfToken) return csrfToken;
-    const response = await fetch(resolveUrl(baseUrl, "/auth/csrf"), {
+    const response = await fetch(resolveUrl(resolvedBaseUrl, "/auth/csrf"), {
       method: "GET",
       credentials,
       headers: { Accept: "application/json" },
@@ -88,7 +123,7 @@ export function createApiClient({
     if (!["GET", "HEAD", "OPTIONS"].includes(method)) {
       headers.set("X-CSRF-Token", await getCsrfToken());
     }
-    const response = await fetch(resolveUrl(baseUrl, path), {
+    const response = await fetch(resolveUrl(resolvedBaseUrl, path), {
       ...init,
       credentials,
       headers: {
@@ -120,13 +155,13 @@ export function createApiClient({
   };
 }
 
-export async function getCurrentSession<T = unknown>(baseUrl = "/api/v1") {
-  const client = createApiClient({ baseUrl, credentials: "same-origin" });
+export async function getCurrentSession<T = unknown>(baseUrl = "/api/v1", origin?: string) {
+  const client = createApiClient({ baseUrl, credentials: "same-origin", origin });
   return client.get<T>("/auth/session");
 }
 
-export async function getCurrentUser<T = unknown>(baseUrl = "/api/v1") {
-  const client = createApiClient({ baseUrl, credentials: "same-origin" });
+export async function getCurrentUser<T = unknown>(baseUrl = "/api/v1", origin?: string) {
+  const client = createApiClient({ baseUrl, credentials: "same-origin", origin });
   return client.get<T>("/users/me");
 }
 

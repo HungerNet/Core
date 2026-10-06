@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Button, GlassCard } from "@hungernet/ui";
 import { OAuthSignIn, useAuth } from "@hungernet/auth";
-import { createApiClient } from "@hungernet/api-client";
+import { createApiClient, resolveApiBaseUrl } from "@hungernet/api-client";
 import { useLocation, useSearchParams } from "react-router-dom";
 
 interface AuthorizationDetails {
@@ -22,7 +22,7 @@ export function AuthorizationPage() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const apiUrl = new URL(import.meta.env.VITE_API_BASE_URL || "/api/v1", window.location.origin).toString().replace(/\/+$/, "");
+  const apiUrl = resolveApiBaseUrl(import.meta.env.VITE_API_BASE_URL || "/api/v1");
 
   useEffect(() => {
     let active = true;

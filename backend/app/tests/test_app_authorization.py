@@ -67,9 +67,15 @@ async def test_registered_app_authorization_uses_pkce_and_profile_scope() -> Non
 
         details = await authorization_details("hungernet", callback, "profile")
         assert details["app_name"] == "HungerNet"
+        worker_callback = "https://preview.millered001.workers.dev/auth/callback"
+        worker_details = await authorization_details("hungernet", worker_callback, "profile")
+        assert worker_details["app_name"] == "HungerNet"
         with pytest.raises(HTTPException) as redirect_error:
             await authorization_details("hungernet", "https://attacker.example/callback", "profile")
         assert redirect_error.value.status_code == 400
+        with pytest.raises(HTTPException) as worker_path_error:
+            await authorization_details("hungernet", "https://preview.millered001.workers.dev/other", "profile")
+        assert worker_path_error.value.status_code == 400
 
         verifier = "v" * 64
         state = "s" * 64
