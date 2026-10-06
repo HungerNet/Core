@@ -1,14 +1,16 @@
 import {
   createContext,
+  useEffect,
   useContext,
   useMemo,
   useRef,
   useState,
   type ReactNode,
+} from "react";
 import {
   ApiClientError,
   createApiClient,
-  const resolvedAccountsBaseUrl = resolveAccountsBaseUrl();
+  getDomainConfig,
   resolveApiBaseUrl,
 } from "@hungernet/api-client";
 import type { AuthSession, PublicProfile, User } from "@hungernet/types";
@@ -425,8 +427,8 @@ function requestKey(clientId: string) {
   return `hungernet.authorization_request:${clientId}`;
 }
 
-export function resolveAccountsBaseUrl(): string {
-  return getDomainConfig().accounts;
+export function resolveAccountsBaseUrl(accountsBaseUrl?: string): string {
+  return accountsBaseUrl ?? getDomainConfig().accounts;
 }
 
 function encodeBase64Url(bytes: Uint8Array) {
