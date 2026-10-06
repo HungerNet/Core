@@ -424,6 +424,29 @@ function requestKey(clientId: string) {
   return `hungernet.authorization_request:${clientId}`;
 }
 
+const WORKERS_DEV_HOST_PATTERN =
+  /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+millered001\.workers\.dev$/i;
+
+export function resolveAccountsBaseUrl(
+  configuredBaseUrl?: string,
+  origin = window.location.origin,
+): string {
+  try {
+    const parsedOrigin = new URL(origin);
+    if (
+      parsedOrigin.protocol === "https:" &&
+      WORKERS_DEV_HOST_PATTERN.test(parsedOrigin.hostname)
+    ) {
+      return "https://accounts.millered001.workers.dev";
+    }
+    if (configuredBaseUrl) return configuredBaseUrl;
+    if (parsedOrigin.hostname === "localhost") return "http://localhost:4174";
+  } catch {
+    if (configuredBaseUrl) return configuredBaseUrl;
+  }
+  return "https://accounts.hungernet.dev";
+}
+
 function encodeBase64Url(bytes: Uint8Array) {
   return btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
@@ -435,9 +458,7 @@ function randomState() {
 export function HungerNetAuthButtons({
   clientId,
   appName,
-  accountsBaseUrl = window.location.hostname === "localhost"
-    ? "http://localhost:4174"
-    : "https://accounts.hungernet.dev",
+  accountsBaseUrl,
   returnTo = `${window.location.pathname}${window.location.search}`,
 }: {
   clientId: string;
@@ -446,6 +467,7 @@ export function HungerNetAuthButtons({
   returnTo?: string;
 }) {
   const [error, setError] = useState("");
+  const resolvedAccountsBaseUrl = resolveAccountsBaseUrl(accountsBaseUrl);
   const startAuthorization = async () => {
     try {
       const verifier = encodeBase64Url(crypto.getRandomValues(new Uint8Array(32))) + encodeBase64Url(crypto.getRandomValues(new Uint8Array(16)));
@@ -454,7 +476,7 @@ export function HungerNetAuthButtons({
       const state = randomState();
       const redirectUri = new URL("/auth/callback", window.location.origin).toString();
       sessionStorage.setItem(requestKey(clientId), JSON.stringify({ state, verifier, returnTo }));
-      const authorizationUrl = new URL("/authorize", accountsBaseUrl);
+      const authorizationUrl = new URL("/authorize", resolvedAccountsBaseUrl);
       authorizationUrl.search = new URLSearchParams({
         client_id: clientId,
         redirect_uri: redirectUri,
@@ -492,9 +514,7 @@ export function FloatingAuthButton({
   returnTo?: string;
 }) {
   const { status, user, signOut } = useAuth();
-  const accountsUrl = accountsBaseUrl ?? (window.location.hostname === "localhost"
-    ? "http://localhost:4174"
-    : "https://accounts.hungernet.dev");
+  const accountsUrl = resolveAccountsBaseUrl(accountsBaseUrl);
 
   return (
     <aside className="floating-auth" aria-label="HungerNet account">
