@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import logging
 from typing import Any
-from urllib.parse import urlencode
+from urllib.parse import urlencode, urlsplit
 
 import httpx
 import jwt
@@ -32,6 +33,84 @@ class ProviderConfig:
     token_url: str
     user_url: str
     scopes: tuple[str, ...]
+
+
+def _shared_oauth_configuration_is_complete() -> bool:
+    try:
+        callback = urlsplit(settings.oauth_callback_base_url.strip())
+        origins = [urlsplit(origin) for origin in settings.allowed_return_origins]
+    except ValueError:
+        return False
+    if (
+        callback.scheme != "https"
+        or not callback.netloc
+        or callback.username
+        or callback.password
+        or callback.query
+        or callback.fragment
+    ):
+        return False
+    if not settings.allowed_return_origins:
+        return False
+    return all(
+        origin.scheme == "https"
+        and bool(origin.netloc)
+        and not origin.username
+        and not origin.password
+        and origin.path in {"", "/"}
+        and not origin.query
+        and not origin.fragment
+        for origin in origins
+    )
+
+
+def is_google_configured() -> bool:
+    return bool(
+        settings.google_client_id
+        and settings.google_client_id.strip()
+        and settings.google_client_secret
+        and settings.google_client_secret.get_secret_value().strip()
+        and _shared_oauth_configuration_is_complete()
+    )
+
+
+def is_github_configured() -> bool:
+    return bool(
+        settings.github_client_id
+        and settings.github_client_id.strip()
+        and settings.github_client_secret
+        and settings.github_client_secret.get_secret_value().strip()
+        and _shared_oauth_configuration_is_complete()
+    )
+
+
+def is_discord_configured() -> bool:
+    return bool(
+        settings.discord_client_id
+        and settings.discord_client_id.strip()
+        and settings.discord_client_secret
+        and settings.discord_client_secret.get_secret_value().strip()
+        and _shared_oauth_configuration_is_complete()
+    )
+
+
+_PROVIDER_VALIDATORS = {
+    "google": is_google_configured,
+    "github": is_github_configured,
+    "discord": is_discord_configured,
+}
+
+
+def configured_oauth_providers(*, log_warnings: bool = False) -> list[str]:
+    logger = logging.getLogger("hungernet.auth")
+    configured = []
+    for provider in settings.allowed_oauth_providers:
+        validator = _PROVIDER_VALIDATORS.get(provider.lower())
+        if validator and validator():
+            configured.append(provider.lower())
+        elif log_warnings:
+            logger.warning("oauth_provider_disabled", extra={"provider": provider})
+    return configured
 
 
 def provider_config(provider: str) -> ProviderConfig:
@@ -65,7 +144,10 @@ def provider_config(provider: str) -> ProviderConfig:
     if provider not in values:
         raise OAuthProviderError("Unsupported OAuth provider")
     client_id, secret, authorize_url, token_url, user_url, scopes = values[provider]
-    if not client_id or secret is None:
+    validator = _PROVIDER_VALIDATORS.get(provider)
+    if validator is None:
+        raise OAuthProviderError("Unsupported OAuth provider")
+    if not validator() or not client_id or secret is None:
         raise OAuthProviderError(f"{provider.title()} OAuth is not configured")
     return ProviderConfig(
         client_id=client_id,

@@ -2,26 +2,194 @@ from __future__ import annotations
 
 import secrets
 from datetime import UTC, datetime
-from urllib.parse import urlsplit
+from urllib.parse import quote, urlsplit
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
 from fastapi.responses import RedirectResponse
 from fastapi.security import HTTPAuthorizationCredentials
-from sqlalchemy import select
+from sqlalchemy import func, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.core.config import settings
 from app.core.deps import bearer_scheme, get_current_user_id, get_db, require_csrf
-from app.core.security import hash_token, verify_session_token
+from app.core.security import (
+    hash_token,
+    new_totp_secret,
+    verify_password,
+    verify_session_token,
+    verify_totp,
+)
 from app.db.models import Role, Session, User
-from app.integrations.oauth import OAuthProviderError, authorization_url, fetch_identity
-from app.schemas.auth import SessionStatusResponse, SessionUserResponse
-from app.services.auth_service import AuthService
-from app.services.auth_service import AuthFlowError
+from app.integrations.oauth import (
+    OAuthProviderError,
+    authorization_url,
+    configured_oauth_providers,
+    fetch_identity,
+)
+from app.schemas.auth import (
+    CredentialsRequest,
+    MfaRequest,
+    RegisterRequest,
+    SessionStatusResponse,
+    SessionUserResponse,
+)
+from app.services.auth_service import AuthFlowError, AuthService
 from app.services.permission_service import PermissionService
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+
+async def _local_user(db: AsyncSession, identifier: str) -> User | None:
+    normalized = identifier.strip().lower()
+    return await db.scalar(
+        select(User).where(
+            (func.lower(User.email) == normalized) | (func.lower(User.username) == normalized)
+        )
+    )
+
+
+def _totp_uri(email: str, secret: str) -> str:
+    label = quote(f"HungerNet:{email}", safe="")
+    return f"otpauth://totp/{label}?secret={secret}&issuer=HungerNet&algorithm=SHA1&digits=6&period=30"
+
+
+def _require_trusted_auth_origin(request: Request = None) -> None:
+    if request is None:
+        return
+    origin = request.headers.get("origin")
+    if origin and origin not in settings.cors_allowed_origins:
+        raise HTTPException(status_code=403, detail="Untrusted request origin")
+
+
+async def _create_login_response(
+    request: Request = None,
+    response: Response = None,
+    db: AsyncSession = None,
+    user: User = None,
+) -> dict[str, bool]:
+    device_label = "Browser"
+    if request is not None:
+        device_label = request.headers.get("user-agent", "Browser")[:160]
+    token, session = await AuthService.issue_session(
+        db,
+        user=user,
+        device_label=device_label,
+    )
+    max_age = max(0, int((session.expires_at - datetime.now(UTC)).total_seconds()))
+    response.set_cookie(
+        settings.session_cookie_name,
+        token,
+        max_age=max_age,
+        expires=session.expires_at,
+        httponly=True,
+        secure=settings.session_cookie_secure,
+        samesite=settings.session_cookie_same_site,
+        domain=settings.session_cookie_domain,
+        path="/",
+    )
+    return {"authenticated": True}
+
+
+@router.get("/providers")
+async def oauth_providers() -> dict[str, list[str]]:
+    return {"providers": configured_oauth_providers()}
+
+
+@router.post("/register", status_code=status.HTTP_201_CREATED)
+async def register(
+    payload: RegisterRequest,
+    db: AsyncSession = Depends(get_db),
+    request: Request = None,
+) -> dict[str, str]:
+    _require_trusted_auth_origin(request)
+    try:
+        user, secret = await AuthService.register_local_user(
+            db,
+            email=payload.email,
+            username=payload.username,
+            password=payload.password,
+        )
+    except AuthFlowError as error:
+        raise HTTPException(status_code=error.status_code, detail=error.message) from error
+    except IntegrityError as error:
+        await db.rollback()
+        raise HTTPException(
+            status_code=409, detail="Email or username is already registered"
+        ) from error
+    return {
+        "setupSecret": secret,
+        "provisioningUri": _totp_uri(user.email or payload.email, secret),
+    }
+
+
+@router.post("/mfa/setup")
+async def setup_mfa(
+    payload: CredentialsRequest,
+    request: Request = None,
+    db: AsyncSession = Depends(get_db),
+) -> dict[str, str]:
+    _require_trusted_auth_origin(request)
+    user = await _local_user(db, payload.identifier)
+    if user is None or not verify_password(payload.password, user.password_hash):
+        raise HTTPException(status_code=401, detail="Invalid email, username, or password")
+    if user.totp_enabled:
+        raise HTTPException(
+            status_code=409, detail="Multi-factor authentication is already enabled"
+        )
+    user.totp_secret = new_totp_secret()
+    await db.commit()
+    return {
+        "setupSecret": user.totp_secret,
+        "provisioningUri": _totp_uri(user.email or user.username, user.totp_secret),
+    }
+
+
+@router.post("/mfa/verify")
+async def verify_mfa(
+    payload: MfaRequest,
+    request: Request = None,
+    response_obj: Response = None,
+    db: AsyncSession = Depends(get_db),
+) -> dict[str, bool]:
+    _require_trusted_auth_origin(request)
+    if response_obj is None:
+        response_obj = Response()
+    user = await _local_user(db, payload.identifier)
+    if (
+        user is None
+        or not verify_password(payload.password, user.password_hash)
+        or not user.totp_secret
+        or not verify_totp(user.totp_secret, payload.code)
+    ):
+        raise HTTPException(status_code=401, detail="Credentials or authenticator code are invalid")
+    if not user.totp_enabled:
+        user.totp_enabled = True
+        await db.commit()
+    return await _create_login_response(request, response_obj, db, user)
+
+
+@router.post("/login")
+async def login(
+    payload: MfaRequest,
+    request: Request = None,
+    response_obj: Response = None,
+    db: AsyncSession = Depends(get_db),
+) -> dict[str, bool]:
+    _require_trusted_auth_origin(request)
+    if response_obj is None:
+        response_obj = Response()
+    user = await _local_user(db, payload.identifier)
+    if (
+        user is None
+        or not user.totp_enabled
+        or not user.totp_secret
+        or not verify_password(payload.password, user.password_hash)
+        or not verify_totp(user.totp_secret, payload.code)
+    ):
+        raise HTTPException(status_code=401, detail="Credentials or authenticator code are invalid")
+    return await _create_login_response(request, response_obj, db, user)
 
 
 @router.get("/session", response_model=SessionStatusResponse)
@@ -94,7 +262,7 @@ async def oauth_start(
     db: AsyncSession = Depends(get_db),
 ) -> RedirectResponse:
     provider = provider.lower()
-    if provider not in settings.allowed_oauth_providers:
+    if provider not in configured_oauth_providers():
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Unsupported OAuth provider")
     fallback = settings.allowed_return_origins[0] if settings.allowed_return_origins else ""
     destination = redirect_to or f"{fallback}/profile"
@@ -145,7 +313,7 @@ async def oauth_callback(
     db: AsyncSession = Depends(get_db),
 ) -> RedirectResponse:
     provider = provider.lower()
-    if provider not in settings.allowed_oauth_providers:
+    if provider not in configured_oauth_providers():
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Unsupported OAuth provider")
     cookie_name = f"{settings.csrf_cookie_name}_oauth"
     cookie_state = request.cookies.get(cookie_name)

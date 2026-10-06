@@ -9,7 +9,13 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
-from app.core.security import create_pkce_pair, generate_session_token, hash_token
+from app.core.security import (
+    create_pkce_pair,
+    generate_session_token,
+    hash_password,
+    hash_token,
+    new_totp_secret,
+)
 from app.db.models import AuditEvent, Identity, OAuthTransaction, Session, User, UserRole
 from app.integrations.oauth import OAuthIdentity
 from app.services.permission_service import PermissionService
@@ -24,6 +30,49 @@ class AuthFlowError(Exception):
 
 
 class AuthService:
+    @staticmethod
+    async def register_local_user(
+        db: AsyncSession,
+        *,
+        email: str,
+        username: str,
+        password: str,
+    ) -> tuple[User, str]:
+        existing = await db.scalar(
+            select(User).where(
+                (func.lower(User.email) == email) | (User.username == username)
+            )
+        )
+        if existing is not None:
+            raise AuthFlowError("account_exists", "Email or username is already registered", 409)
+
+        secret = new_totp_secret()
+        user = User(
+            id=str(uuid4()),
+            username=username,
+            email=email,
+            display_name=username,
+            password_hash=hash_password(password),
+            totp_secret=secret,
+            totp_enabled=False,
+        )
+        db.add(user)
+        member_role = await PermissionService.seed_member_role(db)
+        await db.flush()
+        db.add(UserRole(user_id=user.id, role_id=member_role.id))
+        db.add(
+            AuditEvent(
+                actor_user_id=user.id,
+                action="user.created",
+                target_type="user",
+                target_id=user.id,
+                details="Created with email and password",
+            )
+        )
+        await db.commit()
+        await db.refresh(user)
+        return user, secret
+
     @staticmethod
     async def begin_oauth(
         db: AsyncSession,

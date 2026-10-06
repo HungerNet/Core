@@ -5,6 +5,8 @@ import hashlib
 import hmac
 import json
 import secrets
+import struct
+import time
 from datetime import UTC, datetime, timedelta
 
 from app.core.config import settings
@@ -77,6 +79,48 @@ def verify_session_token(token: str) -> dict | None:
 
 def hash_token(token: str) -> str:
     return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+
+def hash_password(password: str) -> str:
+    salt = secrets.token_bytes(16)
+    digest = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, 600_000)
+    return f"pbkdf2_sha256$600000${_b64url_encode(salt)}${_b64url_encode(digest)}"
+
+
+def verify_password(password: str, encoded: str | None) -> bool:
+    if not encoded:
+        return False
+    try:
+        algorithm, iterations, salt, expected = encoded.split("$")
+        if algorithm != "pbkdf2_sha256" or int(iterations) != 600_000:
+            return False
+        digest = hashlib.pbkdf2_hmac(
+            "sha256", password.encode("utf-8"), _b64url_decode(salt), int(iterations)
+        )
+        return hmac.compare_digest(digest, _b64url_decode(expected))
+    except (ValueError, TypeError):
+        return False
+
+
+def new_totp_secret() -> str:
+    return base64.b32encode(secrets.token_bytes(20)).decode("ascii").rstrip("=")
+
+
+def verify_totp(secret: str, code: str, *, at_time: int | None = None) -> bool:
+    if len(code) != 6 or not code.isdigit():
+        return False
+    try:
+        key = base64.b32decode(secret + "=" * (-len(secret) % 8), casefold=True)
+    except (ValueError, TypeError):
+        return False
+    counter = int((time.time() if at_time is None else at_time) // 30)
+    for offset in (-1, 0, 1):
+        digest = hmac.new(key, struct.pack(">Q", counter + offset), hashlib.sha1).digest()
+        position = digest[-1] & 0x0F
+        value = struct.unpack(">I", digest[position : position + 4])[0] & 0x7FFFFFFF
+        if hmac.compare_digest(f"{value % 1_000_000:06d}", code):
+            return True
+    return False
 
 
 def create_pkce_pair() -> tuple[str, str]:

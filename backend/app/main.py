@@ -12,12 +12,14 @@ from app.api.v1.router import router as v1_router
 from app.core.config import settings
 from app.core.middleware import RedisRateLimitMiddleware, RequestContextMiddleware, SecurityHeadersMiddleware
 from app.core.observability import configure_logging
+from app.integrations.oauth import configured_oauth_providers
 
 configure_logging(settings.log_level)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    configured_oauth_providers(log_warnings=True)
     redis = Redis.from_url(settings.redis_url, decode_responses=True)
     if settings.rate_limit_enabled:
         await redis.ping()

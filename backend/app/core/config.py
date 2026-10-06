@@ -50,21 +50,6 @@ class Settings(BaseSettings):
         if any("*" in origin for origin in self.cors_allowed_origins):
             raise ValueError("CORS_ALLOWED_ORIGINS must contain exact origins; wildcards are not supported")
         if self.environment.lower() == "production":
-            required_oauth = (
-                self.google_client_id and self.google_client_secret,
-                self.github_client_id and self.github_client_secret,
-                self.discord_client_id and self.discord_client_secret,
-            )
-            configured_oauth = all(
-                client_id and secret and secret.get_secret_value().strip()
-                for client_id, secret in (
-                    (self.google_client_id, self.google_client_secret),
-                    (self.github_client_id, self.github_client_secret),
-                    (self.discord_client_id, self.discord_client_secret),
-                )
-            )
-            if not configured_oauth:
-                raise ValueError("Google, GitHub, and Discord OAuth credentials are required in production")
             if not self.cors_allowed_origins:
                 raise ValueError("CORS_ALLOWED_ORIGINS must be configured in production")
         return self

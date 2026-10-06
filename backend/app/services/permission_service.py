@@ -6,7 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.models import Permission, Role, User
+from app.db.models import Permission, Role, RolePermission, User
 
 PERMISSION_REGISTRY = {
     "platform.profile.read",
@@ -72,9 +72,16 @@ class PermissionService:
         for key in sorted(member_nodes - existing):
             permission = Permission(key=key, description=f"Allows {key} actions")
             db.add(permission)
-            role.permissions.append(permission)
+            await db.flush()
+            permission_rows.append(permission)
+            existing.add(key)
+
+        assigned = {
+            row.permission_id
+            for row in (await db.scalars(select(RolePermission).where(RolePermission.role_id == role.id))).all()
+        }
         for permission in permission_rows:
-            if permission not in role.permissions:
-                role.permissions.append(permission)
+            if permission.id not in assigned:
+                db.add(RolePermission(role_id=role.id, permission_id=permission.id))
         await db.flush()
         return role

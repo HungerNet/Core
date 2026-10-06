@@ -72,6 +72,13 @@ class RedisRateLimitMiddleware(BaseHTTPMiddleware):
         method = request.method.upper()
         if path.startswith("/api/v1/auth/oauth/"):
             return f"oauth:{path}"
+        if method == "POST" and path in {
+            "/api/v1/auth/register",
+            "/api/v1/auth/login",
+            "/api/v1/auth/mfa/setup",
+            "/api/v1/auth/mfa/verify",
+        }:
+            return f"auth:{path}"
         if method in {"POST", "PATCH", "PUT", "DELETE"} and path.startswith("/api/v1/users/me"):
             return "user-mutations"
         if method in {"POST", "PATCH", "PUT", "DELETE"} and path.startswith("/api/v1/projects"):
