@@ -2,10 +2,10 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import { AuthProvider } from "@hungernet/auth";
-import "../../../packages/styles/src/legacy/styles/index.css";
-import "../../../packages/styles/src/legacy/styles/themes/premium/galaxy.css";
-import "./legacy/styles/background.css";
-import "./legacy/styles/overrides.css";
+import "../../../packages/styles/src/sites/index.css";
+import "../../../packages/styles/src/sites/themes/premium/galaxy.css";
+import "./styles/background.css";
+import "./styles/overrides.css";
 import { App } from "./App";
 
 const root = document.getElementById("root");

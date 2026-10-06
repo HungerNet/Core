@@ -7,7 +7,7 @@
   "types": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
-    "./legacy": "./src/legacy/index.ts"
+    "./components": "./src/components/index.ts"
   },
   "dependencies": {
     "@hungernet/styles": "workspace:*",

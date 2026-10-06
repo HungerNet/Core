@@ -1,12 +1,12 @@
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
-import { Footer, Navbar, ScrollToTop } from "@hungernet/ui/legacy";
+import { Footer, Navbar, ScrollToTop } from "@hungernet/ui/components";
 import { HungerNetAuthButtons, HungerNetAuthCallback, useAuth } from "@hungernet/auth";
-import Home from "./legacy/pages/Home";
-import Download from "./legacy/pages/Download";
-import DownloadVersion from "./legacy/pages/download/DownloadVersion";
-import Features from "./legacy/pages/Features";
-import Install from "./legacy/pages/Install";
-import Help from "./legacy/pages/Help";
+import Home from "./pages/Home";
+import Download from "./pages/Download";
+import DownloadVersion from "./pages/download/DownloadVersion";
+import Features from "./pages/Features";
+import Install from "./pages/Install";
+import Help from "./pages/Help";
 
 const navItems = [
   { to: "/", label: "Home", end: true },
