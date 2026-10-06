@@ -1,0 +1,42 @@
+html {
+  scroll-behavior: smooth;
+  overscroll-behavior: none;
+  background: #000;
+}
+
+body {
+  min-height: 100vh;
+  overflow-x: hidden;
+  background: transparent;
+  position: relative;
+}
+
+/* Gradient background */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    var(--bg-1) 0%,
+    var(--bg-2) 35%,
+    var(--bg-3) 55%,
+    var(--bg-4) 100%
+  );
+  z-index: -2;
+  background-attachment: fixed;
+}
+
+/* Ambient glows */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(circle at 15% 20%, var(--glow-1) 0%, transparent 45%),
+    radial-gradient(circle at 85% 30%, var(--glow-2) 0%, transparent 45%),
+    radial-gradient(circle at 50% 85%, var(--glow-3) 0%, transparent 50%);
+  z-index: -1;
+  pointer-events: none;
+  background-attachment: fixed;
+}

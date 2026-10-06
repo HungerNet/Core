@@ -1,0 +1,33 @@
+.copyfield {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+  backdrop-filter: blur(12px);
+}
+
+.copyfield-left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.copyfield-label {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.copyfield-value {
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  word-break: break-all;
+}
+
+.copyfield-btn {
+  padding: 4px 8px;
+}

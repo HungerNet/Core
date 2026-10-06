@@ -1,0 +1,17 @@
+.overview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--space-3);
+}
+
+.overview-card { text-align: center; height: 100%; }
+
+.overview-card .overview-icon {
+  font-size: 2rem;
+  margin-bottom: var(--space-1);
+  display: inline-block;
+  line-height: 1;
+}
+
+.overview-card h3 { margin-bottom: var(--space-1); }
+.overview-card p { color: var(--text-secondary); font-size: 0.9rem; }

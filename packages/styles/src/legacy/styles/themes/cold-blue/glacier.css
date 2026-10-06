@@ -1,0 +1,64 @@
+:root {
+  /* Accent */
+  --accent-1: #dff8ff;   /* near-white ice */
+  --accent-2: #9edcff;   /* pale frost */
+  --accent-3: #4fa8ff;   /* glacier blue */
+
+  /* Accent glows */
+  --accent-glow-1: rgba(223, 248, 255, 0.45);
+  --accent-glow-2: rgba(79, 168, 255, 0.4);
+
+  /* Glass */
+  --glass-bg: rgba(223, 248, 255, 0.06);
+  --glass-bg-strong: rgba(223, 248, 255, 0.12);
+  --glass-border: rgba(79, 168, 255, 0.25);
+  --glass-border-strong: rgba(79, 168, 255, 0.45);
+  --glass-shadow: rgba(0, 0, 0, 0.45) 0 8px 32px;
+
+  /* Text */
+  --text-primary: #f6fcff;
+  --text-secondary: #d9e9f5;
+  --text-muted: #9bb4c6;
+
+  /* Background gradient stops (more icy variation) */
+  --bg-1: #031018;  /* deep arctic */
+  --bg-2: #06202c;  /* cold blue */
+  --bg-3: #0a3142;  /* frost */
+  --bg-4: #041a24;  /* icy shadow */
+
+  /* Ambient glows */
+  --glow-1: rgba(223, 248, 255, 0.12);
+  --glow-2: rgba(79, 168, 255, 0.14);
+  --glow-3: rgba(20, 40, 60, 0.1);
+
+  /* Navbar / footer */
+  --navbar-bg: rgba(3, 16, 24, 0.55);
+  --navbar-bg-mobile: rgba(3, 16, 24, 0.85);
+  --footer-bg: rgba(3, 16, 24, 0.4);
+
+  /* Buttons */
+  --btn-primary-start: rgba(223, 248, 255, 0.25);
+  --btn-primary-end: rgba(79, 168, 255, 0.2);
+  --btn-primary-hover-start: rgba(223, 248, 255, 0.4);
+  --btn-primary-hover-end: rgba(79, 168, 255, 0.35);
+  --btn-primary-shadow: rgba(223, 248, 255, 0.45);
+  --btn-border: rgba(79, 168, 255, 0.5);
+  --btn-hover-shadow: rgba(223, 248, 255, 0.25);
+
+  /* Tags */
+  --tag-bg: rgba(79, 168, 255, 0.1);
+  --tag-border: rgba(79, 168, 255, 0.25);
+  --tag-text: #4fa8ff;
+
+  /* Focus */
+  --focus-outline: #4fa8ff;
+  --focus-ring: rgba(79, 168, 255, 0.15);
+
+  /* Hover glow */
+  --hover-glow: rgba(79, 168, 255, 0.12);
+
+  /* Links */
+  --link-color: rgba(79, 168, 255, 0.9);
+  --link-hover-color: rgba(158, 220, 255, 0.9);
+  --link-visited-color: rgba(79, 168, 255, 0.65);
+}

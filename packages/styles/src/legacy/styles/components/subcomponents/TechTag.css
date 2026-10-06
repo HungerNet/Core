@@ -1,0 +1,18 @@
+.tech-tag {
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: var(--tag-bg, rgba(34,211,238,0.1));
+  border: 1px solid var(--tag-border, rgba(34,211,238,0.25));
+  color: var(--tag-text, var(--accent-1));
+  display: inline-flex; /* or inline-block */
+}
+
+.tech-tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1); /* or var(--space-2) for more spacing */
+  justify-content: center;
+}

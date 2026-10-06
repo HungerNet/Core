@@ -1,0 +1,124 @@
+/* Root wrapper */
+.dropdown {
+  position: relative;
+  display: inline-block;
+  z-index: 20;
+}
+
+/* Trigger */
+.dropdown-trigger {
+  outline: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 16px;
+  min-width: 220px; /* STATIC WIDTH */
+  border-radius: var(--radius-sm);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(12px);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background 0.25s var(--ease), border-color 0.25s var(--ease);
+}
+
+.dropdown-trigger:hover {
+  background: var(--glass-bg-strong);
+  border-color: var(--glass-border-strong);
+}
+
+.dropdown-trigger:focus {
+  outline: none; /* remove blue ring */
+}
+
+.dropdown-trigger span:first-child {
+  flex-shrink: 0;
+}
+
+.dropdown-trigger-value {
+  margin-left: auto;
+  text-align: right;
+  flex: 1;
+}
+
+/* Menu container */
+.dropdown-menu {
+  position: absolute;
+  left: 0;
+  width: 220px; /* STATIC WIDTH */
+  max-height: 260px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+  backdrop-filter: blur(12px);
+  box-shadow: var(--glass-shadow);
+  padding: 6px 0;
+  z-index: 999999;
+
+  /* Entry + Exit animation base */
+  opacity: 0;
+  transform: scale(0.97);
+  transform-origin: top;
+  transition: opacity 0.15s var(--ease), transform 0.15s var(--ease);
+
+  /* Hide native scrollbar (Firefox) */
+  scrollbar-width: none;
+}
+
+/* Hide native scrollbar (Chrome/Safari/Edge) */
+.dropdown-menu::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+/* Custom scrollbar thumb overlay */
+.dropdown-menu::before {
+  content: "";
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 4px;
+  height: calc(100% - 8px);
+  background: var(--glass-border-strong);
+  border-radius: 4px;
+  opacity: 0;
+  transition: opacity 0.2s var(--ease);
+  pointer-events: none;
+}
+
+/* Show custom scrollbar while scrolling */
+.dropdown-menu.scrolling::before {
+  opacity: 1;
+}
+
+/* When open */
+.dropdown-menu--open {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* Items */
+.dropdown-item {
+  padding: 10px 14px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: background 0.2s var(--ease), color 0.2s var(--ease);
+}
+
+.dropdown-item:hover {
+  background: var(--glass-bg-strong);
+  color: var(--text-primary);
+}
+
+.dropdown-item.active {
+  color: var(--accent-1);
+  font-weight: 600;
+}
+
+.dropdown-item.highlighted {
+  background: var(--glass-bg-strong);
+  color: var(--text-primary);
+}

@@ -1,0 +1,111 @@
+/* ===== Global Reset & Base ===== */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* ===== Non-color tokens ===== */
+:root {
+  --glass-shadow: rgba(0, 0, 0, 0.35) 0 8px 32px;
+
+  --space-1: 8px;
+  --space-2: 16px;
+  --space-3: 24px;
+  --space-4: 32px;
+  --space-5: 48px;
+  --space-6: 64px;
+
+  --radius-sm: 12px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+  --radius-xl: 32px;
+
+  --sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ===== Base HTML ===== */
+html {
+  scroll-behavior: smooth;
+  overscroll-behavior: none;
+  background: #000;
+}
+
+body {
+  font-family: var(--sans);
+  line-height: 1.5;
+  min-height: 100vh;
+  overflow-x: hidden;
+  position: relative;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  overscroll-behavior: none;
+  background: transparent;
+
+  /* restore inherited text color */
+  color: var(--text-primary);
+}
+
+/* ===== Typography ===== */
+h1, h2, h3, h4 {
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+h1 { font-size: clamp(2.5rem, 5vw, 4rem); font-weight: 700; }
+h2 { font-size: clamp(1.75rem, 3.5vw, 2.5rem); }
+h3 { font-size: 1.35rem; }
+
+p { line-height: 1.6; }
+
+a {
+  text-decoration: none;
+  transition: color 0.25s var(--ease);
+}
+
+img { max-width: 100%; display: block; }
+button { font-family: inherit; cursor: pointer; border: none; background: none; }
+ul { list-style: none; }
+
+/* ===== Layout Helpers ===== */
+.container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 var(--space-3);
+}
+
+.page {
+  padding-top: var(--space-6);
+  padding-bottom: var(--space-6);
+  min-height: 100vh;
+}
+
+.section { margin-bottom: var(--space-5); }
+.section-header { text-align: center; margin-bottom: var(--space-5); }
+
+/* ===== Animations ===== */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes glowPulse {
+  0%, 100% { box-shadow: 0 0 20px var(--accent-glow-1), 0 0 40px transparent; }
+  50% { box-shadow: 0 0 30px var(--accent-glow-1), 0 0 60px rgba(34, 211, 238, 0.15); }
+}
+
+.fade-in-up { animation: fadeInUp 0.7s var(--ease) both; }
+.fade-in { animation: fadeIn 0.8s var(--ease) both; }

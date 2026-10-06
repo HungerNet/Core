@@ -1,0 +1,81 @@
+.faq-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.faq-accordion {
+  cursor: pointer;
+  user-select: none;
+  /* override GlassCard hover lift — we handle it ourselves */
+  transition:
+    border-color 0.3s var(--ease),
+    background 0.3s var(--ease),
+    box-shadow 0.3s var(--ease) !important;
+}
+
+/* Prevent GlassCard translateY on hover */
+.faq-accordion:hover {
+  transform: none !important;
+  border-color: var(--glass-border-strong) !important;
+}
+
+.faq-accordion--open {
+  border-color: var(--accent-2) !important;
+  box-shadow: var(--glass-shadow), 0 0 20px var(--hover-glow) !important;
+}
+
+.faq-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  pointer-events: none;
+}
+
+.faq-question {
+  font-weight: 600;
+  font-size: 1rem;
+  color: var(--text-primary);
+  line-height: 1.4;
+  transition: color 0.2s var(--ease);
+  flex: 1;
+}
+
+.faq-accordion--open .faq-question,
+.faq-accordion:hover .faq-question {
+  color: var(--accent-1);
+}
+
+.faq-chevron {
+  flex-shrink: 0;
+  color: var(--accent-1);
+  display: flex;
+  align-items: center;
+  transition: transform 0.35s var(--ease), color 0.2s;
+}
+
+.faq-accordion--open .faq-chevron {
+  transform: rotate(180deg);
+}
+
+.faq-body {
+  overflow: hidden;
+  max-height: 0;
+  transition: max-height 0.4s var(--ease);
+  pointer-events: none;
+}
+
+/* Stop click-through on the answer text */
+.faq-accordion--open .faq-body {
+  pointer-events: auto;
+}
+
+.faq-answer {
+  margin-top: var(--space-2);
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--glass-border);
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  line-height: 1.7;
+}

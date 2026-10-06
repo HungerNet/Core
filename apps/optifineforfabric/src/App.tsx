@@ -1,7 +1,11 @@
-import { Navigate, Route, Routes, useLocation } from "react-router-dom";
-import { Footer, SiteHeader } from "@hungernet/ui";
-import { HungerNetAuthButtons, HungerNetAuthCallback, useAuth } from "@hungernet/auth";
-import { DownloadPage, DownloadVersionPage, FeaturesPage, HelpPage, HomePage, InstallPage } from "./pages";
+import { Navigate, Route, Routes } from "react-router-dom";
+import { Footer, Navbar, ScrollToTop } from "@hungernet/ui/legacy";
+import Home from "./legacy/pages/Home";
+import Download from "./legacy/pages/Download";
+import DownloadVersion from "./legacy/pages/download/DownloadVersion";
+import Features from "./legacy/pages/Features";
+import Install from "./legacy/pages/Install";
+import Help from "./legacy/pages/Help";
 
 const navItems = [
   { to: "/", label: "Home", end: true },
@@ -11,35 +15,31 @@ const navItems = [
   { to: "/help", label: "Help" },
 ];
 
+const socials = [
+  { label: "GitHub", href: "https://github.com/iFamishedX/optifine-for-fabric" },
+  { label: "Modrinth", href: "https://modrinth.com/project/optifine-for-fabric" },
+  { label: "Discord", href: "https://discord.gg/aNUYADauTJ" },
+];
+
 export function App() {
-  const { status } = useAuth();
-  const location = useLocation();
-  if (location.pathname === "/auth/callback") return <HungerNetAuthCallback clientId="optifineforfabric" apiBaseUrl={import.meta.env.VITE_API_BASE_URL || "/api/v1"} />;
-  return <div className="public-site-shell">
-    <SiteHeader
-      brand="OptiFine for Fabric"
-      navItems={navItems}
-      accountAction={status === "authenticated"
-        ? <a className="account-link" href={`${import.meta.env.VITE_ACCOUNTS_URL || "https://accounts.hungernet.dev"}/profile`}>Manage account</a>
-        : <HungerNetAuthButtons clientId="optifineforfabric" appName="OptiFine for Fabric" accountsBaseUrl={import.meta.env.VITE_ACCOUNTS_URL} />}
-    />
-    <main className="hn-container"><Routes>
-      <Route path="/" element={<HomePage />} />
-      <Route path="/install" element={<InstallPage />} />
-      <Route path="/download" element={<DownloadPage />} />
-      <Route path="/download/:version" element={<DownloadVersionPage />} />
-      <Route path="/features" element={<FeaturesPage />} />
-      <Route path="/help" element={<HelpPage />} />
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes></main>
+  return <>
+    <Navbar brand="OptiFine for Fabric" brandDotColor="#38bdf8" navItems={navItems} />
+    <ScrollToTop />
+    <div className="container">
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/install" element={<Install />} />
+        <Route path="/download" element={<Download />} />
+        <Route path="/download/:version" element={<DownloadVersion />} />
+        <Route path="/features" element={<Features />} />
+        <Route path="/help" element={<Help />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </div>
     <Footer
       brand="OptiFine for Fabric"
-      socials={[
-        { label: "GitHub", href: "https://github.com/iFamishedX/optifine-for-fabric", icon: "github" },
-        { label: "Modrinth", href: "https://modrinth.com/project/optifine-for-fabric", icon: "modrinth" },
-        { label: "Discord", href: "https://discord.gg/aNUYADauTJ", icon: "discord" },
-      ]}
+      socials={socials}
       footerNote={`© ${new Date().getFullYear()} OptiFine for Fabric. Not affiliated with Mojang or OptiFine.`}
     />
-  </div>;
+  </>;
 }

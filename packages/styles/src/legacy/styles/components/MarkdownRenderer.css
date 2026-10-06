@@ -1,0 +1,84 @@
+.markdown-body {
+  color: var(--text-secondary);
+  line-height: 1.7;
+  font-size: 0.95rem;
+}
+
+/* Paragraphs */
+.md-p {
+  margin-bottom: 1rem;
+}
+
+/* Headings */
+.md-h1, .md-h2, .md-h3 {
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.md-h1 { font-size: 1.6rem; }
+.md-h2 { font-size: 1.3rem; }
+.md-h3 { font-size: 1.1rem; }
+
+/* Lists */
+.md-ul {
+  padding-left: 1.4rem;
+  margin-bottom: 1rem;
+}
+
+.md-li {
+  margin-bottom: 0.35rem;
+  list-style-type: disc;
+}
+
+.md-ul .md-ul .md-li {
+  list-style-type: circle;
+}
+
+.md-ul .md-ul .md-ul .md-li {
+  list-style-type: square;
+}
+
+/* Inline code */
+.md-inline-code {
+  background: rgba(255,255,255,0.08);
+  padding: 2px 5px;
+  border-radius: 4px;
+  font-family: var(--mono);
+  font-size: 0.85rem;
+}
+
+/* Code blocks */
+.md-pre {
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 8px;
+  padding: 12px 14px;
+  overflow-x: auto;
+  border: 1px solid var(--glass-border);
+  margin-bottom: 1rem;
+}
+
+.md-pre code {
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  white-space: pre;
+}
+
+/* Tables */
+.md-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1rem;
+}
+
+.md-table th,
+.md-table td {
+  border: 1px solid var(--glass-border);
+  padding: 8px 10px;
+}
+
+.md-table th {
+  background: rgba(255,255,255,0.05);
+  font-weight: 600;
+}

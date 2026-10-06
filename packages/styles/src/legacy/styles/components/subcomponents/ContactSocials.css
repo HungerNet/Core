@@ -1,0 +1,6 @@
+.contact-socials {
+  display: flex;
+  gap: 1px;
+  flex-wrap: wrap;
+  margin-top: var(--space-2);
+}

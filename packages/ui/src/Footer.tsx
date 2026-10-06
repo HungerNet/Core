@@ -14,7 +14,7 @@ export interface FooterProps {
 
 export function Footer({ brand, socials, footerNote }: FooterProps) {
   return (
-    <footer className="site-footer hn-container">
+    <footer className="site-footer">
       <div className="footer-inner">
         <span className="footer-brand"><span className="gradient-text">{brand}</span></span>
         <nav className="footer-social" aria-label={`${brand} social links`}>

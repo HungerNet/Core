@@ -1,0 +1,52 @@
+:root {
+  --accent-1: #ff4fd8;   /* neon pink */
+  --accent-2: #4fd8ff;   /* electric cyan */
+  --accent-3: #b57cff;   /* ultraviolet */
+
+  --accent-glow-1: rgba(255, 79, 216, 0.45);
+  --accent-glow-2: rgba(79, 216, 255, 0.4);
+
+  --glass-bg: rgba(79, 216, 255, 0.06);
+  --glass-bg-strong: rgba(79, 216, 255, 0.12);
+  --glass-border: rgba(255, 79, 216, 0.25);
+  --glass-border-strong: rgba(255, 79, 216, 0.45);
+  --glass-shadow: rgba(0, 0, 0, 0.45) 0 8px 32px;
+
+  --text-primary: #fdf0ff;
+  --text-secondary: #e8cfff;
+  --text-muted: #b99bd1;
+
+  --bg-1: #0a0014;
+  --bg-2: #1a0030;
+  --bg-3: #30004a;
+  --bg-4: #0a0030;
+
+  --glow-1: rgba(255, 79, 216, 0.12);
+  --glow-2: rgba(79, 216, 255, 0.14);
+  --glow-3: rgba(60, 20, 120, 0.1);
+
+  --navbar-bg: rgba(10, 0, 20, 0.55);
+  --navbar-bg-mobile: rgba(10, 0, 20, 0.85);
+  --footer-bg: rgba(10, 0, 20, 0.4);
+
+  --btn-primary-start: rgba(255, 79, 216, 0.25);
+  --btn-primary-end: rgba(79, 216, 255, 0.2);
+  --btn-primary-hover-start: rgba(255, 79, 216, 0.4);
+  --btn-primary-hover-end: rgba(79, 216, 255, 0.35);
+  --btn-primary-shadow: rgba(255, 79, 216, 0.45);
+  --btn-border: rgba(255, 79, 216, 0.5);
+  --btn-hover-shadow: rgba(255, 79, 216, 0.25);
+
+  --tag-bg: rgba(79, 216, 255, 0.1);
+  --tag-border: rgba(79, 216, 255, 0.25);
+  --tag-text: #ff4fd8;
+
+  --focus-outline: #ff4fd8;
+  --focus-ring: rgba(255, 79, 216, 0.15);
+
+  --hover-glow: rgba(255, 79, 216, 0.12);
+
+  --link-color: rgba(255, 79, 216, 0.9);
+  --link-hover-color: rgba(79, 216, 255, 0.8);
+  --link-visited-color: rgba(255, 79, 216, 0.65);
+}

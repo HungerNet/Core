@@ -1,0 +1,73 @@
+.glass-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  padding: 12px 24px;
+  border-radius: var(--radius-sm);
+  font-size: 0.95rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  color: var(--text-primary);
+  transition:
+    transform 0.25s var(--ease),
+    background-color 0.35s var(--ease),
+    border-color 0.25s var(--ease),
+    box-shadow 0.25s var(--ease);
+  position: relative;
+  overflow: hidden;
+}
+
+.glass-btn {
+  margin: 0;
+}
+.glass-btn + .glass-btn {
+  margin-left: var(--space-1);
+}
+
+.glass-btn::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at center, var(--accent-glow-1), transparent 70%);
+  opacity: 0;
+  transition: opacity 0.3s var(--ease);
+}
+
+.glass-btn:hover {
+  transform: translateY(-2px);
+  background: var(--glass-bg-strong);
+  border-color: var(--btn-border, var(--accent-1));
+  box-shadow: 0 0 20px var(--btn-hover-shadow, var(--accent-glow-1));
+}
+
+.glass-btn:hover::after {
+  opacity: 0.15;
+}
+
+.glass-btn:active { transform: translateY(0); }
+
+.glass-btn:focus-visible {
+  outline: 2px solid var(--focus-outline, var(--accent-1));
+  outline-offset: 2px;
+}
+
+/* Primary button variant (uses theme-provided gradient variables) */
+.glass-btn--primary {
+  background: linear-gradient(135deg, var(--btn-primary-start, rgba(34,211,238,0.25)), var(--btn-primary-end, rgba(59,130,246,0.2)));
+  border-color: var(--btn-border, rgba(34,211,238,0.5));
+}
+
+.glass-btn--primary:hover {
+  background: linear-gradient(135deg, var(--btn-primary-hover-start, rgba(34,211,238,0.4)), var(--btn-primary-hover-end, rgba(59,130,246,0.35)));
+  box-shadow: 0 0 28px var(--btn-primary-shadow, rgba(34,211,238,0.45));
+}
+
+.glass-btn--ghost { background: transparent; }
+.glass-btn--sm { padding: 8px 16px; font-size: 0.85rem; }
+.glass-btn--block { width: 100%; }
+.glass-btn--icon { padding: 10px; }

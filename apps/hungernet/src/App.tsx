@@ -1,7 +1,11 @@
-import { Navigate, Route, Routes, useLocation } from "react-router-dom";
-import { Footer, SiteHeader } from "@hungernet/ui";
-import { HungerNetAuthButtons, HungerNetAuthCallback, useAuth } from "@hungernet/auth";
-import { HomePage, HostingPage, ProjectsPage, ToolsPage, EmailGuidePage, SrvGeneratorPage, PublicProfilePage } from "./pages";
+import { Route, Routes } from "react-router-dom";
+import { Footer, Navbar, ScrollToTop } from "@hungernet/ui/legacy";
+import Home from "./legacy/pages/Home";
+import Hosting from "./legacy/pages/Hosting";
+import Projects from "./legacy/pages/Projects";
+import Tools from "./legacy/pages/Tools";
+import Email from "./legacy/pages/tools/Email";
+import SRVGenerator from "./legacy/pages/tools/SRVGenerator";
 
 const navItems = [
   { to: "/", label: "Home", end: true },
@@ -10,34 +14,26 @@ const navItems = [
   { to: "/tools", label: "Tools" },
 ];
 
+const socials = [{ label: "Discord", href: "https://discord.gg/KQHZcWMFtf" }];
+
 export function App() {
-  const { status } = useAuth();
-  const location = useLocation();
-  if (location.pathname === "/auth/callback") return <HungerNetAuthCallback clientId="hungernet" apiBaseUrl={import.meta.env.VITE_API_BASE_URL || "/api/v1"} />;
-  return <div className="public-site-shell">
-    <SiteHeader
-      brand="HungerNet"
-      navItems={navItems}
-      accountAction={status === "authenticated"
-        ? <a className="account-link" href={`${import.meta.env.VITE_ACCOUNTS_URL || "https://accounts.hungernet.dev"}/profile`}>Manage account</a>
-        : <HungerNetAuthButtons clientId="hungernet" appName="HungerNet" accountsBaseUrl={import.meta.env.VITE_ACCOUNTS_URL} />}
-    />
-    <main className="hn-container">
+  return <>
+    <Navbar brand="HungerNet" brandDotColor="#38f8cf" navItems={navItems} />
+    <ScrollToTop />
+    <div className="container">
       <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/hosting" element={<HostingPage />} />
-        <Route path="/projects" element={<ProjectsPage />} />
-        <Route path="/tools" element={<ToolsPage />} />
-        <Route path="/tools/email" element={<EmailGuidePage />} />
-        <Route path="/tools/srv-generator" element={<SrvGeneratorPage />} />
-        <Route path="/user/:username" element={<PublicProfilePage />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="/" element={<Home />} />
+        <Route path="/hosting" element={<Hosting />} />
+        <Route path="/projects" element={<Projects />} />
+        <Route path="/tools" element={<Tools />} />
+        <Route path="/tools/email" element={<Email />} />
+        <Route path="/tools/srv-generator" element={<SRVGenerator />} />
       </Routes>
-    </main>
+    </div>
     <Footer
       brand="HungerNet"
-      socials={[{ label: "Discord", href: "https://discord.gg/KQHZcWMFtf", icon: "discord" }]}
+      socials={socials}
       footerNote={`© ${new Date().getFullYear()} HungerNet. All rights reserved.`}
     />
-  </div>;
+  </>;
 }

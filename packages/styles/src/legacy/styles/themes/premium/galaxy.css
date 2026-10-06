@@ -1,0 +1,64 @@
+:root {
+  /* Accent */
+  --accent-1: #5bb8ff;   /* star cyan */
+  --accent-2: #9b5cf9;   /* cosmic violet */
+  --accent-3: #ff6bd9;   /* nebula pink */
+
+  /* Accent glows */
+  --accent-glow-1: rgba(91, 184, 255, 0.45);
+  --accent-glow-2: rgba(155, 92, 249, 0.4);
+
+  /* Glass */
+  --glass-bg: rgba(91, 184, 255, 0.06);
+  --glass-bg-strong: rgba(91, 184, 255, 0.12);
+  --glass-border: rgba(155, 92, 249, 0.25);
+  --glass-border-strong: rgba(155, 92, 249, 0.45);
+  --glass-shadow: rgba(0, 0, 0, 0.45) 0 8px 32px;
+
+  /* Text */
+  --text-primary: #f4f0ff;
+  --text-secondary: #d8cfff;
+  --text-muted: #a99bd1;
+
+  /* Background gradient stops */
+  --bg-1: #050014;  /* deep space */
+  --bg-2: #12003a;  /* cosmic violet */
+  --bg-3: #2a004f;  /* nebula purple */
+  --bg-4: #0a0030;  /* star blue */
+
+  /* Ambient glows */
+  --glow-1: rgba(91, 184, 255, 0.12);
+  --glow-2: rgba(155, 92, 249, 0.14);
+  --glow-3: rgba(60, 20, 120, 0.1);
+
+  /* Navbar / footer */
+  --navbar-bg: rgba(5, 0, 20, 0.55);
+  --navbar-bg-mobile: rgba(5, 0, 20, 0.85);
+  --footer-bg: rgba(5, 0, 20, 0.4);
+
+  /* Buttons */
+  --btn-primary-start: rgba(91, 184, 255, 0.25);
+  --btn-primary-end: rgba(155, 92, 249, 0.2);
+  --btn-primary-hover-start: rgba(91, 184, 255, 0.4);
+  --btn-primary-hover-end: rgba(155, 92, 249, 0.35);
+  --btn-primary-shadow: rgba(91, 184, 255, 0.45);
+  --btn-border: rgba(155, 92, 249, 0.5);
+  --btn-hover-shadow: rgba(91, 184, 255, 0.25);
+
+  /* Tags */
+  --tag-bg: rgba(155, 92, 249, 0.1);
+  --tag-border: rgba(155, 92, 249, 0.25);
+  --tag-text: #ff6bd9;
+
+  /* Focus */
+  --focus-outline: #ff6bd9;
+  --focus-ring: rgba(155, 92, 249, 0.15);
+
+  /* Hover glow */
+  --hover-glow: rgba(155, 92, 249, 0.12);
+
+  /* Links */
+  --link-color: rgba(155, 92, 249, 0.9);
+  --link-hover-color: rgba(91, 184, 255, 0.8);
+  --link-visited-color: rgba(155, 92, 249, 0.65);
+}

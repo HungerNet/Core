@@ -71,7 +71,7 @@ export function SiteHeader({ brand, navItems, accountAction }: SiteHeaderProps) 
   }, [location.pathname, menuOpen]);
 
   return (
-    <header className={`site-header hn-container${menuOpen ? " is-open" : ""}`}>
+    <header className={`site-header${menuOpen ? " is-open" : ""}`}>
       <Link className="site-brand" to="/" onClick={() => setMenuOpen(false)}>
         <span className="site-brand-dot" aria-hidden="true" />
         <span>{brand}</span>

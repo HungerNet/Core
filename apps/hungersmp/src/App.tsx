@@ -1,7 +1,9 @@
-import { Navigate, Route, Routes, useLocation } from "react-router-dom";
-import { Footer, SiteHeader } from "@hungernet/ui";
-import { HungerNetAuthButtons, HungerNetAuthCallback, useAuth } from "@hungernet/auth";
-import { AnnouncementsPage, FAQPage, HomePage, InfoPage, ProjectsPage, RulesPage } from "./pages";
+import { Navigate, Route, Routes } from "react-router-dom";
+import { Footer, Navbar, ScrollToTop } from "@hungernet/ui/legacy";
+import Home from "./legacy/pages/Home";
+import Info from "./legacy/pages/Info";
+import FAQ from "./legacy/pages/FAQ";
+import Rules from "./legacy/pages/Rules";
 
 const navItems = [
   { to: "/", label: "Home", end: true },
@@ -12,31 +14,25 @@ const navItems = [
   { to: "/announcements", label: "Announcements" },
 ];
 
+const socials = [{ label: "Discord", href: "https://discord.gg/KQHZcWMFtf" }];
+
 export function App() {
-  const { status } = useAuth();
-  const location = useLocation();
-  if (location.pathname === "/auth/callback") return <HungerNetAuthCallback clientId="hungersmp" apiBaseUrl={import.meta.env.VITE_API_BASE_URL || "/api/v1"} />;
-  return <div className="public-site-shell">
-    <SiteHeader
-      brand="Hunger SMP"
-      navItems={navItems}
-      accountAction={status === "authenticated"
-        ? <a className="account-link" href={`${import.meta.env.VITE_ACCOUNTS_URL || "https://accounts.hungernet.dev"}/profile`}>Manage account</a>
-        : <HungerNetAuthButtons clientId="hungersmp" appName="Hunger SMP" accountsBaseUrl={import.meta.env.VITE_ACCOUNTS_URL} />}
-    />
-    <main className="hn-container"><Routes>
-      <Route path="/" element={<HomePage />} />
-      <Route path="/info" element={<InfoPage />} />
-      <Route path="/faq" element={<FAQPage />} />
-      <Route path="/rules" element={<RulesPage />} />
-      <Route path="/projects" element={<ProjectsPage />} />
-      <Route path="/announcements" element={<AnnouncementsPage />} />
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes></main>
+  return <>
+    <Navbar brand="Hunger SMP" brandDotColor="#4f44ef" navItems={navItems} />
+    <ScrollToTop />
+    <div className="container">
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/info" element={<Info />} />
+        <Route path="/faq" element={<FAQ />} />
+        <Route path="/rules" element={<Rules />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </div>
     <Footer
       brand="Hunger SMP"
-      socials={[{ label: "Discord", href: "https://discord.gg/KQHZcWMFtf", icon: "discord" }]}
-      footerNote={`© ${new Date().getFullYear()} Hunger SMP. Not affiliated with Mojang.`}
+      socials={socials}
+      footerNote={`© ${new Date().getFullYear()} HungerNet. Not affiliated with Mojang.`}
     />
-  </div>;
+  </>;
 }

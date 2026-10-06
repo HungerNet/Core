@@ -1,0 +1,82 @@
+.timeline {
+  position: relative;
+  max-width: 720px;
+  margin: 0 auto;
+  padding-left: 48px;
+}
+
+/* Base line */
+.timeline::before {
+  content: "";
+  position: absolute;
+  left: 20px;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--accent-1);
+  opacity: 0.35;
+}
+
+/* Animated pulse */
+.timeline::after {
+  content: "";
+  position: absolute;
+  left: 20px;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+
+  background: radial-gradient(
+    circle at center,
+    var(--accent-1) 0%,
+    var(--accent-1) 40%,
+    transparent 70%
+  );
+
+  background-size: 100% 120px;
+  background-repeat: no-repeat;
+
+  /* animation: squirclePulse 4s ease-in-out infinite; */
+  animation: squirclePulse 5s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+
+  filter: drop-shadow(0 0 8px var(--accent-glow-1));
+}
+
+@keyframes squirclePulse {
+  0% {
+    background-position: 0 -120px;
+  }
+  50% {
+    background-position: 0 calc(100% + 120px);
+  }
+  100% {
+    background-position: 0 -120px;
+  }
+}
+
+/* Timeline items */
+.timeline-item {
+  margin-bottom: var(--space-4);
+}
+
+.timeline-content {
+  padding-left: var(--space-1);
+}
+
+.timeline-meta {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-family: var(--mono);
+  display: block;
+  margin-bottom: 4px;
+}
+
+.timeline-content h3 {
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.timeline-content p {
+  color: var(--text-secondary);
+  font-size: 0.92rem;
+}
