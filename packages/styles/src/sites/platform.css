@@ -61,9 +61,9 @@
   --glow-3: rgba(255, 208, 138, 0.11);
   --site-glow-primary: rgba(255, 102, 82, 0.14);
   --site-glow-secondary: rgba(255, 166, 83, 0.1);
-  --site-glow-radius-primary: 24%;
-  --site-glow-radius-secondary: 28%;
-  --site-glow-radius-tertiary: 26%;
+  --site-glow-radius-primary: 30%;
+  --site-glow-radius-secondary: 35%;
+  --site-glow-radius-tertiary: 32%;
   --glass-border-strong: rgba(255, 116, 95, 0.44);
   --btn-primary-start: rgba(255, 116, 95, 0.2);
   --btn-primary-end: rgba(255, 173, 94, 0.16);
