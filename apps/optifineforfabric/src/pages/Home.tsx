@@ -27,8 +27,8 @@ const techTags = ["Fabric", "Sodium", "Iris", "Lithium", "Starlight", "DynamicLi
 
 const stats = [
   { value: "8×", label: "FPS Boost" },
-  { value: "500k+", label: "Total Downloads" },
-  { value: "26.2", label: "Latest versions" },
+  { value: "800k+", label: "Total Downloads" },
+  { value: "26.3", label: "Latest versions" },
   { value: "<1 MB", label: "Lightweight Install" },
   { value: "100%", label: "Free & open-source" },
 ]
