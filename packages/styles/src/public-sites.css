@@ -24,15 +24,15 @@
 }
 
 :root[data-site="hungernet"] {
-  --site-bg: #071f1d;
-  --site-mid: #0f4039;
-  --site-end: #1c3447;
-  --site-glow-primary: rgba(105, 255, 220, 0.24);
-  --site-glow-secondary: rgba(120, 211, 255, 0.18);
-  --color-primary: #78f9d5;
-  --color-primary-strong: #4de0c3;
-  --color-secondary: #7bd6ff;
-  --site-tertiary: #d8ffc0;
+  --site-bg: #071923;
+  --site-mid: #0d2b37;
+  --site-end: #1f283f;
+  --site-glow-primary: rgba(255, 116, 95, 0.2);
+  --site-glow-secondary: rgba(255, 166, 83, 0.15);
+  --color-primary: #ff8f6b;
+  --color-primary-strong: #ff745f;
+  --color-secondary: #ffc078;
+  --site-tertiary: #ffd08a;
 }
 
 :root[data-site="hungersmp"] {
