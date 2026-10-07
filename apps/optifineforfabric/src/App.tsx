@@ -31,7 +31,7 @@ export function App() {
   const returnTo = `${location.pathname}${location.search}${location.hash}`;
 
   return <>
-    <Navbar brand="OptiFine for Fabric" brandDotColor="#38bdf8" navItems={navItems} />
+    <Navbar brand="OptiFine for Fabric" brandDotColor="#7ef9d2" navItems={navItems} />
     <ScrollToTop />
     <div className="container">
       <Routes>

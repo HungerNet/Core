@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import { AuthProvider } from "@hungernet/auth";
 import "@hungernet/styles";
+import "./profile.css";
 import { App } from "./App";
 
 document.documentElement.dataset.site = "accounts";

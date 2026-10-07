@@ -67,7 +67,7 @@ export default function Download() {
         pv.add(pvRaw)
       })
 
-      let pvList = Array.from(pv)
+      const pvList = Array.from(pv)
 
       pvList.sort((a, b) => {
         const pa = a.replace("v", "").split(".").map(Number)

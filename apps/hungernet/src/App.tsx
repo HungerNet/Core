@@ -7,6 +7,7 @@ import Projects from "./pages/Projects";
 import Tools from "./pages/Tools";
 import Email from "./pages/tools/Email";
 import SRVGenerator from "./pages/tools/SRVGenerator";
+import UserProfile from "./pages/UserProfile";
 
 const navItems = [
   { to: "/", label: "Home", end: true },
@@ -26,7 +27,7 @@ export function App() {
   const returnTo = `${location.pathname}${location.search}${location.hash}`;
 
   return <>
-    <Navbar brand="HungerNet" brandDotColor="#38f8cf" navItems={navItems} />
+    <Navbar brand="HungerNet" brandDotColor="#7ef9d2" navItems={navItems} />
     <ScrollToTop />
     <div className="container">
       <Routes>
@@ -36,6 +37,7 @@ export function App() {
         <Route path="/tools" element={<Tools />} />
         <Route path="/tools/email" element={<Email />} />
         <Route path="/tools/srv-generator" element={<SRVGenerator />} />
+        <Route path="/user/:username" element={<UserProfile />} />
       </Routes>
     </div>
     <Footer

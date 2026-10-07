@@ -40,7 +40,8 @@ export type PermissionNode = string;
 export interface RoleSummary {
   id: string;
   key: string;
-  displayName: string;
+  name: string;
+  color: string;
 }
 
 export interface EffectivePermissions {

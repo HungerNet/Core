@@ -2,6 +2,15 @@
 
 This is the FastAPI backend for the Core platform. It includes async SQLAlchemy models, OAuth login flows, profile/session management, permission enforcement, admin endpoints, project and announcement APIs, logging middleware, and security headers.
 
+## Profiles, avatars, and roles
+
+- `GET /api/v1/public/users/{username}` returns public profile details, role badges, and online status derived from an unexpired session seen in the last five minutes.
+- `POST /api/v1/users/me/avatar` accepts raw PNG, JPEG, WebP, or GIF bytes (maximum 5 MB), requires the authenticated session/CSRF flow, and returns the stored avatar URL.
+- Set `AVATAR_STORAGE_DIR` to persistent storage and `AVATAR_PUBLIC_BASE_URL` to the API origin. Docker Compose mounts the persistent `avatar_data` volume at the configured storage directory.
+- The `member` role has no permission nodes. `superuser` has every node in `PERMISSION_REGISTRY`; the `roles.create` node specifically gates role creation. Role IDs are lowercase alphanumeric strings and role colors are `#RRGGBB`.
+
+Run `uv run alembic upgrade head` before deploying so the default roles, permissions, and role color column are available.
+
 ## Local setup
 
 ```bash

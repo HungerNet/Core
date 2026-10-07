@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
-import { createApiClient } from "@hungernet/api-client";
+import { useEffect, useState, type CSSProperties } from "react";
+import { ApiClientError, createApiClient } from "@hungernet/api-client";
 import { Button, GlassCard, InputBox } from "@hungernet/ui";
+import { useAuth } from "@hungernet/auth";
 import { AdminLayout } from "../components/AdminLayout";
 
 interface RoleRecord {
@@ -8,6 +9,7 @@ interface RoleRecord {
   key: string;
   name: string;
   description: string | null;
+  color: string;
   is_system: boolean;
   permissions: string[];
 }
@@ -15,12 +17,17 @@ interface RoleRecord {
 const api = createApiClient();
 
 export function RolesPage() {
+  const { user } = useAuth();
+  const canCreate = user?.permissions?.includes("roles.create") ?? false;
+  const canManage = user?.permissions?.includes("platform.admin.roles.manage") ?? false;
   const [roles, setRoles] = useState<RoleRecord[]>([]);
   const [availablePermissions, setAvailablePermissions] = useState<string[]>([]);
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [key, setKey] = useState("");
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [color, setColor] = useState("#7ef9d2");
   const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -39,24 +46,50 @@ export function RolesPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  async function createRole() {
+  function resetForm() {
+    setShowForm(false);
+    setEditingId(null);
+    setKey("");
+    setName("");
+    setDescription("");
+    setColor("#7ef9d2");
+    setSelectedPermissions([]);
+  }
+
+  function editRole(role: RoleRecord) {
+    setEditingId(role.id);
+    setKey(role.key);
+    setName(role.name);
+    setDescription(role.description ?? "");
+    setColor(role.color);
+    setSelectedPermissions(role.permissions);
+    setShowForm(true);
+  }
+
+  async function saveRole() {
     setSaving(true);
     setError("");
     try {
-      const role = await api.post<RoleRecord>("/admin/roles", {
-        key,
-        name,
-        description: description || null,
+      const payload = {
+        name: name.trim(),
+        description: description.trim() || null,
+        color,
         permission_keys: selectedPermissions,
+      };
+      const role = editingId
+        ? await api.patch<RoleRecord>(`/admin/roles/${encodeURIComponent(editingId)}`, payload)
+        : await api.post<RoleRecord>("/admin/roles", { ...payload, key: key.trim() });
+      setRoles((current) => {
+        const updated = editingId
+          ? current.map((item) => item.id === role.id ? role : item)
+          : [...current, role];
+        return updated.sort((left, right) => left.id.localeCompare(right.id));
       });
-      setRoles((current) => [...current, role].sort((left, right) => left.key.localeCompare(right.key)));
-      setKey("");
-      setName("");
-      setDescription("");
-      setSelectedPermissions([]);
-      setShowForm(false);
-    } catch {
-      setError("Could not create role. Check the role key and your permissions.");
+      resetForm();
+    } catch (cause) {
+      setError(cause instanceof ApiClientError
+        ? cause.message
+        : editingId ? "Could not update this role." : "Could not create this role.");
     } finally {
       setSaving(false);
     }
@@ -71,44 +104,127 @@ export function RolesPage() {
   return (
     <AdminLayout
       title="Roles and permissions"
-      actions={
-        <Button variant="primary" size="sm" onClick={() => setShowForm((visible) => !visible)} disabled={loading}>
-          {showForm ? "Cancel" : "Add role"}
+      actions={canCreate && (
+        <Button
+          variant="primary"
+          size="sm"
+          onClick={() => showForm ? resetForm() : setShowForm(true)}
+          disabled={loading}
+        >
+          {showForm ? "Cancel" : "Create role"}
         </Button>
-      }
+      )}
     >
-      {error && <p role="alert">{error}</p>}
-      {showForm && <GlassCard style={{ padding: "1rem", marginBottom: "1rem" }}>
-        <div className="input-row">
-          <div className="input-field"><label htmlFor="role-key">Role key</label><InputBox id="role-key" value={key} onChange={setKey} placeholder="platform.support" /></div>
-          <div className="input-field"><label htmlFor="role-name">Role name</label><InputBox id="role-name" value={name} onChange={setName} placeholder="Support" /></div>
-        </div>
-        <div className="input-field" style={{ marginTop: "1rem" }}><label htmlFor="role-description">Description</label><InputBox id="role-description" value={description} onChange={setDescription} placeholder="Role description" /></div>
-        <fieldset style={{ marginTop: "1rem" }}>
-          <legend>Permissions</legend>
-          <div style={{ display: "grid", gap: "0.5rem" }}>
-            {availablePermissions.map((permission) => <label key={permission} style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
-              <input type="checkbox" checked={selectedPermissions.includes(permission)} onChange={() => togglePermission(permission)} />
-              {permission}
-            </label>)}
+      {error && <p role="alert" className="role-error">{error}</p>}
+
+      {showForm && (
+        <GlassCard className="role-editor" style={{ padding: "1.25rem", marginBottom: "1rem" }}>
+          <div className="role-editor-heading">
+            <div>
+              <h3>{editingId ? "Edit role" : "Create a role"}</h3>
+              <p className="muted">Use a lowercase, alphanumeric ID that is easy to recognize.</p>
+            </div>
+            <span className="role-preview" style={{ "--role-color": color } as CSSProperties}>
+              {name.trim() || "Role"}
+            </span>
           </div>
-        </fieldset>
-        <Button variant="primary" size="sm" onClick={() => void createRole()} disabled={saving || key.trim().length < 3 || !name.trim()}>{saving ? "Creating…" : "Create role"}</Button>
-      </GlassCard>}
-      {loading && <p role="status">Loading roles…</p>}
-      {!loading && roles.length === 0 && <p>No roles found.</p>}
-      <div style={{ display: "grid", gap: "1rem" }}>
-        {roles.map((role) => (
-          <GlassCard key={role.id} style={{ padding: "1rem" }}>
-            <h3>{role.name}</h3>
-            <p className="muted">{role.key}</p>
-            {role.is_system && <p className="muted">System role</p>}
-            {role.description ? <p>{role.description}</p> : null}
-            <ul style={{ marginTop: "0.75rem", paddingLeft: "1.25rem", color: "var(--color-muted)" }}>
-              {role.permissions.map((permission) => (
-                <li key={permission}>{permission}</li>
+          <div className="role-fields">
+            {!editingId && (
+              <div className="input-field">
+                <label htmlFor="role-key">Role ID</label>
+                <InputBox
+                  id="role-key"
+                  value={key}
+                  onChange={(value) => setKey(value.toLowerCase().replace(/[^a-z0-9]/g, ""))}
+                  placeholder="moderator"
+                  maxLength={80}
+                />
+              </div>
+            )}
+            <div className="input-field">
+              <label htmlFor="role-name">Display name</label>
+              <InputBox id="role-name" value={name} onChange={setName} placeholder="Moderator" />
+            </div>
+            <div className="input-field">
+              <label htmlFor="role-color">Role color</label>
+              <div className="role-color-input">
+                <input
+                  id="role-color"
+                  type="color"
+                  value={color}
+                  onChange={(event) => setColor(event.target.value)}
+                  aria-label="Choose a role color"
+                />
+                <code>{color.toUpperCase()}</code>
+              </div>
+            </div>
+            <div className="input-field role-description-field">
+              <label htmlFor="role-description">Description</label>
+              <InputBox
+                id="role-description"
+                value={description}
+                onChange={setDescription}
+                placeholder="What this role is for"
+              />
+            </div>
+          </div>
+          <fieldset className="role-permissions">
+            <legend>Permission nodes <span>{selectedPermissions.length} selected</span></legend>
+            <div className="role-permission-grid">
+              {availablePermissions.map((permission) => (
+                <label key={permission} className="role-permission-option">
+                  <input
+                    type="checkbox"
+                    checked={selectedPermissions.includes(permission)}
+                    onChange={() => togglePermission(permission)}
+                  />
+                  <code>{permission}</code>
+                </label>
               ))}
-            </ul>
+            </div>
+          </fieldset>
+          <div className="role-editor-actions">
+            <Button variant="secondary" size="sm" onClick={resetForm} disabled={saving}>Cancel</Button>
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => void saveRole()}
+              disabled={saving || !name.trim() || (!editingId && !key)}
+            >
+              {saving ? "Saving…" : editingId ? "Save changes" : "Create role"}
+            </Button>
+          </div>
+        </GlassCard>
+      )}
+
+      {loading && <p role="status">Loading roles…</p>}
+      {!loading && !error && roles.length === 0 && <p>No roles found.</p>}
+      <div className="role-grid">
+        {roles.map((role) => (
+          <GlassCard key={role.id} className="role-card" style={{ "--role-color": role.color } as CSSProperties}>
+            <div className="role-card-heading">
+              <div className="role-identity">
+                <span className="role-color-dot" aria-hidden="true" />
+                <div>
+                  <h3>{role.name}</h3>
+                  <code className="role-id">{role.id}</code>
+                </div>
+              </div>
+              {role.is_system
+                ? <span className="role-system-tag">System</span>
+                : canManage && (
+                  <Button variant="secondary" size="sm" onClick={() => editRole(role)}>Edit</Button>
+                )}
+            </div>
+            {role.description && <p className="role-description">{role.description}</p>}
+            <div className="role-permission-summary">
+              <span>{role.permissions.length === 0 ? "No permission nodes" : `${role.permissions.length} permission nodes`}</span>
+              {role.permissions.length > 0 && (
+                <div className="role-permission-list">
+                  {role.permissions.map((permission) => <code key={permission}>{permission}</code>)}
+                </div>
+              )}
+            </div>
           </GlassCard>
         ))}
       </div>

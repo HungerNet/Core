@@ -47,7 +47,6 @@ export function ProfilePage() {
         ...(email.trim() ? { email: email.trim() } : {}),
         display_name: displayName,
         bio: bio || null,
-        avatar_url: avatarUrl || null,
       });
       setUsername(profile.username);
       setEmail(profile.email ?? "");
@@ -57,6 +56,25 @@ export function ProfilePage() {
       setSaved(true);
     } catch (cause) {
       setError(cause instanceof ApiClientError ? cause.message : "Could not save your profile.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function uploadAvatar(file: File) {
+    setSaving(true);
+    setSaved(false);
+    setError("");
+    try {
+      const result = await api.request<{ avatar_url: string }>("/users/me/avatar", {
+        method: "POST",
+        body: file,
+        headers: { "Content-Type": file.type },
+      });
+      setAvatarUrl(result.avatar_url);
+      setSaved(true);
+    } catch (cause) {
+      setError(cause instanceof ApiClientError ? cause.message : "Could not upload your avatar.");
     } finally {
       setSaving(false);
     }
@@ -100,8 +118,26 @@ export function ProfilePage() {
               />
             </div>
             <div className="input-field">
-              <label htmlFor="profile-avatar">Profile picture URL</label>
-              <InputBox id="profile-avatar" value={avatarUrl} onChange={setAvatarUrl} placeholder="https://example.com/avatar.jpg" />
+              <label htmlFor="profile-avatar">Profile picture</label>
+              <div className="profile-avatar-upload">
+                {avatarUrl
+                  ? <img src={avatarUrl} alt="Your current profile avatar" />
+                  : <span aria-hidden="true">{displayName.slice(0, 1).toUpperCase() || "?"}</span>}
+                <div>
+                  <input
+                    id="profile-avatar"
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp,image/gif"
+                    disabled={loading || saving}
+                    onChange={(event) => {
+                      const file = event.currentTarget.files?.[0];
+                      event.currentTarget.value = "";
+                      if (file) void uploadAvatar(file);
+                    }}
+                  />
+                  <span className="site-meta">PNG, JPEG, WebP, or GIF · up to 5 MB</span>
+                </div>
+              </div>
             </div>
           </div>
         </GlassCard>

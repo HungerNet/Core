@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+import logging
+import re
 from datetime import UTC, datetime
+from uuid import uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy import func, select
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import (
@@ -36,6 +39,23 @@ from app.schemas.user import (
 from app.services.auth_service import AuthFlowError, AuthService
 
 router = APIRouter(prefix="/users", tags=["users"])
+logger = logging.getLogger("hungernet.api")
+MAX_AVATAR_SIZE = 5 * 1024 * 1024
+AVATAR_FORMATS = (
+    (b"\x89PNG\r\n\x1a\n", ".png"),
+    (b"\xff\xd8\xff", ".jpg"),
+    (b"GIF87a", ".gif"),
+    (b"GIF89a", ".gif"),
+)
+
+
+def avatar_extension(content: bytes) -> str | None:
+    for signature, extension in AVATAR_FORMATS:
+        if content.startswith(signature):
+            return extension
+    if len(content) >= 12 and content[:4] == b"RIFF" and content[8:12] == b"WEBP":
+        return ".webp"
+    return None
 
 
 @router.get("/me", response_model=UserMeResponse)
@@ -56,7 +76,7 @@ async def read_current_user(user: User = Depends(get_current_user)) -> UserMeRes
 @router.patch(
     "/me",
     response_model=UserMeResponse,
-    dependencies=[Depends(require_csrf), Depends(require_permission("platform.profile.update"))],
+    dependencies=[Depends(require_csrf)],
 )
 async def update_current_user(
     request: Request,
@@ -89,8 +109,6 @@ async def update_current_user(
             updates["email"] = normalized_email
         else:
             updates.pop("email")
-    if "avatar_url" in updates and updates["avatar_url"] is not None:
-        updates["avatar_url"] = str(updates["avatar_url"])
     for field, value in updates.items():
         setattr(user, field, value)
     if email_changed:
@@ -120,6 +138,61 @@ async def update_current_user(
         is_active=user.is_active,
         is_superuser=user.is_superuser,
     )
+
+
+@router.post("/me/avatar", dependencies=[Depends(require_csrf)])
+async def upload_current_user_avatar(
+    request: Request,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict[str, str]:
+    content = bytearray()
+    async for chunk in request.stream():
+        if len(content) + len(chunk) > MAX_AVATAR_SIZE:
+            raise HTTPException(status_code=413, detail="Avatar image must be 5 MB or smaller")
+        content.extend(chunk)
+
+    extension = avatar_extension(content)
+    if extension is None:
+        raise HTTPException(status_code=415, detail="Upload a PNG, JPEG, WebP, or GIF image")
+
+    avatar_dir = settings.avatar_storage_dir / "avatars"
+    filename = f"{uuid4().hex}{extension}"
+    avatar_path = avatar_dir / filename
+    try:
+        avatar_dir.mkdir(parents=True, exist_ok=True)
+        avatar_path.write_bytes(content)
+    except OSError as error:
+        raise HTTPException(status_code=500, detail="Avatar could not be stored") from error
+
+    previous_url = user.avatar_url
+    avatar_url = f"{settings.avatar_public_base_url.rstrip('/')}/media/avatars/{filename}"
+    user.avatar_url = avatar_url
+    try:
+        await db.commit()
+    except SQLAlchemyError:
+        await db.rollback()
+        try:
+            avatar_path.unlink(missing_ok=True)
+        except OSError:
+            logger.exception("Could not remove an uncommitted avatar upload")
+        raise
+
+    if previous_url:
+        previous_path = previous_url.split("?", 1)[0]
+        previous_filename = previous_path.rsplit("/", 1)[-1]
+        if (
+            previous_path.startswith(
+                f"{settings.avatar_public_base_url.rstrip('/')}/media/avatars/"
+            )
+            and re.fullmatch(r"[a-f0-9]{32}\.(png|jpg|gif|webp)", previous_filename)
+            and previous_filename != filename
+        ):
+            try:
+                (avatar_dir / previous_filename).unlink(missing_ok=True)
+            except OSError:
+                logger.exception("Could not remove a replaced avatar image")
+    return {"avatar_url": avatar_url}
 
 
 @router.get("/me/identities", response_model=list[LinkedIdentityResponse])

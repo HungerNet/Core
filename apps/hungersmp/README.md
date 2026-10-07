@@ -2,6 +2,8 @@
 
 This app wraps the public Hunger SMP experience and can call the shared platform API for project and announcement data.
 
+The `/auth/callback` route completes the shared OAuth flow for the `hungersmp` client. Global colors, glass surfaces, responsive spacing, and reduced-motion behavior come from `packages/styles/src/sites/platform.css`; page-specific rules stay in `src/styles/overrides.css`.
+
 ## Local development
 
 ```bash

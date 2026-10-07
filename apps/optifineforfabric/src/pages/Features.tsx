@@ -99,7 +99,7 @@ export default function Features() {
               <h3>Vanilla Minecraft</h3>
             </div>
             <ul className="compare-list">
-              {comparison.map(({ label, vanilla }, idx) => (
+              {comparison.map(({ label, vanilla }) => (
                 <li key={label}>
                   <span className={`compare-list-icon compare-list-icon--${vanilla ? "yes" : "no"}`}>
                     <Icon name={vanilla ? "check" : "x"} size={16} strokeWidth={2.5} />

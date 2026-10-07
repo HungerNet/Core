@@ -2,6 +2,8 @@
 
 This public-facing app hosts the iFamished site content inside the shared HungerNet platform architecture.
 
+The `/auth/callback` route completes the shared OAuth flow for the `ifamished` client. Global colors, glass surfaces, responsive spacing, and reduced-motion behavior come from `packages/styles/src/sites/platform.css`; page-specific rules stay in `src/styles/overrides.css`.
+
 ## Local development
 
 ```bash

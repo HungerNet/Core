@@ -15,7 +15,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1
 WORKDIR /srv/app
 
-RUN groupadd --system app && useradd --system --gid app --create-home app
+RUN groupadd --system app && useradd --system --gid app --create-home app \
+    && install -d -o app -g app /srv/app/media
 COPY --from=build /install /usr/local
 COPY --chown=app:app alembic.ini ./alembic.ini
 COPY --chown=app:app alembic ./alembic

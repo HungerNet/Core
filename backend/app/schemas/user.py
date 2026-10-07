@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from datetime import datetime
 import re
+from datetime import datetime
 
-from pydantic import AnyHttpUrl, BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator
 
 
 class PublicUserResponse(BaseModel):
@@ -31,7 +31,6 @@ class UserUpdateRequest(BaseModel):
     username: str | None = Field(default=None, min_length=3, max_length=64)
     email: str | None = Field(default=None, max_length=254)
     bio: str | None = Field(default=None, max_length=500)
-    avatar_url: AnyHttpUrl | None = None
     profile_visibility: str | None = Field(default=None, pattern="^(public|private)$")
 
     @field_validator("display_name")

@@ -141,4 +141,8 @@
     width: 100%;
     text-align: center;
   }
+
+  .navbar-underline {
+    display: none;
+  }
 }

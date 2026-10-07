@@ -23,30 +23,11 @@ export default function EmailGuide() {
 
   
 
-  // Parsed email
-  const [username, setUsername] = useState("");
-  const [domain, setDomain] = useState("");
-
   // Guide visibility
   const [generated, setGenerated] = useState(false);
 
   // Error visibility
   const [showErrors, setShowErrors] = useState(false);
-
-  // Parse email
-  useEffect(() => {
-    const emailRegex = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
-
-    if (!emailRegex.test(email)) {
-      setUsername("");
-      setDomain("");
-      return;
-    }
-
-    const [user, dom] = email.split("@");
-    setUsername(user);
-    setDomain(dom);
-  }, [email]);
 
   // Auto-generate if URL params exist
   useEffect(() => {

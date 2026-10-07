@@ -2,6 +2,8 @@
 
 This app exposes the public OptiFine for Fabric site and uses the shared Modrinth client logic for version fetching and release metadata.
 
+The `/auth/callback` route completes the shared OAuth flow for the `optifineforfabric` client. Global colors, glass surfaces, responsive spacing, and reduced-motion behavior come from `packages/styles/src/sites/platform.css`; page-specific rules stay in `src/styles/overrides.css`.
+
 ## Local development
 
 ```bash

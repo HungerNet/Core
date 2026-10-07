@@ -104,7 +104,7 @@ export default function Info() {
               <h3>Other Servers</h3>
             </div>
             <ul className="compare-list">
-              {comparison.map(({ label, other }, idx) => (
+              {comparison.map(({ label, other }) => (
                 <li key={label}>
                   <span className={`compare-list-icon compare-list-icon--${other ? "yes" : "no"}`}>
                     <Icon name={other ? "check" : "x"} size={16} strokeWidth={2.5} />

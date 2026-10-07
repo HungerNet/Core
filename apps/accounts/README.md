@@ -4,10 +4,13 @@ This app is the platform account dashboard for profile editing, session/device m
 
 ## Included flows
 
-- Profile read/update for username, email, bio, and avatar metadata
+- Profile read/update for username, email, and bio
+- Avatar uploads through `POST /users/me/avatar` (PNG, JPEG, WebP, or GIF, up to 5 MB)
 - OAuth provider linking for Google, GitHub, and Discord
 - Session/device listing and revocation
 - Authenticated route handling via the shared `@hungernet/auth` package
+
+The profile page keeps its existing settings layout. Avatar changes are uploaded as image bytes and stored by the backend; avatar URLs cannot be edited in the profile form.
 
 ## Local development
 

@@ -1,4 +1,5 @@
 from collections.abc import Collection
+from pathlib import Path
 from urllib.parse import urlsplit
 
 from pydantic import Field, SecretStr, model_validator
@@ -101,6 +102,8 @@ class Settings(BaseSettings):
     rate_limit_enabled: bool = True
     rate_limit_requests: int = 60
     rate_limit_window_seconds: int = 60
+    avatar_storage_dir: Path = Path("media")
+    avatar_public_base_url: str = "https://api.hungernet.dev"
     log_level: str = "INFO"
     model_config = SettingsConfigDict(extra="ignore")
 

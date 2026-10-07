@@ -1,5 +1,6 @@
 import logging
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
@@ -7,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from redis.asyncio import Redis
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.responses import JSONResponse
+from starlette.staticfiles import StaticFiles
 
 from app.api.v1.router import router as v1_router
 from app.core.config import (
@@ -47,6 +49,10 @@ app = FastAPI(
 )
 
 app.include_router(v1_router, prefix=API_ROUTE_PREFIX)
+
+avatar_storage_dir = Path(settings.avatar_storage_dir)
+avatar_storage_dir.mkdir(parents=True, exist_ok=True)
+app.mount("/media", StaticFiles(directory=avatar_storage_dir), name="media")
 
 app.add_middleware(
     CORSMiddleware,

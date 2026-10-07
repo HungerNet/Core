@@ -26,7 +26,7 @@ export function App() {
   const returnTo = `${location.pathname}${location.search}${location.hash}`;
 
   return <>
-    <Navbar brand="Hunger SMP" brandDotColor="#4f44ef" navItems={navItems} />
+    <Navbar brand="Hunger SMP" brandDotColor="#7ef9d2" navItems={navItems} />
     <ScrollToTop />
     <div className="container">
       <Routes>

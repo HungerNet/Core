@@ -28,7 +28,7 @@ export function App() {
   const returnTo = `${location.pathname}${location.search}${location.hash}`;
 
   return <>
-    <Navbar brand="iFamished" brandDotColor="#22d3ee" navItems={navItems} />
+    <Navbar brand="iFamished" brandDotColor="#7ef9d2" navItems={navItems} />
     <ScrollToTop />
     <div className="container">
       <Routes>

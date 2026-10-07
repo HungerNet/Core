@@ -1,4 +1,3 @@
-import { useState } from "react"
 import { GlassCard, GlassButton, usePageTitle, Icon, StatPill } from "@hungernet/ui/components"
 import CopyIPButton from "../components/CopyIPButton"
 

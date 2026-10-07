@@ -214,7 +214,6 @@ class AuthService:
             username=username,
             email=normalized_email,
             display_name=identity_data.display_name[:120],
-            avatar_url=identity_data.avatar_url,
         )
         db.add(user)
         db.add(

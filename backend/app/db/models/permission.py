@@ -36,6 +36,7 @@ class Role(Base):
     key: Mapped[str] = mapped_column(String(80), unique=True, nullable=False, index=True)
     name: Mapped[str] = mapped_column(String(120), nullable=False)
     description: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    color: Mapped[str] = mapped_column(String(7), default="#7ef9d2", nullable=False)
     is_system: Mapped[bool] = mapped_column(default=False, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(UTC), nullable=False,

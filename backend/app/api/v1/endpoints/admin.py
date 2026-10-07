@@ -7,7 +7,12 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.core.deps import get_current_user, get_current_user_id, get_db, require_csrf, require_permission
+from app.core.deps import (
+    get_current_user,
+    get_db,
+    require_csrf,
+    require_permission,
+)
 from app.db.models import AuditEvent, Permission, Role, Session, User
 from app.schemas.admin import (
     AdminUserResponse,
@@ -15,11 +20,25 @@ from app.schemas.admin import (
     RoleAssignmentRequest,
     RoleCreateRequest,
     RoleResponse,
+    RoleUpdateRequest,
     UserStatusUpdateRequest,
 )
-from app.services.permission_service import PERMISSION_REGISTRY
+from app.services.permission_service import PERMISSION_REGISTRY, role_identifier
 
 router = APIRouter(prefix="/admin", tags=["admin"])
+
+
+async def find_role(db: AsyncSession, identifier: str) -> Role | None:
+    role = await db.scalar(
+        select(Role).where((Role.id == identifier) | (Role.key == identifier))
+    )
+    if role is not None:
+        return role
+    roles = await db.scalars(select(Role))
+    return next(
+        (candidate for candidate in roles if role_identifier(candidate) == identifier),
+        None,
+    )
 
 
 @router.get("/users")
@@ -57,10 +76,11 @@ async def list_roles(
     roles = await db.scalars(select(Role).options(selectinload(Role.permissions)).order_by(Role.key))
     return [
         RoleResponse(
-            id=role.id,
+            id=role_identifier(role),
             key=role.key,
             name=role.name,
             description=role.description,
+            color=role.color,
             is_system=role.is_system,
             permissions=sorted(permission.key for permission in role.permissions),
         )
@@ -92,29 +112,36 @@ async def get_user(
     "/roles",
     response_model=RoleResponse,
     status_code=status.HTTP_201_CREATED,
-    dependencies=[Depends(require_csrf), Depends(require_permission("platform.admin.roles.manage"))],
+    dependencies=[Depends(require_csrf), Depends(require_permission("roles.create"))],
 )
 async def create_role(
     payload: RoleCreateRequest,
     actor: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> RoleResponse:
-    if any(key not in PERMISSION_REGISTRY for key in payload.permission_keys):
+    permission_keys = list(dict.fromkeys(payload.permission_keys))
+    if any(key not in PERMISSION_REGISTRY for key in permission_keys):
         raise HTTPException(status_code=422, detail="Unknown permission node")
     if await db.scalar(select(Role.id).where(Role.key == payload.key)):
         raise HTTPException(status_code=409, detail="Role key already exists")
     permissions = list(
         (
-            await db.scalars(select(Permission).where(Permission.key.in_(payload.permission_keys)))
+            await db.scalars(select(Permission).where(Permission.key.in_(permission_keys)))
         ).all()
-    ) if payload.permission_keys else []
+    ) if permission_keys else []
     existing = {permission.key for permission in permissions}
-    for key in payload.permission_keys:
+    for key in permission_keys:
         if key not in existing:
             permission = Permission(key=key, description=f"Allows {key} actions")
             db.add(permission)
             permissions.append(permission)
-    role = Role(key=payload.key, name=payload.name, description=payload.description, is_system=False)
+    role = Role(
+        key=payload.key,
+        name=payload.name,
+        description=payload.description,
+        color=payload.color.lower(),
+        is_system=False,
+    )
     role.permissions = permissions
     db.add(role)
     await db.flush()
@@ -129,12 +156,77 @@ async def create_role(
     )
     await db.commit()
     return RoleResponse(
-        id=role.id,
+        id=role_identifier(role),
         key=role.key,
         name=role.name,
         description=role.description,
+        color=role.color,
         is_system=role.is_system,
         permissions=sorted(item.key for item in permissions),
+    )
+
+
+@router.patch(
+    "/roles/{role_id}",
+    response_model=RoleResponse,
+    dependencies=[
+        Depends(require_csrf),
+        Depends(require_permission("platform.admin.roles.manage")),
+    ],
+)
+async def update_role(
+    role_id: str,
+    payload: RoleUpdateRequest,
+    actor: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> RoleResponse:
+    role = await find_role(db, role_id)
+    if role is None:
+        raise HTTPException(status_code=404, detail="Role not found")
+    if role.is_system:
+        raise HTTPException(status_code=409, detail="System roles cannot be edited")
+
+    updates = payload.model_dump(exclude_unset=True)
+    permission_keys = updates.pop("permission_keys", None)
+    if permission_keys is not None:
+        permission_keys = list(dict.fromkeys(permission_keys))
+        if any(key not in PERMISSION_REGISTRY for key in permission_keys):
+            raise HTTPException(status_code=422, detail="Unknown permission node")
+        permissions = list(
+            (await db.scalars(select(Permission).where(Permission.key.in_(permission_keys)))).all()
+        ) if permission_keys else []
+        existing = {permission.key for permission in permissions}
+        for key in permission_keys:
+            if key not in existing:
+                permission = Permission(key=key, description=f"Allows {key} actions")
+                db.add(permission)
+                permissions.append(permission)
+        role.permissions = permissions
+
+    if "color" in updates and updates["color"] is not None:
+        updates["color"] = updates["color"].lower()
+    for field, value in updates.items():
+        setattr(role, field, value)
+    db.add(
+        AuditEvent(
+            actor_user_id=actor.id,
+            action="role.updated",
+            target_type="role",
+            target_id=role.id,
+            details=f"Updated role {role.key}",
+        )
+    )
+    await db.commit()
+    await db.refresh(role)
+    await db.refresh(role, attribute_names=["permissions"])
+    return RoleResponse(
+        id=role_identifier(role),
+        key=role.key,
+        name=role.name,
+        description=role.description,
+        color=role.color,
+        is_system=role.is_system,
+        permissions=sorted(permission.key for permission in role.permissions),
     )
 
 
@@ -176,7 +268,7 @@ async def assign_role(
     db: AsyncSession = Depends(get_db),
 ) -> None:
     user = await db.scalar(select(User).where(User.id == user_id).options(selectinload(User.roles)))
-    role = await db.get(Role, role_id)
+    role = await find_role(db, role_id)
     if user is None or role is None:
         raise HTTPException(status_code=404, detail="User or role not found")
     if role not in user.roles:
@@ -206,7 +298,7 @@ async def revoke_role(
     db: AsyncSession = Depends(get_db),
 ) -> None:
     user = await db.scalar(select(User).where(User.id == user_id).options(selectinload(User.roles)))
-    role = await db.get(Role, role_id)
+    role = await find_role(db, role_id)
     if user is None or role is None:
         raise HTTPException(status_code=404, detail="User or role not found")
     if role.is_system:
@@ -242,8 +334,16 @@ async def update_user_status(
         raise HTTPException(status_code=404, detail="User not found")
     if user.id == actor.id and not payload.active:
         raise HTTPException(status_code=409, detail="Administrators cannot disable their own account")
-    if user.is_superuser and not payload.active:
-        active_admins = await db.scalar(select(func.count()).select_from(User).where(User.is_superuser.is_(True), User.is_active.is_(True))) or 0
+    has_superuser_role = any(role.key == "superuser" for role in user.roles)
+    if (user.is_superuser or has_superuser_role) and not payload.active:
+        active_admins = await db.scalar(
+            select(func.count())
+            .select_from(User)
+            .where(
+                User.is_active.is_(True),
+                (User.is_superuser.is_(True) | User.roles.any(Role.key == "superuser")),
+            )
+        ) or 0
         if active_admins <= 1:
             raise HTTPException(status_code=409, detail="Cannot disable the last active administrator")
     user.is_active = payload.active

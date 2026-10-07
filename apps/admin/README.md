@@ -5,10 +5,13 @@ This app provides the platform administration surface for user management, role/
 ## Included flows
 
 - User search and status management
-- Role and permission management
+- Role creation and editing with lowercase alphanumeric IDs, configurable colors, and permission nodes
+- Role assignment and revocation from user details (system roles are protected)
 - Project posting and moderation actions
 - Audit log review and access control checks
 - Shared auth guards from `@hungernet/auth`
+
+The built-in `Member` role has no permission nodes. `Superuser` receives every registered permission node, including `roles.create`. Role colors are six-digit hexadecimal values.
 
 ## Local development
 
