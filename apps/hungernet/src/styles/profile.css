@@ -18,8 +18,8 @@
 .user-profile-cover {
   min-height: clamp(8rem, 24vw, 13rem);
   background:
-    radial-gradient(ellipse at 75% 12%, var(--site-glow-secondary), transparent 28%),
-    radial-gradient(ellipse at 20% 30%, var(--site-glow-primary), transparent 24%),
+    radial-gradient(ellipse at 75% 12%, var(--site-glow-secondary), transparent var(--site-glow-radius-secondary, 28%)),
+    radial-gradient(ellipse at 20% 30%, var(--site-glow-primary), transparent var(--site-glow-radius-primary, 24%)),
     linear-gradient(128deg, rgba(11, 29, 40, 0.9), rgba(18, 25, 42, 0.85));
   border-bottom: 1px solid var(--glass-border);
 }
