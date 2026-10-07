@@ -13,50 +13,50 @@
 
 :root[data-site="ifamished"] {
   --site-bg: #071923;
-  --site-mid: #0d2c38;
-  --site-end: #2b1d2f;
-  --site-glow-primary: rgba(82, 211, 234, 0.18);
-  --site-glow-secondary: rgba(255, 125, 157, 0.12);
-  --color-primary: #42e0ee;
-  --color-primary-strong: #19b9df;
-  --color-secondary: #ff789d;
-  --site-tertiary: #9bffc1;
+  --site-mid: #0d2b37;
+  --site-end: #1f283f;
+  --site-glow-primary: rgba(74, 216, 230, 0.2);
+  --site-glow-secondary: rgba(85, 146, 255, 0.15);
+  --color-primary: #4ad9e6;
+  --color-primary-strong: #2bbad1;
+  --color-secondary: #7fc6ff;
+  --site-tertiary: #9ff6d2;
 }
 
 :root[data-site="hungernet"] {
-  --site-bg: #081d1a;
-  --site-mid: #123f38;
-  --site-end: #1d2d41;
-  --site-glow-primary: rgba(83, 240, 199, 0.18);
-  --site-glow-secondary: rgba(110, 185, 255, 0.12);
-  --color-primary: #53f0c7;
-  --color-primary-strong: #20c6b4;
-  --color-secondary: #6eb9ff;
-  --site-tertiary: #ffd37d;
+  --site-bg: #071f1d;
+  --site-mid: #0f4039;
+  --site-end: #1c3447;
+  --site-glow-primary: rgba(105, 255, 220, 0.24);
+  --site-glow-secondary: rgba(120, 211, 255, 0.18);
+  --color-primary: #78f9d5;
+  --color-primary-strong: #4de0c3;
+  --color-secondary: #7bd6ff;
+  --site-tertiary: #d8ffc0;
 }
 
 :root[data-site="hungersmp"] {
-  --site-bg: #0b0d1e;
-  --site-mid: #1b1e3f;
-  --site-end: #122f39;
-  --site-glow-primary: rgba(155, 179, 255, 0.16);
-  --site-glow-secondary: rgba(67, 228, 221, 0.11);
-  --color-primary: #9bb3ff;
-  --color-primary-strong: #657eff;
-  --color-secondary: #43e4dd;
-  --site-tertiary: #ffab84;
+  --site-bg: #090d1e;
+  --site-mid: #171d38;
+  --site-end: #1d2d41;
+  --site-glow-primary: rgba(163, 175, 255, 0.2);
+  --site-glow-secondary: rgba(121, 205, 255, 0.14);
+  --color-primary: #a9b7ff;
+  --color-primary-strong: #7b8dff;
+  --color-secondary: #7dd8ff;
+  --site-tertiary: #d7c8ff;
 }
 
 :root[data-site="optifineforfabric"] {
-  --site-bg: #17130b;
-  --site-mid: #2a2112;
-  --site-end: #2d2218;
-  --site-glow-primary: rgba(255, 170, 92, 0.16);
-  --site-glow-secondary: rgba(255, 211, 140, 0.12);
-  --color-primary: #56c7ff;
-  --color-primary-strong: #2598e7;
-  --color-secondary: #b8fa79;
-  --site-tertiary: #ffc37a;
+  --site-bg: #170f08;
+  --site-mid: #2c1d0f;
+  --site-end: #352a1a;
+  --site-glow-primary: rgba(255, 168, 92, 0.22);
+  --site-glow-secondary: rgba(255, 212, 112, 0.18);
+  --color-primary: #f7b25d;
+  --color-primary-strong: #ef8f43;
+  --color-secondary: #f7d979;
+  --site-tertiary: #ffdb9b;
 }
 
 :root:is([data-site="ifamished"], [data-site="hungernet"], [data-site="hungersmp"], [data-site="optifineforfabric"]) body {
