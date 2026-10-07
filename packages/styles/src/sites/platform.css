@@ -61,9 +61,6 @@
   --glow-3: rgba(255, 208, 138, 0.11);
   --site-glow-primary: rgba(255, 102, 82, 0.14);
   --site-glow-secondary: rgba(255, 166, 83, 0.1);
-  --site-glow-radius-primary: 30%;
-  --site-glow-radius-secondary: 35%;
-  --site-glow-radius-tertiary: 32%;
   --glass-border-strong: rgba(255, 116, 95, 0.44);
   --btn-primary-start: rgba(255, 116, 95, 0.2);
   --btn-primary-end: rgba(255, 173, 94, 0.16);
@@ -191,9 +188,9 @@ html {
 
 body {
   background:
-    radial-gradient(circle at 18% 12%, var(--site-glow-primary, rgba(99, 246, 214, 0.15)), transparent var(--site-glow-radius-primary, 24%)),
-    radial-gradient(circle at 82% 18%, var(--site-glow-secondary, rgba(155, 140, 255, 0.18)), transparent var(--site-glow-radius-secondary, 28%)),
-    radial-gradient(circle at 50% 82%, color-mix(in srgb, var(--site-glow-primary, rgba(99, 246, 214, 0.15)) 55%, transparent), transparent var(--site-glow-radius-tertiary, 26%)),
+    radial-gradient(ellipse 22% 19% at 14% 11%, var(--site-glow-primary) 0%, transparent 100%),
+    radial-gradient(ellipse 19% 17% at 86% 15%, var(--site-glow-secondary) 0%, transparent 100%),
+    radial-gradient(ellipse 20% 15% at 50% 86%, color-mix(in srgb, var(--site-glow-primary) 55%, transparent) 0%, transparent 100%),
     linear-gradient(180deg, var(--site-bg, #07111b) 0%, var(--site-mid, #0b1623) 100%);
   background-attachment: fixed;
   font-family: var(--sans);
