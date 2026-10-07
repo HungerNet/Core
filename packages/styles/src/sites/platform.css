@@ -46,35 +46,151 @@
   --radius-xl: 2rem;
 }
 
+:root[data-site="hungernet"] {
+  --accent-1: #55f0b5;
+  --accent-2: #55c7ff;
+  --accent-3: #d8ff70;
+  --accent-glow-1: rgba(85, 240, 181, 0.4);
+  --accent-glow-2: rgba(85, 199, 255, 0.3);
+  --bg-1: #061a14;
+  --bg-2: #0a3026;
+  --bg-3: #12483b;
+  --bg-4: #142e40;
+  --glow-1: rgba(85, 240, 181, 0.22);
+  --glow-2: rgba(216, 255, 112, 0.16);
+  --glow-3: rgba(85, 199, 255, 0.18);
+  --site-glow-primary: rgba(61, 255, 174, 0.3);
+  --site-glow-secondary: rgba(87, 196, 255, 0.27);
+  --glass-border-strong: rgba(85, 240, 181, 0.5);
+  --btn-primary-start: rgba(85, 240, 181, 0.32);
+  --btn-primary-end: rgba(85, 199, 255, 0.24);
+  --btn-primary-hover-start: rgba(85, 240, 181, 0.48);
+  --btn-primary-hover-end: rgba(85, 199, 255, 0.38);
+  --btn-primary-shadow: rgba(85, 240, 181, 0.32);
+  --btn-border: rgba(85, 240, 181, 0.52);
+  --btn-hover-shadow: rgba(85, 240, 181, 0.24);
+  --tag-bg: rgba(85, 240, 181, 0.1);
+  --tag-border: rgba(85, 240, 181, 0.3);
+  --tag-text: #8dffd0;
+  --focus-outline: #8dffd0;
+  --focus-ring: rgba(85, 240, 181, 0.22);
+  --hover-glow: rgba(85, 240, 181, 0.16);
+  --link-color: #7dffd0;
+  --link-hover-color: #95dcff;
+  --link-visited-color: #d8ff9b;
+}
+
+:root[data-site="hungersmp"] {
+  --accent-1: #a7a0ff;
+  --accent-2: #ff78c8;
+  --accent-3: #69e9f2;
+  --accent-glow-1: rgba(167, 160, 255, 0.42);
+  --accent-glow-2: rgba(255, 120, 200, 0.3);
+  --bg-1: #100a22;
+  --bg-2: #29204f;
+  --bg-3: #172d50;
+  --bg-4: #391b43;
+  --glow-1: rgba(167, 160, 255, 0.24);
+  --glow-2: rgba(255, 120, 200, 0.19);
+  --glow-3: rgba(105, 233, 242, 0.17);
+  --site-glow-primary: rgba(154, 115, 255, 0.34);
+  --site-glow-secondary: rgba(255, 89, 184, 0.25);
+  --glass-border-strong: rgba(255, 120, 200, 0.48);
+  --btn-primary-start: rgba(167, 160, 255, 0.32);
+  --btn-primary-end: rgba(255, 120, 200, 0.24);
+  --btn-primary-hover-start: rgba(167, 160, 255, 0.48);
+  --btn-primary-hover-end: rgba(255, 120, 200, 0.38);
+  --btn-primary-shadow: rgba(167, 160, 255, 0.32);
+  --btn-border: rgba(167, 160, 255, 0.54);
+  --btn-hover-shadow: rgba(255, 120, 200, 0.24);
+  --tag-bg: rgba(167, 160, 255, 0.11);
+  --tag-border: rgba(167, 160, 255, 0.3);
+  --tag-text: #c3beff;
+  --focus-outline: #b9b2ff;
+  --focus-ring: rgba(167, 160, 255, 0.23);
+  --hover-glow: rgba(255, 120, 200, 0.17);
+  --link-color: #c4baff;
+  --link-hover-color: #ff9ad7;
+  --link-visited-color: #8cecf2;
+}
+
+:root[data-site="ifamished"] {
+  --accent-1: #ff8067;
+  --accent-2: #ffc857;
+  --accent-3: #79d9ff;
+  --accent-glow-1: rgba(255, 128, 103, 0.4);
+  --accent-glow-2: rgba(255, 200, 87, 0.3);
+  --bg-1: #1b0d18;
+  --bg-2: #3a1728;
+  --bg-3: #3e2031;
+  --bg-4: #182c43;
+  --glow-1: rgba(255, 128, 103, 0.22);
+  --glow-2: rgba(255, 200, 87, 0.16);
+  --glow-3: rgba(121, 217, 255, 0.17);
+  --site-glow-primary: rgba(255, 103, 108, 0.31);
+  --site-glow-secondary: rgba(255, 190, 83, 0.25);
+  --glass-border-strong: rgba(255, 128, 103, 0.5);
+  --btn-primary-start: rgba(255, 128, 103, 0.32);
+  --btn-primary-end: rgba(255, 200, 87, 0.24);
+  --btn-primary-hover-start: rgba(255, 128, 103, 0.48);
+  --btn-primary-hover-end: rgba(255, 200, 87, 0.38);
+  --btn-primary-shadow: rgba(255, 128, 103, 0.32);
+  --btn-border: rgba(255, 128, 103, 0.54);
+  --btn-hover-shadow: rgba(255, 128, 103, 0.24);
+  --tag-bg: rgba(255, 128, 103, 0.1);
+  --tag-border: rgba(255, 128, 103, 0.3);
+  --tag-text: #ffad94;
+  --focus-outline: #ff9b82;
+  --focus-ring: rgba(255, 128, 103, 0.23);
+  --hover-glow: rgba(255, 128, 103, 0.16);
+  --link-color: #ff9c7d;
+  --link-hover-color: #ffd17a;
+  --link-visited-color: #9bdfff;
+}
+
+:root[data-site="optifineforfabric"] {
+  --accent-1: #c6f36a;
+  --accent-2: #ffd166;
+  --accent-3: #63d6c7;
+  --accent-glow-1: rgba(198, 243, 106, 0.4);
+  --accent-glow-2: rgba(255, 209, 102, 0.3);
+  --bg-1: #10190b;
+  --bg-2: #243116;
+  --bg-3: #3b3416;
+  --bg-4: #10302e;
+  --glow-1: rgba(198, 243, 106, 0.2);
+  --glow-2: rgba(255, 209, 102, 0.18);
+  --glow-3: rgba(99, 214, 199, 0.16);
+  --site-glow-primary: rgba(186, 255, 83, 0.29);
+  --site-glow-secondary: rgba(255, 192, 68, 0.27);
+  --glass-border-strong: rgba(198, 243, 106, 0.5);
+  --btn-primary-start: rgba(198, 243, 106, 0.32);
+  --btn-primary-end: rgba(255, 209, 102, 0.24);
+  --btn-primary-hover-start: rgba(198, 243, 106, 0.48);
+  --btn-primary-hover-end: rgba(255, 209, 102, 0.38);
+  --btn-primary-shadow: rgba(198, 243, 106, 0.32);
+  --btn-border: rgba(198, 243, 106, 0.54);
+  --btn-hover-shadow: rgba(198, 243, 106, 0.24);
+  --tag-bg: rgba(198, 243, 106, 0.1);
+  --tag-border: rgba(198, 243, 106, 0.3);
+  --tag-text: #d4ff83;
+  --focus-outline: #d4ff83;
+  --focus-ring: rgba(198, 243, 106, 0.23);
+  --hover-glow: rgba(198, 243, 106, 0.16);
+  --link-color: #d4ff83;
+  --link-hover-color: #ffe08b;
+  --link-visited-color: #80e7d7;
+}
+
 html {
-  background: #07111b;
-}
-
-[data-site="hungernet"] {
-  --site-glow-primary: rgba(99, 246, 214, 0.15);
-  --site-glow-secondary: rgba(155, 140, 255, 0.18);
-}
-
-[data-site="hungersmp"] {
-  --site-glow-primary: rgba(90, 220, 190, 0.14);
-  --site-glow-secondary: rgba(79, 199, 255, 0.16);
-}
-
-[data-site="ifamished"] {
-  --site-glow-primary: rgba(79, 168, 255, 0.15);
-  --site-glow-secondary: rgba(126, 220, 255, 0.16);
-}
-
-[data-site="optifineforfabric"] {
-  --site-glow-primary: rgba(143, 162, 255, 0.16);
-  --site-glow-secondary: rgba(79, 199, 255, 0.15);
+  background: var(--bg-1);
 }
 
 body {
   background:
-    radial-gradient(circle at top left, var(--site-glow-primary), transparent 20%),
-    radial-gradient(circle at top right, var(--site-glow-secondary), transparent 24%),
-    linear-gradient(180deg, #07111b 0%, #0b1623 100%);
+    radial-gradient(ellipse 70% 58% at 7% 4%, var(--site-glow-primary), transparent 74%),
+    radial-gradient(ellipse 56% 66% at 96% 30%, var(--site-glow-secondary), transparent 76%),
+    linear-gradient(135deg, var(--bg-1) 0%, var(--bg-2) 34%, var(--bg-3) 67%, var(--bg-4) 100%);
   background-attachment: fixed;
   font-family: var(--sans);
   color: var(--text-primary);
