@@ -23,6 +23,7 @@ from app.core.config import (
     NORMAL_SHARED_COOKIE_DOMAIN,
     OAUTH_CALLBACK_ENDPOINT,
     RETURN_ORIGINS,
+    app_csrf_cookie_name,
     is_allowed_origin,
     is_workers_dev_origin,
     settings,
@@ -36,7 +37,7 @@ from app.core.security import (
     verify_session_token,
     verify_totp,
 )
-from app.db.models import OAuthTransaction, Role, Session, User
+from app.db.models import AppRefreshToken, OAuthTransaction, Role, Session, User
 from app.integrations.oauth import (
     OAuthProviderError,
     authorization_url,
@@ -76,6 +77,10 @@ class AppTokenRequest(BaseModel):
     redirect_uri: str = Field(min_length=1, max_length=500)
     code: str = Field(min_length=32, max_length=128)
     code_verifier: str = Field(min_length=43, max_length=128)
+
+
+class AppRefreshRequest(BaseModel):
+    client_id: str = Field(min_length=1, max_length=48)
 
 
 def _registered_app(client_id: str, redirect_uri: str) -> str:
@@ -123,7 +128,64 @@ def _auth_cookie_policy(
         cookie_domain = None
         if same_site is None and settings.session_cookie_secure:
             cookie_same_site = "none"
+    elif origin and urlsplit(origin).hostname in {"localhost", "127.0.0.1"}:
+        cookie_domain = None
     return cookie_domain, cookie_same_site
+
+
+def _refresh_cookie_name(client_id: str) -> str:
+    return f"hungernet_refresh_{client_id}"
+
+
+def _refresh_cookie_policy(origin: str | None) -> tuple[str | None, str]:
+    cookie_domain, cookie_same_site = _auth_cookie_policy(origin)
+    if origin:
+        hostname = urlsplit(origin).hostname
+        if hostname and hostname != "hungernet.dev" and not hostname.endswith(".hungernet.dev"):
+            cookie_domain = None
+    return cookie_domain, cookie_same_site
+
+
+def _require_app_origin(
+    client_id: str,
+    origin: str | None,
+    redirect_uri: str | None = None,
+) -> None:
+    callbacks = APP_CALLBACKS.get(client_id, [])
+    if not origin or f"{origin.rstrip('/')}/auth/callback" not in callbacks:
+        raise HTTPException(status_code=403, detail="Untrusted application origin")
+    if redirect_uri:
+        parsed_redirect = urlsplit(redirect_uri)
+        redirect_origin = f"{parsed_redirect.scheme}://{parsed_redirect.netloc}"
+        if redirect_origin != origin:
+            raise HTTPException(
+                status_code=403,
+                detail="Application origin does not match redirect URL",
+            )
+
+
+def _set_refresh_cookie(
+    response: Response,
+    *,
+    client_id: str,
+    token: str,
+    expires_at: datetime,
+    origin: str | None,
+) -> None:
+    if expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=UTC)
+    cookie_domain, cookie_same_site = _refresh_cookie_policy(origin)
+    response.set_cookie(
+        _refresh_cookie_name(client_id),
+        token,
+        max_age=max(0, int((expires_at - datetime.now(UTC)).total_seconds())),
+        expires=expires_at,
+        httponly=True,
+        secure=settings.session_cookie_secure,
+        samesite=cookie_same_site,
+        domain=cookie_domain,
+        path="/",
+    )
 
 
 async def _create_login_response(
@@ -240,8 +302,13 @@ async def authorize_application(
 async def exchange_authorization_code(
     payload: AppTokenRequest,
     db: AsyncSession = Depends(get_db),
+    request: Request = None,
+    response: Response = None,
 ) -> dict[str, str | int]:
     _registered_app(payload.client_id, payload.redirect_uri)
+    origin = request.headers.get("origin") if request else None
+    if origin:
+        _require_app_origin(payload.client_id, origin, payload.redirect_uri)
     if not re.fullmatch(r"[A-Za-z0-9_-]{43,128}", payload.code_verifier):
         raise HTTPException(status_code=400, detail="Invalid PKCE verifier")
     digest = hashlib.sha256(payload.code_verifier.encode("ascii")).digest()
@@ -277,19 +344,148 @@ async def exchange_authorization_code(
     if session is None or user is None:
         raise HTTPException(status_code=401, detail="HungerNet session is no longer active")
 
-    transaction.consumed_at = datetime.now(UTC)
+    now = datetime.now(UTC)
+    refresh_token = secrets.token_urlsafe(48)
+    db.add(
+        AppRefreshToken(
+            session_id=session.id,
+            user_id=user.id,
+            client_id=payload.client_id,
+            token_hash=hash_token(refresh_token),
+            expires_at=session.expires_at,
+        )
+    )
+    transaction.consumed_at = now
     await db.commit()
     access_token = generate_session_token(
         user.id,
         session.id,
         scope="profile",
         audience=payload.client_id,
-        expires_minutes=settings.jwt_expiry_minutes,
+        expires_minutes=settings.access_token_expiry_minutes,
+    )
+    if response is None:
+        response = Response()
+    _set_refresh_cookie(
+        response,
+        client_id=payload.client_id,
+        token=refresh_token,
+        expires_at=session.expires_at,
+        origin=origin,
     )
     return {
         "access_token": access_token,
         "token_type": "Bearer",
-        "expires_in": settings.jwt_expiry_minutes * 60,
+        "expires_in": settings.access_token_expiry_minutes * 60,
+        "scope": "profile",
+    }
+
+
+@router.post("/refresh")
+async def refresh_application_token(
+    payload: AppRefreshRequest,
+    request: Request,
+    response: Response,
+    db: AsyncSession = Depends(get_db),
+) -> dict[str, str | int]:
+    _require_app_origin(payload.client_id, request.headers.get("origin"))
+    await require_csrf(request)
+    token = request.cookies.get(_refresh_cookie_name(payload.client_id))
+    if not token:
+        raise HTTPException(status_code=401, detail="Application refresh token is missing")
+
+    now = datetime.now(UTC)
+    refresh_record = await db.scalar(
+        select(AppRefreshToken)
+        .where(
+            AppRefreshToken.token_hash == hash_token(token),
+            AppRefreshToken.client_id == payload.client_id,
+            AppRefreshToken.expires_at > now,
+        )
+        .with_for_update()
+    )
+    if refresh_record is None:
+        raise HTTPException(
+            status_code=401,
+            detail="Application refresh token is invalid or expired",
+        )
+
+    session = await db.scalar(
+        select(Session).where(
+            Session.id == refresh_record.session_id,
+            Session.user_id == refresh_record.user_id,
+            Session.revoked_at.is_(None),
+            Session.expires_at > now,
+        )
+    )
+    user = await db.scalar(
+        select(User).where(User.id == refresh_record.user_id, User.is_active.is_(True))
+    )
+    if session is None or user is None:
+        raise HTTPException(status_code=401, detail="HungerNet session is no longer active")
+
+    if refresh_record.revoked_at is not None:
+        revoked_at = refresh_record.revoked_at
+        if revoked_at.tzinfo is None:
+            revoked_at = revoked_at.replace(tzinfo=UTC)
+        if now - revoked_at <= timedelta(seconds=15):
+            access_token = generate_session_token(
+                user.id,
+                session.id,
+                scope="profile",
+                audience=payload.client_id,
+                expires_minutes=settings.access_token_expiry_minutes,
+            )
+            return {
+                "access_token": access_token,
+                "token_type": "Bearer",
+                "expires_in": settings.access_token_expiry_minutes * 60,
+                "scope": "profile",
+            }
+
+        session.revoked_at = now
+        active_tokens = await db.scalars(
+            select(AppRefreshToken).where(
+                AppRefreshToken.session_id == session.id,
+                AppRefreshToken.revoked_at.is_(None),
+            )
+        )
+        for active_token in active_tokens:
+            active_token.revoked_at = now
+        await db.commit()
+        raise HTTPException(status_code=401, detail="Application refresh token reuse detected")
+
+    refresh_record.revoked_at = now
+    replacement_token = secrets.token_urlsafe(48)
+    db.add(
+        AppRefreshToken(
+            session_id=session.id,
+            user_id=user.id,
+            client_id=payload.client_id,
+            token_hash=hash_token(replacement_token),
+            expires_at=session.expires_at,
+        )
+    )
+    await db.commit()
+
+    _set_refresh_cookie(
+        response,
+        client_id=payload.client_id,
+        token=replacement_token,
+        expires_at=session.expires_at,
+        origin=request.headers.get("origin"),
+    )
+    access_token = generate_session_token(
+        user.id,
+        session.id,
+        scope="profile",
+        audience=payload.client_id,
+        expires_minutes=settings.access_token_expiry_minutes,
+    )
+    return {
+        "access_token": access_token,
+        "token_type": "Bearer",
+        "expires_in": settings.access_token_expiry_minutes * 60,
         "scope": "profile",
     }
 
@@ -481,13 +677,21 @@ async def get_session_status(
 
 
 @router.get("/csrf")
-async def issue_csrf_token(request: Request, response: Response) -> dict[str, str]:
+async def issue_csrf_token(
+    request: Request,
+    response: Response,
+    client_id: str | None = None,
+) -> dict[str, str]:
+    if client_id:
+        if client_id not in APP_CALLBACKS:
+            raise HTTPException(status_code=400, detail="Unknown HungerNet application")
+        _require_app_origin(client_id, request.headers.get("origin"))
     token = secrets.token_urlsafe(32)
-    cookie_domain, cookie_same_site = _auth_cookie_policy(request.headers.get("origin"))
+    cookie_domain, cookie_same_site = _refresh_cookie_policy(request.headers.get("origin"))
     response.set_cookie(
-        settings.csrf_cookie_name,
+        app_csrf_cookie_name(client_id) if client_id else settings.csrf_cookie_name,
         token,
-        max_age=3600,
+        max_age=settings.session_expiry_days * 24 * 60 * 60,
         secure=settings.session_cookie_secure,
         httponly=False,
         samesite=cookie_same_site,
@@ -648,15 +852,33 @@ async def logout(
         authorization = request.headers.get("authorization", "").split(maxsplit=1)
         if len(authorization) == 2 and authorization[0].lower() == "bearer":
             token = authorization[1]
-    if token:
-        session = await db.scalar(
-            select(Session).where(Session.user_id == user_id, Session.token_hash == hash_token(token))
+    claims = verify_session_token(token) if token else None
+    session = None
+    if claims:
+        session_query = select(Session).where(
+            Session.id == claims.get("sid"),
+            Session.user_id == user_id,
+            Session.revoked_at.is_(None),
         )
-        if session and session.revoked_at is None:
-            session.revoked_at = datetime.now(UTC)
-            await db.commit()
+        if claims.get("scope", "session") == "session":
+            session_query = session_query.where(Session.token_hash == hash_token(token))
+        session = await db.scalar(session_query)
+    if session:
+        now = datetime.now(UTC)
+        session.revoked_at = now
+        refresh_tokens = await db.scalars(
+            select(AppRefreshToken).where(
+                AppRefreshToken.session_id == session.id,
+                AppRefreshToken.revoked_at.is_(None),
+            )
+        )
+        for refresh_token in refresh_tokens:
+            refresh_token.revoked_at = now
+        await db.commit()
     response = Response(status_code=204)
-    cookie_domain, cookie_same_site = _auth_cookie_policy(request.headers.get("origin"))
+    origin = request.headers.get("origin")
+    cookie_domain, cookie_same_site = _auth_cookie_policy(origin)
+    refresh_cookie_domain, refresh_cookie_same_site = _refresh_cookie_policy(origin)
     response.delete_cookie(
         settings.session_cookie_name,
         domain=cookie_domain,
@@ -667,11 +889,27 @@ async def logout(
     )
     response.delete_cookie(
         settings.csrf_cookie_name,
-        domain=cookie_domain,
+        domain=refresh_cookie_domain,
         path="/",
         secure=settings.session_cookie_secure,
         samesite=cookie_same_site,
     )
+    for client_id in APP_CALLBACKS:
+        response.delete_cookie(
+            app_csrf_cookie_name(client_id),
+            domain=refresh_cookie_domain,
+            path="/",
+            secure=settings.session_cookie_secure,
+            samesite=refresh_cookie_same_site,
+        )
+        response.delete_cookie(
+            _refresh_cookie_name(client_id),
+            domain=refresh_cookie_domain,
+            path="/",
+            secure=settings.session_cookie_secure,
+            httponly=True,
+            samesite=refresh_cookie_same_site,
+        )
     return response
 
 

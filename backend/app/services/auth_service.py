@@ -251,8 +251,12 @@ class AuthService:
     ) -> tuple[str, Session]:
         now = datetime.now(UTC)
         session_id = str(uuid4())
-        expires_at = now + timedelta(minutes=settings.jwt_expiry_minutes)
-        token = generate_session_token(user.id, session_id)
+        expires_at = now + timedelta(days=settings.session_expiry_days)
+        token = generate_session_token(
+            user.id,
+            session_id,
+            expires_minutes=settings.session_expiry_days * 24 * 60,
+        )
         db_session = Session(
             id=session_id,
             user_id=user.id,

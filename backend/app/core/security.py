@@ -35,7 +35,14 @@ def generate_session_token(
         "sid": session_id,
         "scope": scope,
         "iat": int(now.timestamp()),
-        "exp": int((now + timedelta(minutes=expires_minutes or settings.jwt_expiry_minutes)).timestamp()),
+        "exp": int(
+            (
+                now
+                + timedelta(
+                    minutes=expires_minutes or settings.access_token_expiry_minutes
+                )
+            ).timestamp()
+        ),
     }
     if audience:
         payload["aud"] = audience

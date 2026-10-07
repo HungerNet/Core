@@ -20,7 +20,7 @@ interface PublicProfile {
   roles: ProfileRole[];
 }
 
-const api = createApiClient();
+const api = createApiClient({ clientId: "hungernet" });
 
 export default function UserProfile() {
   const { username = "" } = useParams();

@@ -22,7 +22,10 @@ WORKERS_DEV_ALLOWED_ORIGINS = (
     "https://optifineforfabric.millered001.workers.dev",
     "https://hungersmp.millered001.workers.dev",
 )
-CORS_ORIGINS = NORMAL_ALLOWED_ORIGINS + WORKERS_DEV_ALLOWED_ORIGINS
+LOCAL_DEV_ALLOWED_ORIGINS = tuple(
+    f"http://localhost:{port}" for port in (4173, 4174, 4180, 4181, 4182, 4183)
+)
+CORS_ORIGINS = NORMAL_ALLOWED_ORIGINS + WORKERS_DEV_ALLOWED_ORIGINS + LOCAL_DEV_ALLOWED_ORIGINS
 RETURN_ORIGINS = CORS_ORIGINS
 OAUTH_CALLBACK_ENDPOINT = "https://api.hungernet.dev/api/v1"
 APP_CALLBACKS = {
@@ -85,7 +88,8 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+asyncpg://hungernet:local-development-only@localhost:5432/hungernet"
     jwt_secret: str = "development-only-change-me"
     jwt_algorithm: str = "HS256"
-    jwt_expiry_minutes: int = 60
+    access_token_expiry_minutes: int = Field(default=15, ge=1, le=60)
+    session_expiry_days: int = Field(default=30, ge=1, le=365)
     recent_auth_window_minutes: int = Field(default=10, ge=1, le=60)
     allowed_oauth_providers: list[str] = Field(default_factory=lambda: ["google", "github", "discord"])
     google_client_id: str | None = None
@@ -123,3 +127,7 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
+
+def app_csrf_cookie_name(client_id: str) -> str:
+    return f"{settings.csrf_cookie_name}_{client_id}"

@@ -21,7 +21,7 @@ Required VPS environment variables (configure in the protected VPS environment f
 
 - `POSTGRES_PASSWORD`, `DATABASE_URL`, and `JWT_SECRET` (at least 32 random characters)
 - `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, `DISCORD_CLIENT_ID`, and `DISCORD_CLIENT_SECRET`
-- Optional `POSTGRES_DB`, `POSTGRES_USER`, `JWT_ALGORITHM`, `JWT_EXPIRY_MINUTES`, and rate-limit values
+- Optional `POSTGRES_DB`, `POSTGRES_USER`, `JWT_ALGORITHM`, `ACCESS_TOKEN_EXPIRY_MINUTES`, `SESSION_EXPIRY_DAYS`, and rate-limit values
 
 Use the same password in `POSTGRES_PASSWORD` and `DATABASE_URL`. The database URL must use `postgresql+asyncpg://...@db:5432/...`; URL-encode any reserved characters in the password. CORS and OAuth return origins are hardcoded exact lists in backend source. Redeploy the API after changing those lists.
 

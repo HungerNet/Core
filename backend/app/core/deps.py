@@ -7,7 +7,13 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.core.config import APP_CALLBACKS, CORS_ORIGINS, is_allowed_origin, settings
+from app.core.config import (
+    APP_CALLBACKS,
+    CORS_ORIGINS,
+    app_csrf_cookie_name,
+    is_allowed_origin,
+    settings,
+)
 from app.core.security import hash_token, verify_session_token
 from app.db.models import Role, Session, User
 from app.db.session import get_db_session
@@ -93,11 +99,33 @@ def require_permission(permission: str):
 
 
 async def require_csrf(request: Request) -> None:
-    if not request.cookies.get(settings.session_cookie_name):
+    has_refresh_cookie = any(
+        cookie_name.startswith("hungernet_refresh_")
+        for cookie_name in request.cookies
+    )
+    has_bearer_token = request.headers.get("authorization", "").lower().startswith("bearer ")
+    if (
+        not request.cookies.get(settings.session_cookie_name)
+        and not has_refresh_cookie
+        and not has_bearer_token
+    ):
         return
 
     origin = request.headers.get("origin")
-    csrf_cookie = request.cookies.get(settings.csrf_cookie_name)
+    csrf_cookie_name = settings.csrf_cookie_name
+    for cookie_name in request.cookies:
+        if cookie_name.startswith("hungernet_refresh_"):
+            client_id = cookie_name.removeprefix("hungernet_refresh_")
+            if client_id in APP_CALLBACKS:
+                csrf_cookie_name = app_csrf_cookie_name(client_id)
+                break
+    if csrf_cookie_name == settings.csrf_cookie_name and has_bearer_token:
+        authorization = request.headers.get("authorization", "").split(maxsplit=1)
+        claims = verify_session_token(authorization[1]) if len(authorization) == 2 else None
+        client_id = claims.get("aud") if claims else None
+        if claims and claims.get("scope") == "profile" and client_id in APP_CALLBACKS:
+            csrf_cookie_name = app_csrf_cookie_name(client_id)
+    csrf_cookie = request.cookies.get(csrf_cookie_name)
     csrf_header = request.headers.get("x-csrf-token")
     if origin is None or not is_allowed_origin(origin, CORS_ORIGINS):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Untrusted request origin")

@@ -50,38 +50,42 @@ function mapSessionToUser(session: AuthSession | null): User | null {
 }
 
 export function AuthProvider({ children, clientId }: AuthProviderProps) {
+  const apiClientId = clientId === "accounts" ? undefined : clientId;
   const client = useMemo(
     () =>
       createApiClient({
         credentials: "include",
+        clientId: apiClientId,
       }),
-    [],
+    [apiClientId],
   );
 
-  const [state, setState] = useState<AuthState>({ status: "loading", user: null });
+  const [state, setState] = useState<AuthState>({
+    status: "loading",
+    user: null,
+  });
 
   const refresh = async () => {
     try {
-      const session = await client.get<AuthSession>("/auth/session").catch(() => null);
+      const session = await client
+        .get<AuthSession>("/auth/session")
+        .catch(() => null);
 
       if (session?.user) {
         setState({ status: "authenticated", user: mapSessionToUser(session) });
         return;
       }
 
-      const accessToken = clientId ? sessionStorage.getItem(accessTokenKey(clientId)) : null;
-      if (clientId && accessToken) {
-        const apiUrl = resolveApiBaseUrl();
-        const response = await fetch(`${apiUrl}/auth/userinfo`, {
-          headers: { Authorization: `Bearer ${accessToken}` },
-        });
-        if (response.ok) {
-          const profile = await response.json() as {
+      if (apiClientId) {
+        const profile = await client
+          .get<{
             id: string;
             display_name: string;
             avatar_url: string | null;
             permissions?: string[];
-          };
+          }>("/auth/userinfo")
+          .catch(() => null);
+        if (profile) {
           setState({
             status: "authenticated",
             user: {
@@ -95,7 +99,6 @@ export function AuthProvider({ children, clientId }: AuthProviderProps) {
           });
           return;
         }
-        sessionStorage.removeItem(accessTokenKey(clientId));
       }
       setState({ status: "unauthenticated", user: null });
     } catch {
@@ -104,13 +107,14 @@ export function AuthProvider({ children, clientId }: AuthProviderProps) {
   };
 
   const signOut = async () => {
-    if (clientId) sessionStorage.removeItem(accessTokenKey(clientId));
+    if (apiClientId) client.clearAccessToken();
     try {
       await client.post("/auth/logout", {}).catch(() => undefined);
     } catch {
       // Ignore logout failures and clear UI state.
     }
 
+    if (apiClientId) client.clearAccessToken();
     setState({ status: "unauthenticated", user: null });
   };
 
@@ -119,7 +123,9 @@ export function AuthProvider({ children, clientId }: AuthProviderProps) {
   }, [client]);
 
   return (
-    <AuthContext.Provider value={{ ...state, refresh, signOut }}>{children}</AuthContext.Provider>
+    <AuthContext.Provider value={{ ...state, refresh, signOut }}>
+      {children}
+    </AuthContext.Provider>
   );
 }
 
@@ -143,7 +149,9 @@ export function OAuthSignIn({
   const apiUrl = resolveApiBaseUrl();
   const returnTo = new URL(returnPath, window.location.origin).toString();
   const [providers, setProviders] = useState<string[]>([]);
-  const [mode, setMode] = useState<"signin" | "register" | "setup">(initialMode);
+  const [mode, setMode] = useState<"signin" | "register" | "setup">(
+    initialMode,
+  );
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -160,9 +168,11 @@ export function OAuthSignIn({
       .then((response) => (response.ok ? response.json() : null))
       .then((payload: { providers?: unknown } | null) => {
         if (active && Array.isArray(payload?.providers)) {
-          setProviders(payload.providers.filter((provider): provider is string =>
-            ["google", "github", "discord"].includes(String(provider)),
-          ));
+          setProviders(
+            payload.providers.filter((provider): provider is string =>
+              ["google", "github", "discord"].includes(String(provider)),
+            ),
+          );
         }
       })
       .catch(() => undefined);
@@ -189,21 +199,27 @@ export function OAuthSignIn({
         return;
       }
       if (mode === "register") {
-        const result = await client.post<{ setupSecret: string }>("/auth/register", {
-          email,
-          username,
-          password,
-        });
+        const result = await client.post<{ setupSecret: string }>(
+          "/auth/register",
+          {
+            email,
+            username,
+            password,
+          },
+        );
         setPendingIdentifier(email);
         setSetupSecret(result.setupSecret);
         setCode("");
         return;
       }
       if (mode === "setup") {
-        const result = await client.post<{ setupSecret: string }>("/auth/mfa/setup", {
-          identifier,
-          password,
-        });
+        const result = await client.post<{ setupSecret: string }>(
+          "/auth/mfa/setup",
+          {
+            identifier,
+            password,
+          },
+        );
         setPendingIdentifier(identifier);
         setSetupSecret(result.setupSecret);
         setCode("");
@@ -212,7 +228,11 @@ export function OAuthSignIn({
       await client.post("/auth/login", { identifier, password, code });
       finishSignIn();
     } catch (cause) {
-      if (mode === "signin" && cause instanceof ApiClientError && cause.status === 401) {
+      if (
+        mode === "signin" &&
+        cause instanceof ApiClientError &&
+        cause.status === 401
+      ) {
         const attemptedIdentifier = identifier.trim();
         if (attemptedIdentifier.includes("@")) {
           setEmail(attemptedIdentifier);
@@ -222,9 +242,13 @@ export function OAuthSignIn({
         setPassword("");
         setCode("");
         setMode("register");
-        setError("We couldn't sign you in. Create an account if you're new, or return to sign in.");
+        setError(
+          "We couldn't sign you in. Create an account if you're new, or return to sign in.",
+        );
       } else {
-        setError(cause instanceof Error ? cause.message : "Authentication failed");
+        setError(
+          cause instanceof Error ? cause.message : "Authentication failed",
+        );
       }
     } finally {
       setBusy(false);
@@ -237,11 +261,13 @@ export function OAuthSignIn({
     discord: "Discord",
   };
 
-  const panelTitle =
-    setupSecret ? "Set up your authenticator" :
-    mode === "register" ? "Create your account" :
-    mode === "setup" ? "Add MFA protection" :
-    "Welcome back";
+  const panelTitle = setupSecret
+    ? "Set up your authenticator"
+    : mode === "register"
+      ? "Create your account"
+      : mode === "setup"
+        ? "Add MFA protection"
+        : "Welcome back";
 
   return (
     <div className="auth-shell">
@@ -252,13 +278,30 @@ export function OAuthSignIn({
               <span className="auth-badge">Secure sign-in</span>
               <h3 className="auth-title">{panelTitle}</h3>
             </div>
-            <p className="auth-subtitle">Add this key to your authenticator app, then confirm the six-digit code below.</p>
+            <p className="auth-subtitle">
+              Add this key to your authenticator app, then confirm the six-digit
+              code below.
+            </p>
             <code className="auth-token">{setupSecret}</code>
             <div className="auth-field">
               <label htmlFor="auth-code">Authenticator code</label>
-              <input id="auth-code" autoComplete="one-time-code" inputMode="numeric" maxLength={6} required value={code} onChange={(event) => setCode(event.target.value)} />
+              <input
+                id="auth-code"
+                autoComplete="one-time-code"
+                inputMode="numeric"
+                maxLength={6}
+                required
+                value={code}
+                onChange={(event) => setCode(event.target.value)}
+              />
             </div>
-            <button className="glass-button glass-button--primary glass-button--md" disabled={busy} type="submit">Verify and continue</button>
+            <button
+              className="glass-button glass-button--primary glass-button--md"
+              disabled={busy}
+              type="submit"
+            >
+              Verify and continue
+            </button>
           </form>
         ) : (
           <>
@@ -298,17 +341,38 @@ export function OAuthSignIn({
                 <>
                   <div className="auth-field">
                     <label htmlFor="auth-email">Email</label>
-                    <input id="auth-email" autoComplete="email" required type="email" value={email} onChange={(event) => setEmail(event.target.value)} />
+                    <input
+                      id="auth-email"
+                      autoComplete="email"
+                      required
+                      type="email"
+                      value={email}
+                      onChange={(event) => setEmail(event.target.value)}
+                    />
                   </div>
                   <div className="auth-field">
                     <label htmlFor="auth-username">Username</label>
-                    <input id="auth-username" autoComplete="username" minLength={3} maxLength={48} required value={username} onChange={(event) => setUsername(event.target.value)} />
+                    <input
+                      id="auth-username"
+                      autoComplete="username"
+                      minLength={3}
+                      maxLength={48}
+                      required
+                      value={username}
+                      onChange={(event) => setUsername(event.target.value)}
+                    />
                   </div>
                 </>
               ) : (
                 <div className="auth-field">
                   <label htmlFor="auth-identifier">Email or username</label>
-                  <input id="auth-identifier" autoComplete="username" required value={identifier} onChange={(event) => setIdentifier(event.target.value)} />
+                  <input
+                    id="auth-identifier"
+                    autoComplete="username"
+                    required
+                    value={identifier}
+                    onChange={(event) => setIdentifier(event.target.value)}
+                  />
                 </div>
               )}
 
@@ -316,7 +380,9 @@ export function OAuthSignIn({
                 <label htmlFor="auth-password">Password</label>
                 <input
                   id="auth-password"
-                  autoComplete={mode === "register" ? "new-password" : "current-password"}
+                  autoComplete={
+                    mode === "register" ? "new-password" : "current-password"
+                  }
                   minLength={mode === "register" ? 12 : undefined}
                   required
                   type="password"
@@ -328,13 +394,30 @@ export function OAuthSignIn({
               {mode === "signin" && (
                 <div className="auth-field">
                   <label htmlFor="auth-code">Authenticator code</label>
-                  <input id="auth-code" autoComplete="one-time-code" inputMode="numeric" maxLength={6} pattern="[0-9]{6}" required value={code} onChange={(event) => setCode(event.target.value)} />
+                  <input
+                    id="auth-code"
+                    autoComplete="one-time-code"
+                    inputMode="numeric"
+                    maxLength={6}
+                    pattern="[0-9]{6}"
+                    required
+                    value={code}
+                    onChange={(event) => setCode(event.target.value)}
+                  />
                 </div>
               )}
 
               <div className="auth-actions">
-                <button className="glass-button glass-button--primary glass-button--md" disabled={busy} type="submit">
-                  {mode === "register" ? "Create account" : mode === "setup" ? "Continue" : "Sign in"}
+                <button
+                  className="glass-button glass-button--primary glass-button--md"
+                  disabled={busy}
+                  type="submit"
+                >
+                  {mode === "register"
+                    ? "Create account"
+                    : mode === "setup"
+                      ? "Continue"
+                      : "Sign in"}
                 </button>
                 {mode === "signin" && (
                   <button
@@ -381,7 +464,11 @@ export function OAuthSignIn({
             )}
           </>
         )}
-        {error && <p className="auth-error" role="alert">{error}</p>}
+        {error && (
+          <p className="auth-error" role="alert">
+            {error}
+          </p>
+        )}
       </div>
     </div>
   );
@@ -419,10 +506,6 @@ export function RequirePermission({
   return <>{children}</>;
 }
 
-function accessTokenKey(clientId: string) {
-  return `hungernet.access_token:${clientId}`;
-}
-
 function requestKey(clientId: string) {
   return `hungernet.authorization_request:${clientId}`;
 }
@@ -432,11 +515,16 @@ export function resolveAccountsBaseUrl(accountsBaseUrl?: string): string {
 }
 
 function encodeBase64Url(bytes: Uint8Array) {
-  return btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  return btoa(String.fromCharCode(...bytes))
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
 }
 
 function randomState() {
-  return Array.from(crypto.getRandomValues(new Uint8Array(32)), (value) => value.toString(16).padStart(2, "0")).join("");
+  return Array.from(crypto.getRandomValues(new Uint8Array(32)), (value) =>
+    value.toString(16).padStart(2, "0"),
+  ).join("");
 }
 
 async function beginAuthorization(
@@ -445,12 +533,23 @@ async function beginAuthorization(
   accountsBaseUrl: string,
   returnTo = `${window.location.pathname}${window.location.search}${window.location.hash}`,
 ) {
-  const verifier = encodeBase64Url(crypto.getRandomValues(new Uint8Array(32))) + encodeBase64Url(crypto.getRandomValues(new Uint8Array(16)));
-  const challengeBytes = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier));
+  const verifier =
+    encodeBase64Url(crypto.getRandomValues(new Uint8Array(32))) +
+    encodeBase64Url(crypto.getRandomValues(new Uint8Array(16)));
+  const challengeBytes = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(verifier),
+  );
   const codeChallenge = encodeBase64Url(new Uint8Array(challengeBytes));
   const state = randomState();
-  const redirectUri = new URL("/auth/callback", window.location.origin).toString();
-  sessionStorage.setItem(requestKey(clientId), JSON.stringify({ state, verifier, returnTo }));
+  const redirectUri = new URL(
+    "/auth/callback",
+    window.location.origin,
+  ).toString();
+  sessionStorage.setItem(
+    requestKey(clientId),
+    JSON.stringify({ state, verifier, returnTo }),
+  );
   const authorizationUrl = new URL("/authorize", accountsBaseUrl);
   authorizationUrl.search = new URLSearchParams({
     client_id: clientId,
@@ -479,7 +578,12 @@ export function HungerNetAuthButtons({
   const resolvedAccountsBaseUrl = resolveAccountsBaseUrl(accountsBaseUrl);
   const startAuthorization = async () => {
     try {
-      await beginAuthorization(clientId, appName, resolvedAccountsBaseUrl, returnTo);
+      await beginAuthorization(
+        clientId,
+        appName,
+        resolvedAccountsBaseUrl,
+        returnTo,
+      );
     } catch {
       setError("Secure sign-in could not be started in this browser.");
     }
@@ -487,10 +591,18 @@ export function HungerNetAuthButtons({
 
   return (
     <div className="auth-redirect-actions">
-      <button className="glass-button glass-button--primary glass-button--md" onClick={() => void startAuthorization()} type="button">
+      <button
+        className="glass-button glass-button--primary glass-button--md"
+        onClick={() => void startAuthorization()}
+        type="button"
+      >
         Continue with HungerNet
       </button>
-      {error && <p className="auth-error" role="alert">{error}</p>}
+      {error && (
+        <p className="auth-error" role="alert">
+          {error}
+        </p>
+      )}
     </div>
   );
 }
@@ -509,7 +621,9 @@ export function FloatingAuthButton({
   const [error, setError] = useState("");
   const controlRef = useRef<HTMLDivElement>(null);
   const accountsUrl = resolveAccountsBaseUrl();
-  const resolvedReturnTo = returnTo ?? `${window.location.pathname}${window.location.search}${window.location.hash}`;
+  const resolvedReturnTo =
+    returnTo ??
+    `${window.location.pathname}${window.location.search}${window.location.hash}`;
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -517,7 +631,8 @@ export function FloatingAuthButton({
       if (event.key === "Escape") setMenuOpen(false);
     };
     const closeOnOutsidePointer = (event: PointerEvent) => {
-      if (!controlRef.current?.contains(event.target as Node)) setMenuOpen(false);
+      if (!controlRef.current?.contains(event.target as Node))
+        setMenuOpen(false);
     };
     window.addEventListener("keydown", closeOnEscape);
     document.addEventListener("pointerdown", closeOnOutsidePointer);
@@ -534,7 +649,12 @@ export function FloatingAuthButton({
     }
     if (status !== "unauthenticated") return;
     setError("");
-    void beginAuthorization(clientId, appName, accountsUrl, resolvedReturnTo).catch(() => {
+    void beginAuthorization(
+      clientId,
+      appName,
+      accountsUrl,
+      resolvedReturnTo,
+    ).catch(() => {
       setError("Secure sign-in could not be started in this browser.");
     });
   };
@@ -544,39 +664,66 @@ export function FloatingAuthButton({
       <button
         className="floating-auth-trigger"
         type="button"
-        aria-label={status === "authenticated" ? "Open account menu" : status === "loading" ? "Checking account" : "Sign in with HungerNet"}
+        aria-label={
+          status === "authenticated"
+            ? "Open account menu"
+            : status === "loading"
+              ? "Checking account"
+              : "Sign in with HungerNet"
+        }
         aria-haspopup={status === "authenticated" ? "menu" : undefined}
         aria-expanded={status === "authenticated" ? menuOpen : undefined}
         disabled={status === "loading"}
         onClick={handleClick}
         title={status === "authenticated" ? "Account" : "Sign in"}
       >
-        <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <svg
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
           <circle cx="12" cy="8" r="3.5" />
           <path d="M5.5 20a6.5 6.5 0 0 1 13 0" />
         </svg>
       </button>
       {status === "authenticated" && menuOpen && (
-        <div className="floating-auth-menu" role="menu" aria-label="Account options">
-          <span className="floating-auth-name">{user?.displayName || "My account"}</span>
+        <div
+          className="floating-auth-menu"
+          role="menu"
+          aria-label="Account options"
+        >
+          <span className="floating-auth-name">
+            {user?.displayName || "My account"}
+          </span>
           <a role="menuitem" href={new URL("/profile", accountsUrl).toString()}>
             Manage account
           </a>
-          <button role="menuitem" type="button" onClick={() => { setMenuOpen(false); void signOut(); }}>
+          <button
+            role="menuitem"
+            type="button"
+            onClick={() => {
+              setMenuOpen(false);
+              void signOut();
+            }}
+          >
             Sign out
           </button>
         </div>
       )}
-      {error && <p className="floating-auth-error" role="alert">{error}</p>}
+      {error && (
+        <p className="floating-auth-error" role="alert">
+          {error}
+        </p>
+      )}
     </div>
   );
 }
 
-export function HungerNetAuthCallback({
-  clientId,
-}: {
-  clientId: string;
-}) {
+export function HungerNetAuthCallback({ clientId }: { clientId: string }) {
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -591,32 +738,56 @@ export function HungerNetAuthCallback({
         return;
       }
       try {
-        const request = JSON.parse(savedRequest) as { state: string; verifier: string; returnTo: string };
-        if (request.state !== returnedState) throw new Error("Authorization state did not match.");
+        const request = JSON.parse(savedRequest) as {
+          state: string;
+          verifier: string;
+          returnTo: string;
+        };
+        if (request.state !== returnedState)
+          throw new Error("Authorization state did not match.");
         if (authorizationError) {
           sessionStorage.removeItem(requestKey(clientId));
           throw new Error("You cancelled the HungerNet authorization request.");
         }
-        if (!code) throw new Error("The HungerNet authorization response is incomplete.");
+        if (!code)
+          throw new Error(
+            "The HungerNet authorization response is incomplete.",
+          );
         const apiUrl = resolveApiBaseUrl();
         const response = await fetch(`${apiUrl}/auth/token`, {
           method: "POST",
+          credentials: "include",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             client_id: clientId,
-            redirect_uri: new URL("/auth/callback", window.location.origin).toString(),
+            redirect_uri: new URL(
+              "/auth/callback",
+              window.location.origin,
+            ).toString(),
             code,
             code_verifier: request.verifier,
           }),
         });
-        const payload = await response.json() as { access_token?: string; message?: string };
-        if (!response.ok || !payload.access_token) throw new Error(payload.message ?? "Could not exchange the authorization code.");
-        sessionStorage.setItem(accessTokenKey(clientId), payload.access_token);
+        const payload = (await response.json()) as {
+          access_token?: string;
+          message?: string;
+        };
+        if (!response.ok || !payload.access_token)
+          throw new Error(
+            payload.message ?? "Could not exchange the authorization code.",
+          );
         sessionStorage.removeItem(requestKey(clientId));
-        const destination = request.returnTo.startsWith("/") && !request.returnTo.startsWith("//") ? request.returnTo : "/";
+        const destination =
+          request.returnTo.startsWith("/") && !request.returnTo.startsWith("//")
+            ? request.returnTo
+            : "/";
         window.location.replace(destination);
       } catch (cause) {
-        setError(cause instanceof Error ? cause.message : "Could not complete HungerNet authorization.");
+        setError(
+          cause instanceof Error
+            ? cause.message
+            : "Could not complete HungerNet authorization.",
+        );
       }
     };
     void completeAuthorization();
@@ -625,8 +796,12 @@ export function HungerNetAuthCallback({
   return (
     <main className="auth-callback-shell">
       <div className="loading-orb" aria-hidden="true" />
-      <h1>{error ? "Authorization needs attention" : "Connecting to HungerNet"}</h1>
-      <p role={error ? "alert" : "status"}>{error || "Finishing your secure sign-in…"}</p>
+      <h1>
+        {error ? "Authorization needs attention" : "Connecting to HungerNet"}
+      </h1>
+      <p role={error ? "alert" : "status"}>
+        {error || "Finishing your secure sign-in…"}
+      </p>
     </main>
   );
 }

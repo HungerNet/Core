@@ -1,8 +1,25 @@
-import { NORMAL_DOMAINS, WORKERS_DEV_DOMAINS } from "./domains";
+import {
+  NORMAL_DOMAINS,
+  usesFirstPartyApi,
+} from "./domains";
 
 export interface ApiClientOptions {
   credentials?: RequestCredentials;
   clientId?: string;
+}
+
+interface AppAccessToken {
+  token: string;
+  expiresAt: number;
+}
+
+const appAccessTokens = new Map<string, AppAccessToken>();
+const appRefreshRequests = new Map<string, Promise<string | null>>();
+const csrfTokens = new Map<string, string>();
+const csrfRequests = new Map<string, Promise<string>>();
+
+export function clearAppAccessToken(clientId: string) {
+  appAccessTokens.delete(clientId);
 }
 
 export function resolveApiBaseUrl(
@@ -10,10 +27,7 @@ export function resolveApiBaseUrl(
   origin = typeof window === "undefined" ? undefined : window.location.origin,
 ): string {
   if (!origin) return normalApiBaseUrl;
-
-  const hostname = new URL(origin).hostname.toLowerCase();
-  if (hostname === new URL(WORKERS_DEV_DOMAINS.accounts).hostname) return "/api/v1";
-  return hostname.endsWith(".workers.dev") ? WORKERS_DEV_DOMAINS.api : normalApiBaseUrl;
+  return usesFirstPartyApi(origin) ? "/api/v1" : normalApiBaseUrl;
 }
 
 export type ApiErrorCode =
@@ -34,7 +48,12 @@ export class ApiClientError extends Error {
   public readonly code: string;
   public readonly requestId?: string;
 
-  constructor(message: string, status: number, code: string, requestId?: string) {
+  constructor(
+    message: string,
+    status: number,
+    code: string,
+    requestId?: string,
+  ) {
     super(message);
     this.name = "ApiClientError";
     this.status = status;
@@ -62,7 +81,9 @@ async function parseJsonResponse<T>(response: Response): Promise<T> {
       errorPayload?.message ?? "Request failed",
       response.status,
       errorPayload?.code ?? "server_error",
-      errorPayload?.requestId ?? response.headers.get("X-Request-ID") ?? undefined,
+      errorPayload?.requestId ??
+        response.headers.get("X-Request-ID") ??
+        undefined,
     );
   }
 
@@ -78,52 +99,161 @@ export function createApiClient({
   clientId,
 }: ApiClientOptions = {}) {
   const resolvedBaseUrl = resolveApiBaseUrl();
-  let csrfToken: string | undefined;
-
+  const csrfCacheKey = `${resolvedBaseUrl}:${clientId ?? "session"}`;
   const getCsrfToken = async () => {
-    if (csrfToken) return csrfToken;
-    const response = await fetch(resolveUrl(resolvedBaseUrl, "/auth/csrf"), {
-      method: "GET",
-      credentials,
-      headers: { Accept: "application/json" },
-    });
-    if (!response.ok) throw new ApiClientError("Unable to initialize request protection", response.status, "csrf_error");
-    const payload = (await response.json()) as { csrfToken?: unknown };
-    if (typeof payload.csrfToken !== "string") {
-      throw new ApiClientError("Invalid CSRF token response", response.status, "csrf_error");
+    const cached = csrfTokens.get(csrfCacheKey);
+    if (cached) return cached;
+    const pending = csrfRequests.get(csrfCacheKey);
+    if (pending) return pending;
+
+    const csrfRequest = (async () => {
+      const csrfPath = clientId
+        ? `/auth/csrf?client_id=${encodeURIComponent(clientId)}`
+        : "/auth/csrf";
+      const response = await fetch(resolveUrl(resolvedBaseUrl, csrfPath), {
+        method: "GET",
+        credentials,
+        headers: { Accept: "application/json" },
+      });
+      if (!response.ok) {
+        throw new ApiClientError(
+          "Unable to initialize request protection",
+          response.status,
+          "csrf_error",
+        );
+      }
+      const payload = (await response.json()) as { csrfToken?: unknown };
+      if (typeof payload.csrfToken !== "string") {
+        throw new ApiClientError(
+          "Invalid CSRF token response",
+          response.status,
+          "csrf_error",
+        );
+      }
+      csrfTokens.set(csrfCacheKey, payload.csrfToken);
+      return payload.csrfToken;
+    })();
+    csrfRequests.set(csrfCacheKey, csrfRequest);
+    try {
+      return await csrfRequest;
+    } finally {
+      if (csrfRequests.get(csrfCacheKey) === csrfRequest) {
+        csrfRequests.delete(csrfCacheKey);
+      }
     }
-    csrfToken = payload.csrfToken;
-    return csrfToken;
   };
 
-  const request = async <T>(path: string, init: RequestInit = {}): Promise<T> => {
+  const refreshAppAccessToken = async (
+    force = false,
+  ): Promise<string | null> => {
+    if (!clientId || typeof window === "undefined") return null;
+    const current = appAccessTokens.get(clientId);
+    if (!force && current && current.expiresAt > Date.now() + 30_000)
+      return current.token;
+
+    const pending = appRefreshRequests.get(clientId);
+    if (pending) return pending;
+
+    const performRefresh = async (): Promise<string | null> => {
+      try {
+        const csrf = await getCsrfToken();
+        const response = await fetch(
+          resolveUrl(resolvedBaseUrl, "/auth/refresh"),
+          {
+            method: "POST",
+            credentials,
+            headers: {
+              Accept: "application/json",
+              "Content-Type": "application/json",
+              "X-CSRF-Token": csrf,
+            },
+            body: JSON.stringify({ client_id: clientId }),
+          },
+        );
+        if (!response.ok) {
+          appAccessTokens.delete(clientId);
+          return null;
+        }
+        const payload = (await response.json()) as {
+          access_token?: unknown;
+          expires_in?: unknown;
+        };
+        if (
+          typeof payload.access_token !== "string" ||
+          typeof payload.expires_in !== "number"
+        ) {
+          appAccessTokens.delete(clientId);
+          return null;
+        }
+        appAccessTokens.set(clientId, {
+          token: payload.access_token,
+          expiresAt: Date.now() + payload.expires_in * 1000,
+        });
+        return payload.access_token;
+      } catch {
+        appAccessTokens.delete(clientId);
+        return null;
+      }
+    };
+    const refreshRequest = performRefresh();
+    appRefreshRequests.set(clientId, refreshRequest);
+    try {
+      return await refreshRequest;
+    } finally {
+      if (appRefreshRequests.get(clientId) === refreshRequest) {
+        appRefreshRequests.delete(clientId);
+      }
+    }
+  };
+
+  const request = async <T>(
+    path: string,
+    init: RequestInit = {},
+  ): Promise<T> => {
     const method = (init.method ?? "GET").toUpperCase();
+    const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+    const canUseAppToken = Boolean(
+      clientId &&
+      typeof window !== "undefined" &&
+      !["/auth/session", "/auth/csrf", "/auth/token", "/auth/refresh"].includes(
+        normalizedPath,
+      ),
+    );
     const headers = new Headers(init.headers);
     headers.set("Accept", "application/json");
     if (init.body !== undefined && !headers.has("Content-Type")) {
       headers.set("Content-Type", "application/json");
     }
-    const accessToken = clientId && typeof window !== "undefined"
-      ? window.sessionStorage.getItem(`hungernet.access_token:${clientId}`)
-      : null;
+    let accessToken = canUseAppToken ? await refreshAppAccessToken() : null;
     if (accessToken && !headers.has("Authorization")) {
       headers.set("Authorization", `Bearer ${accessToken}`);
     }
     if (!["GET", "HEAD", "OPTIONS"].includes(method)) {
       headers.set("X-CSRF-Token", await getCsrfToken());
     }
-    const response = await fetch(resolveUrl(resolvedBaseUrl, path), {
-      ...init,
-      credentials,
-      headers: Object.fromEntries(headers.entries()),
-    });
+    const fetchRequest = () =>
+      fetch(resolveUrl(resolvedBaseUrl, path), {
+        ...init,
+        credentials,
+        headers: Object.fromEntries(headers.entries()),
+      });
+    let response = await fetchRequest();
+    if (response.status === 401 && accessToken && canUseAppToken && clientId) {
+      headers.delete("Authorization");
+      accessToken = await refreshAppAccessToken(true);
+      if (accessToken) {
+        headers.set("Authorization", `Bearer ${accessToken}`);
+        response = await fetchRequest();
+      }
+    }
 
     return parseJsonResponse<T>(response);
   };
 
   return {
     request,
-    get: <T>(path: string, init: RequestInit = {}) => request<T>(path, { ...init, method: "GET" }),
+    get: <T>(path: string, init: RequestInit = {}) =>
+      request<T>(path, { ...init, method: "GET" }),
     post: <T>(path: string, body: unknown, init: RequestInit = {}) =>
       request<T>(path, {
         ...init,
@@ -136,7 +266,12 @@ export function createApiClient({
         method: "PATCH",
         body: JSON.stringify(body),
       }),
-    delete: <T>(path: string, init: RequestInit = {}) => request<T>(path, { ...init, method: "DELETE" }),
+    delete: <T>(path: string, init: RequestInit = {}) =>
+      request<T>(path, { ...init, method: "DELETE" }),
+    clearAccessToken: () => {
+      if (clientId) clearAppAccessToken(clientId);
+      csrfTokens.delete(csrfCacheKey);
+    },
   };
 }
 
