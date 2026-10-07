@@ -188,8 +188,8 @@ html {
 
 body {
   background:
-    radial-gradient(circle at top left, rgba(99, 246, 214, 0.145), transparent 20%),
-    radial-gradient(circle at top right, rgba(155, 140, 255, 0.17), transparent 24%),
+    radial-gradient(circle at top left, rgba(99, 246, 214, 0.15), transparent 20%),
+    radial-gradient(circle at top right, rgba(155, 140, 255, 0.18), transparent 24%),
     linear-gradient(180deg, var(--site-bg, #07111b) 0%, var(--site-mid, #0b1623) 100%);
   background-attachment: fixed;
   font-family: var(--sans);

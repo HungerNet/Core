@@ -12,9 +12,9 @@
 }
 
 :root[data-site="ifamished"] {
-  --site-bg: #08141a;
-  --site-mid: #13323d;
-  --site-end: #2a1d2d;
+  --site-bg: #071923;
+  --site-mid: #0e2d37;
+  --site-end: #2e1d2e;
   --color-primary: #42e0ee;
   --color-primary-strong: #19b9df;
   --color-secondary: #ff789d;
@@ -22,8 +22,8 @@
 }
 
 :root[data-site="hungernet"] {
-  --site-bg: #071a15;
-  --site-mid: #0d2d25;
+  --site-bg: #081d1a;
+  --site-mid: #123d35;
   --site-end: #1c2f46;
   --color-primary: #53f0c7;
   --color-primary-strong: #20c6b4;
@@ -32,9 +32,9 @@
 }
 
 :root[data-site="hungersmp"] {
-  --site-bg: #0a0d1b;
+  --site-bg: #0b0d1e;
   --site-mid: #1a1d3a;
-  --site-end: #0f2d35;
+  --site-end: #122b36;
   --color-primary: #9bb3ff;
   --color-primary-strong: #657eff;
   --color-secondary: #43e4dd;
@@ -42,9 +42,9 @@
 }
 
 :root[data-site="optifineforfabric"] {
-  --site-bg: #071b25;
-  --site-mid: #123d4d;
-  --site-end: #1f3628;
+  --site-bg: #17130b;
+  --site-mid: #2b2111;
+  --site-end: #2c2218;
   --color-primary: #56c7ff;
   --color-primary-strong: #2598e7;
   --color-secondary: #b8fa79;
