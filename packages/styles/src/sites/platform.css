@@ -47,37 +47,40 @@
 }
 
 :root[data-site="hungernet"] {
-  --accent-1: #71f5d5;
-  --accent-2: #7fdcff;
-  --accent-3: #d9ff9a;
-  --accent-glow-1: rgba(113, 245, 213, 0.28);
-  --accent-glow-2: rgba(127, 220, 255, 0.22);
-  --bg-1: #071d1a;
-  --bg-2: #123d35;
-  --bg-3: #1c4659;
-  --bg-4: #1d2d3c;
-  --glow-1: rgba(113, 245, 213, 0.14);
-  --glow-2: rgba(127, 220, 255, 0.12);
-  --glow-3: rgba(217, 255, 154, 0.1);
-  --site-glow-primary: rgba(105, 255, 220, 0.24);
-  --site-glow-secondary: rgba(120, 211, 255, 0.18);
-  --glass-border-strong: rgba(113, 245, 213, 0.44);
-  --btn-primary-start: rgba(113, 245, 213, 0.24);
-  --btn-primary-end: rgba(127, 220, 255, 0.19);
-  --btn-primary-hover-start: rgba(113, 245, 213, 0.38);
-  --btn-primary-hover-end: rgba(127, 220, 255, 0.3);
-  --btn-primary-shadow: rgba(113, 245, 213, 0.2);
-  --btn-border: rgba(113, 245, 213, 0.38);
-  --btn-hover-shadow: rgba(113, 245, 213, 0.16);
-  --tag-bg: rgba(113, 245, 213, 0.08);
-  --tag-border: rgba(113, 245, 213, 0.24);
-  --tag-text: #9af7d7;
-  --focus-outline: #9af7d7;
-  --focus-ring: rgba(113, 245, 213, 0.16);
-  --hover-glow: rgba(113, 245, 213, 0.12);
-  --link-color: #8ef9d7;
-  --link-hover-color: #9adfff;
-  --link-visited-color: #d8ff9b;
+  --accent-1: #ff745f;
+  --accent-2: #ffad5e;
+  --accent-3: #ffd08a;
+  --accent-glow-1: rgba(255, 116, 95, 0.28);
+  --accent-glow-2: rgba(255, 173, 94, 0.22);
+  --bg-1: #1a0b0d;
+  --bg-2: #361414;
+  --bg-3: #4a201a;
+  --bg-4: #301719;
+  --site-bg: #1a0b0d;
+  --site-mid: #361414;
+  --site-end: #4a201a;
+  --glow-1: rgba(255, 116, 95, 0.14);
+  --glow-2: rgba(255, 173, 94, 0.12);
+  --glow-3: rgba(255, 208, 138, 0.1);
+  --site-glow-primary: rgba(255, 102, 82, 0.24);
+  --site-glow-secondary: rgba(255, 166, 83, 0.18);
+  --glass-border-strong: rgba(255, 116, 95, 0.44);
+  --btn-primary-start: rgba(255, 116, 95, 0.24);
+  --btn-primary-end: rgba(255, 173, 94, 0.19);
+  --btn-primary-hover-start: rgba(255, 116, 95, 0.38);
+  --btn-primary-hover-end: rgba(255, 173, 94, 0.3);
+  --btn-primary-shadow: rgba(255, 116, 95, 0.2);
+  --btn-border: rgba(255, 116, 95, 0.38);
+  --btn-hover-shadow: rgba(255, 116, 95, 0.16);
+  --tag-bg: rgba(255, 116, 95, 0.08);
+  --tag-border: rgba(255, 116, 95, 0.24);
+  --tag-text: #ff9a7f;
+  --focus-outline: #ff9a7f;
+  --focus-ring: rgba(255, 116, 95, 0.16);
+  --hover-glow: rgba(255, 116, 95, 0.12);
+  --link-color: #ff9a7f;
+  --link-hover-color: #ffc078;
+  --link-visited-color: #ffd08a;
 }
 
 :root[data-site="hungersmp"] {
