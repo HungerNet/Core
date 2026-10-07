@@ -13,7 +13,7 @@ interface AuditRecord {
   created_at: string;
 }
 
-const api = createApiClient();
+const api = createApiClient({ clientId: "admin" });
 
 export function AuditPage() {
   const [events, setEvents] = useState<AuditRecord[]>([]);

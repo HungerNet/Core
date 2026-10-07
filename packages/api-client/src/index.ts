@@ -2,6 +2,7 @@ import { NORMAL_DOMAINS, WORKERS_DEV_DOMAINS } from "./domains";
 
 export interface ApiClientOptions {
   credentials?: RequestCredentials;
+  clientId?: string;
 }
 
 export function resolveApiBaseUrl(
@@ -74,6 +75,7 @@ async function parseJsonResponse<T>(response: Response): Promise<T> {
 
 export function createApiClient({
   credentials = "include",
+  clientId,
 }: ApiClientOptions = {}) {
   const resolvedBaseUrl = resolveApiBaseUrl();
   let csrfToken: string | undefined;
@@ -100,6 +102,12 @@ export function createApiClient({
     headers.set("Accept", "application/json");
     if (init.body !== undefined && !headers.has("Content-Type")) {
       headers.set("Content-Type", "application/json");
+    }
+    const accessToken = clientId && typeof window !== "undefined"
+      ? window.sessionStorage.getItem(`hungernet.access_token:${clientId}`)
+      : null;
+    if (accessToken && !headers.has("Authorization")) {
+      headers.set("Authorization", `Bearer ${accessToken}`);
     }
     if (!["GET", "HEAD", "OPTIONS"].includes(method)) {
       headers.set("X-CSRF-Token", await getCsrfToken());

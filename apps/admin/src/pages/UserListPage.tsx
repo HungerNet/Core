@@ -17,7 +17,7 @@ interface UserListResponse {
   total: number;
 }
 
-const api = createApiClient();
+const api = createApiClient({ clientId: "admin" });
 
 export function UserListPage() {
   const [users, setUsers] = useState<AdminUserRecord[]>([]);

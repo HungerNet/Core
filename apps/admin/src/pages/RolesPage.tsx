@@ -14,7 +14,7 @@ interface RoleRecord {
   permissions: string[];
 }
 
-const api = createApiClient();
+const api = createApiClient({ clientId: "admin" });
 
 export function RolesPage() {
   const { user } = useAuth();

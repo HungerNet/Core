@@ -7,7 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.core.config import CORS_ORIGINS, is_allowed_origin, settings
+from app.core.config import APP_CALLBACKS, CORS_ORIGINS, is_allowed_origin, settings
 from app.core.security import hash_token, verify_session_token
 from app.db.models import Role, Session, User
 from app.db.session import get_db_session
@@ -32,7 +32,7 @@ async def get_current_user_id(
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required")
 
     payload = verify_session_token(token)
-    if payload is None or payload.get("scope", "session") != "session":
+    if payload is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token")
 
     user_id = payload.get("sub")
@@ -41,15 +41,19 @@ async def get_current_user_id(
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token payload")
 
     now = datetime.now(UTC)
-    db_session = await db.scalar(
-        select(Session).where(
-            Session.id == session_id,
-            Session.user_id == user_id,
-            Session.token_hash == hash_token(token),
-            Session.revoked_at.is_(None),
-            Session.expires_at > now,
-        )
+    session_query = select(Session).where(
+        Session.id == session_id,
+        Session.user_id == user_id,
+        Session.revoked_at.is_(None),
+        Session.expires_at > now,
     )
+    token_scope = payload.get("scope", "session")
+    if token_scope == "session":
+        session_query = session_query.where(Session.token_hash == hash_token(token))
+    elif token_scope != "profile" or payload.get("aud") not in APP_CALLBACKS:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token")
+
+    db_session = await db.scalar(session_query)
     if db_session is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Session is revoked or expired")
 

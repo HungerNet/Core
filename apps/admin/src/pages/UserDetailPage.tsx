@@ -21,7 +21,7 @@ interface RoleRecord {
   is_system: boolean;
 }
 
-const api = createApiClient();
+const api = createApiClient({ clientId: "admin" });
 
 export function UserDetailPage() {
   const { id } = useParams();

@@ -19,6 +19,7 @@ from app.api.v1.endpoints.auth import (
     exchange_authorization_code,
     get_session_status,
 )
+from app.core.deps import get_current_user_id
 from app.db import models  # noqa: F401
 from app.db.base import Base
 from app.db.models import Permission, Role, User
@@ -129,6 +130,11 @@ async def test_registered_app_authorization_uses_pkce_and_profile_scope() -> Non
         )
         access_token = token_result["access_token"]
         assert token_result["scope"] == "profile"
+        assert await get_current_user_id(
+            _request(),
+            HTTPAuthorizationCredentials(scheme="Bearer", credentials=access_token),
+            db,
+        ) == user.id
         info = await authorized_user_info(HTTPAuthorizationCredentials(scheme="Bearer", credentials=access_token), db)
         assert info == {
             "id": user.id,

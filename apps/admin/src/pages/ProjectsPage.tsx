@@ -11,7 +11,7 @@ interface ProjectRecord {
   body: string;
 }
 
-const api = createApiClient();
+const api = createApiClient({ clientId: "admin" });
 
 export function ProjectsPage() {
   const [title, setTitle] = useState("");
