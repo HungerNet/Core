@@ -12,9 +12,9 @@
 }
 
 :root[data-site="ifamished"] {
-  --site-bg: #07111b;
-  --site-mid: #0d1b23;
-  --site-end: #101827;
+  --site-bg: #040b10;
+  --site-mid: #091a21;
+  --site-end: #0a1320;
   --color-primary: #42e0ee;
   --color-primary-strong: #19b9df;
   --color-secondary: #ff789d;
@@ -22,9 +22,9 @@
 }
 
 :root[data-site="hungernet"] {
-  --site-bg: #061510;
-  --site-mid: #0a2721;
-  --site-end: #0d1b2a;
+  --site-bg: #050d0a;
+  --site-mid: #081b17;
+  --site-end: #0a1620;
   --color-primary: #53f0c7;
   --color-primary-strong: #20c6b4;
   --color-secondary: #6eb9ff;
@@ -32,9 +32,9 @@
 }
 
 :root[data-site="hungersmp"] {
-  --site-bg: #0b0c1e;
-  --site-mid: #151a2f;
-  --site-end: #101d2a;
+  --site-bg: #070a14;
+  --site-mid: #0d1321;
+  --site-end: #0d1820;
   --color-primary: #9bb3ff;
   --color-primary-strong: #657eff;
   --color-secondary: #43e4dd;
@@ -42,9 +42,9 @@
 }
 
 :root[data-site="optifineforfabric"] {
-  --site-bg: #071622;
-  --site-mid: #0f1f2d;
-  --site-end: #111b1f;
+  --site-bg: #050d12;
+  --site-mid: #0a171d;
+  --site-end: #0b1716;
   --color-primary: #56c7ff;
   --color-primary-strong: #2598e7;
   --color-secondary: #b8fa79;
@@ -53,9 +53,9 @@
 
 :root:is([data-site="ifamished"], [data-site="hungernet"], [data-site="hungersmp"], [data-site="optifineforfabric"]) body {
   background:
-    radial-gradient(circle at top left, color-mix(in srgb, var(--color-primary) 12%, transparent), transparent 26%),
-    radial-gradient(circle at top right, color-mix(in srgb, var(--color-secondary) 12%, transparent), transparent 28%),
-    linear-gradient(180deg, var(--site-bg) 0%, var(--site-mid) 100%);
+    radial-gradient(circle at top left, color-mix(in srgb, var(--color-primary) 8%, transparent), transparent 32%),
+    radial-gradient(circle at top right, color-mix(in srgb, var(--color-secondary) 7%, transparent), transparent 34%),
+    linear-gradient(180deg, var(--site-bg) 0%, var(--site-mid) 70%, var(--site-end) 100%);
   color: var(--color-text);
   font-family: var(--font-body);
   letter-spacing: 0;
@@ -66,7 +66,7 @@
   position: fixed;
   inset: 0;
   pointer-events: none;
-  background-image: linear-gradient(rgba(148, 173, 204, 0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(148, 173, 204, 0.04) 1px, transparent 1px);
+  background-image: linear-gradient(rgba(148, 173, 204, 0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(148, 173, 204, 0.02) 1px, transparent 1px);
   background-size: 42px 42px;
   mask-image: radial-gradient(circle at center, black 35%, transparent 82%);
 }
@@ -76,10 +76,11 @@
   position: fixed;
   inset: 0;
   pointer-events: none;
-  opacity: 0.55;
+  opacity: 0.28;
   background:
-    radial-gradient(circle at 16% 20%, color-mix(in srgb, var(--color-primary) 14%, transparent), transparent 38%),
-    radial-gradient(circle at 84% 24%, color-mix(in srgb, var(--color-secondary) 12%, transparent), transparent 42%);
+    radial-gradient(circle at 16% 20%, color-mix(in srgb, var(--color-primary) 9%, transparent), transparent 42%),
+    radial-gradient(circle at 84% 24%, color-mix(in srgb, var(--color-secondary) 8%, transparent), transparent 45%);
+  mask-image: linear-gradient(to bottom, black, transparent 76%);
 }
 
 :root:is([data-site="ifamished"], [data-site="hungernet"], [data-site="hungersmp"], [data-site="optifineforfabric"]) h1,
@@ -421,24 +422,24 @@
 
 :root:is([data-site="ifamished"], [data-site="hungernet"], [data-site="hungersmp"], [data-site="optifineforfabric"]) body {
   background:
-    radial-gradient(circle at top left, color-mix(in srgb, var(--color-primary) 12%, transparent), transparent 26%),
-    radial-gradient(circle at top right, color-mix(in srgb, var(--color-secondary) 12%, transparent), transparent 28%),
-    linear-gradient(180deg, var(--site-bg) 0%, var(--site-mid) 100%);
+    radial-gradient(circle at top left, color-mix(in srgb, var(--color-primary) 8%, transparent), transparent 32%),
+    radial-gradient(circle at top right, color-mix(in srgb, var(--color-secondary) 7%, transparent), transparent 34%),
+    linear-gradient(180deg, var(--site-bg) 0%, var(--site-mid) 70%, var(--site-end) 100%);
 }
 
 :root:is([data-site="ifamished"], [data-site="hungernet"], [data-site="hungersmp"], [data-site="optifineforfabric"]) body::before {
   inset: 0;
-  background-image: linear-gradient(rgba(148, 173, 204, 0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(148, 173, 204, 0.04) 1px, transparent 1px);
+  background-image: linear-gradient(rgba(148, 173, 204, 0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(148, 173, 204, 0.02) 1px, transparent 1px);
   background-size: 42px 42px;
   mask-image: radial-gradient(circle at center, black 35%, transparent 82%);
-  opacity: 0.95;
+  opacity: 0.8;
 }
 
 :root:is([data-site="ifamished"], [data-site="hungernet"], [data-site="hungersmp"], [data-site="optifineforfabric"]) body::after {
-  opacity: 0.55;
+  opacity: 0.28;
   background:
-    radial-gradient(circle at 16% 20%, color-mix(in srgb, var(--color-primary) 12%, transparent), transparent 40%),
-    radial-gradient(circle at 84% 24%, color-mix(in srgb, var(--color-secondary) 12%, transparent), transparent 42%);
+    radial-gradient(circle at 16% 20%, color-mix(in srgb, var(--color-primary) 9%, transparent), transparent 42%),
+    radial-gradient(circle at 84% 24%, color-mix(in srgb, var(--color-secondary) 8%, transparent), transparent 45%);
   mask-image: linear-gradient(to bottom, black, transparent 76%);
 }
 
