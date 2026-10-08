@@ -56,7 +56,8 @@ async def test_admin_user_details_updates_roles_status_and_deletion(
             avatar_url=f"https://api.example.test/media/avatars/{avatar_name}",
             roles=[role],
         )
-        db.add_all([actor, target])
+        taken = User(username="taken_name", display_name="Taken")
+        db.add_all([actor, target, taken])
         await db.flush()
 
         identity = Identity(
@@ -106,7 +107,7 @@ async def test_admin_user_details_updates_roles_status_and_deletion(
         updated = await update_user(
             target.id,
             AdminUserUpdateRequest(
-                username="Updated_Member",
+                username="updated_member",
                 email=None,
                 display_name="Updated Member",
                 profile_visibility="private",
@@ -117,6 +118,22 @@ async def test_admin_user_details_updates_roles_status_and_deletion(
         assert updated.username == "updated_member"
         assert updated.email is None
         assert updated.profile_visibility == "private"
+
+        updated = await update_user(
+            target.id,
+            AdminUserUpdateRequest(username="taken_name"),
+            actor,
+            db,
+        )
+        assert updated.username.startswith("taken_name#")
+
+        updated = await update_user(
+            target.id,
+            AdminUserUpdateRequest(username="renamed_user"),
+            actor,
+            db,
+        )
+        assert updated.username == "renamed_user"
 
         moderator = Role(key="moderator", name="Moderator")
         db.add(moderator)

@@ -96,7 +96,7 @@ class AdminUserDetailResponse(AdminUserResponse):
 
 
 class AdminUserUpdateRequest(BaseModel):
-    username: str | None = Field(default=None, min_length=3, max_length=64)
+    username: str | None = Field(default=None, min_length=1, max_length=64)
     email: str | None = Field(default=None, max_length=254)
     display_name: str | None = Field(default=None, min_length=1, max_length=120)
     avatar_url: str | None = Field(default=None, max_length=500)
@@ -107,11 +107,12 @@ class AdminUserUpdateRequest(BaseModel):
 
     @field_validator("username")
     @classmethod
-    def normalize_username(cls, value: str | None) -> str:
-        normalized = value.strip().lower() if value else ""
-        if not re.fullmatch(r"[a-z0-9][a-z0-9_-]{2,63}", normalized):
-            raise ValueError("Username must be 3-64 letters, numbers, hyphens, or underscores")
-        return normalized
+    def validate_username(cls, value: str | None) -> str:
+        if value is None or not re.fullmatch(r"[a-z0-9_]+", value):
+            raise ValueError(
+                "Username must contain only lowercase letters, numbers, and underscores"
+            )
+        return value
 
     @field_validator("email")
     @classmethod
@@ -126,10 +127,9 @@ class AdminUserUpdateRequest(BaseModel):
     @field_validator("display_name")
     @classmethod
     def validate_display_name(cls, value: str | None) -> str:
-        normalized = value.strip() if value else ""
-        if not normalized:
+        if value is None or not value.strip():
             raise ValueError("Display name cannot be empty")
-        return normalized
+        return value
 
 
 class RoleAssignmentRequest(BaseModel):

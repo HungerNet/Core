@@ -4,15 +4,22 @@ from pydantic import ValidationError
 from app.schemas.user import UserUpdateRequest
 
 
-def test_username_is_trimmed_and_normalized() -> None:
-    payload = UserUpdateRequest(username="  Example_User  ")
+def test_username_is_accepted_without_normalization() -> None:
+    payload = UserUpdateRequest(username="example_user")
 
     assert payload.username == "example_user"
 
 
-def test_username_rejects_invalid_normalized_value() -> None:
+@pytest.mark.parametrize("username", ["Example", "cool-player", "two words", "name#1234", "✨"])
+def test_username_rejects_invalid_value(username: str) -> None:
     with pytest.raises(ValidationError):
-        UserUpdateRequest(username="  x  ")
+        UserUpdateRequest(username=username)
+
+
+def test_display_name_preserves_case_and_spacing() -> None:
+    payload = UserUpdateRequest(display_name="  Cool Player ✨  ")
+
+    assert payload.display_name == "  Cool Player ✨  "
 
 
 def test_email_is_trimmed_and_normalized() -> None:

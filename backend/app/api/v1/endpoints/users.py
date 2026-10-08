@@ -37,6 +37,7 @@ from app.schemas.user import (
     UserUpdateRequest,
 )
 from app.services.auth_service import AuthFlowError, AuthService
+from app.services.username_service import ReservedUsernameError, resolve_edited_username
 
 router = APIRouter(prefix="/users", tags=["users"])
 logger = logging.getLogger("hungernet.api")
@@ -87,13 +88,15 @@ async def update_current_user(
     updates = payload.model_dump(exclude_unset=True)
     email_changed = "email" in updates and updates["email"] != user.email
     if "username" in updates and updates["username"]:
-        normalized = updates["username"].strip().lower()
-        conflict = await db.scalar(
-            select(User.id).where(func.lower(User.username) == normalized, User.id != user.id)
-        )
-        if conflict:
-            raise HTTPException(status_code=409, detail="Username is already in use")
-        updates["username"] = normalized
+        try:
+            updates["username"] = await resolve_edited_username(
+                db,
+                updates["username"],
+                current_username=user.username,
+                user_id=user.id,
+            )
+        except (ReservedUsernameError, ValueError) as error:
+            raise HTTPException(status_code=409, detail=str(error)) from error
     if "email" in updates:
         normalized_email = updates["email"]
         if normalized_email != user.email:

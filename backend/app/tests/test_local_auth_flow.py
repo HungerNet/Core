@@ -78,7 +78,7 @@ async def test_registration_requires_totp_and_sets_workers_cookie_attributes(
         result = await register(
             RegisterRequest(
                 email="member@example.test",
-                username="member_one",
+                display_name="Member One",
                 password="correct horse battery staple",
             ),
             db,
@@ -87,9 +87,10 @@ async def test_registration_requires_totp_and_sets_workers_cookie_attributes(
         assert result["provisioningUri"].startswith("otpauth://totp/")
 
         user = await db.scalar(
-            __import__("sqlalchemy").select(models.User).where(models.User.username == "member_one")
+            __import__("sqlalchemy").select(models.User).where(models.User.username == "memberone")
         )
         assert user is not None and user.totp_secret
+        assert user.display_name == "Member One"
         payload = MfaRequest(
             identifier="member@example.test",
             password="correct horse battery staple",
@@ -122,7 +123,7 @@ async def test_registration_requires_totp_and_sets_workers_cookie_attributes(
         )
         assert session.authenticated
         assert session.user is not None
-        assert session.user.username == "member_one"
+        assert session.user.username == "memberone"
         db_session = await db.scalar(
             select(models.Session).where(
                 models.Session.user_id == user.id
@@ -145,7 +146,7 @@ async def test_invalid_totp_does_not_activate_account() -> None:
         await register(
             RegisterRequest(
                 email="member@example.test",
-                username="member_one",
+                display_name="Member One",
                 password="correct horse battery staple",
             ),
             db,

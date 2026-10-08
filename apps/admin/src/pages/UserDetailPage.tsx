@@ -1,6 +1,6 @@
 import { useEffect, useState, type CSSProperties } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { createApiClient } from "@hungernet/api-client";
+import { ApiClientError, createApiClient } from "@hungernet/api-client";
 import { GlassButton as Button, GlassCard, InputBox } from "@hungernet/ui/components";
 import { useAuth } from "@hungernet/auth";
 import { AdminLayout } from "../components/AdminLayout";
@@ -65,6 +65,7 @@ export function UserDetailPage() {
   const { user: viewer } = useAuth();
   const canManageRoles = viewer?.permissions?.includes("platform.admin.roles.manage") ?? false;
   const [user, setUser] = useState<AdminUserRecord | null>(null);
+  const [usernameDraft, setUsernameDraft] = useState("");
   const [roles, setRoles] = useState<RoleRecord[]>([]);
   const [roleError, setRoleError] = useState("");
   const [savingRoleId, setSavingRoleId] = useState<string | null>(null);
@@ -72,11 +73,15 @@ export function UserDetailPage() {
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState("");
+  const [usernameNotice, setUsernameNotice] = useState("");
 
   useEffect(() => {
     if (!id) return;
     void api.get<AdminUserRecord>(`/admin/users/${encodeURIComponent(id)}`)
-      .then(setUser)
+      .then((loadedUser) => {
+        setUser(loadedUser);
+        setUsernameDraft(loadedUser.username);
+      })
       .catch(() => setError("Could not load this user."))
       .finally(() => setLoading(false));
     if (canManageRoles) {
@@ -106,19 +111,30 @@ export function UserDetailPage() {
     if (!user) return;
     setSaving(true);
     setError("");
+    setUsernameNotice("");
     try {
-      const updated = await api.patch<AdminUserRecord>(`/admin/users/${encodeURIComponent(user.id)}`, {
-        username: user.username,
+      const requestedUsername = usernameDraft;
+      const updates: Record<string, unknown> = {
         email: user.email?.trim() || null,
         display_name: user.display_name,
         avatar_url: user.avatar_url?.trim() || null,
         bio: user.bio?.trim() || null,
         profile_visibility: user.profile_visibility,
         is_superuser: user.is_superuser,
-      });
+      };
+      if (usernameDraft !== user.username) updates.username = usernameDraft;
+      const updated = await api.patch<AdminUserRecord>(`/admin/users/${encodeURIComponent(user.id)}`, updates);
       setUser(updated);
-    } catch {
-      setError("Could not save account settings. Check the username and email for conflicts.");
+      setUsernameDraft(updated.username);
+      if (usernameChanged && updated.username !== requestedUsername) {
+        setUsernameNotice(`That username is already in use. Assigned ${updated.username} instead.`);
+      }
+    } catch (cause) {
+      setError(
+        cause instanceof ApiClientError && cause.status === 409
+          ? "That username or email is already in use, or the username base is reserved."
+          : "Could not save account settings. Check username format and reserved names.",
+      );
     } finally {
       setSaving(false);
     }
@@ -189,6 +205,16 @@ export function UserDetailPage() {
     );
   }
 
+  const usernameChanged = usernameDraft !== user.username;
+  const reservedBase = user.username.match(/^([a-z0-9_]+)#\d{4}$/)?.[1];
+  const usernameError = !usernameChanged
+    ? ""
+    : !/^[a-z0-9_]{1,64}$/.test(usernameDraft)
+      ? "Use lowercase letters, numbers, and underscores only."
+      : usernameDraft === reservedBase
+        ? "The base of this generated username is reserved."
+        : "";
+
   return (
     <AdminLayout
       title={user.display_name}
@@ -206,14 +232,23 @@ export function UserDetailPage() {
               <div className="section-label">Account settings</div>
               <h3>Edit profile and access</h3>
             </div>
-            <Button variant="primary" size="sm" onClick={() => void saveSettings()} disabled={saving}>
+            <Button variant="primary" size="sm" onClick={() => void saveSettings()} disabled={saving || Boolean(usernameError)}>
               {saving ? "Saving…" : "Save changes"}
             </Button>
           </div>
           <div className="user-edit-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 16rem), 1fr))", gap: "1rem" }}>
             <div className="input-field">
               <label htmlFor="user-username">Username</label>
-              <InputBox id="user-username" value={user.username} onChange={(value) => setUser({ ...user, username: value })} />
+              <InputBox id="user-username" value={usernameDraft} maxLength={64} pattern="[a-z0-9_]+" autoCapitalize="none" spellCheck={false} aria-invalid={Boolean(usernameError)} onChange={(value) => {
+                if (value.includes("#")) {
+                  setUsernameNotice("The discriminator is generated automatically.");
+                  return;
+                }
+                setUsernameNotice("");
+                setUsernameDraft(value);
+              }} />
+              {usernameError && <p className="muted" role="alert">{usernameError}</p>}
+              {usernameNotice && <p className="muted" role="status">{usernameNotice}</p>}
             </div>
             <div className="input-field">
               <label htmlFor="user-display-name">Display name</label>

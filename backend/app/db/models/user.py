@@ -1,11 +1,12 @@
 from __future__ import annotations
 
+import re
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 from uuid import uuid4
 
 from sqlalchemy import Boolean, DateTime, String, Text
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 
 from app.db.base import Base
 
@@ -20,7 +21,7 @@ class User(Base):
     __tablename__ = "users"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
-    username: Mapped[str] = mapped_column(String(64), unique=True, index=True, nullable=False)
+    username: Mapped[str] = mapped_column(String(69), unique=True, index=True, nullable=False)
     email: Mapped[str | None] = mapped_column(String(254), unique=True, index=True, nullable=True)
     password_hash: Mapped[str | None] = mapped_column(String(256), nullable=True)
     totp_secret: Mapped[str | None] = mapped_column(String(64), nullable=True)
@@ -40,6 +41,15 @@ class User(Base):
         onupdate=lambda: datetime.now(UTC),
         nullable=False,
     )
+
+    @validates("username")
+    def validate_username(self, _key: str, value: str) -> str:
+        if not re.fullmatch(r"(?:[a-z0-9_]+|[a-z0-9_]+#\d{4})", value):
+            raise ValueError(
+                "Username must be lowercase and use letters, numbers, underscores, "
+                "or a generated suffix"
+            )
+        return value
 
     identities: Mapped[list[Identity]] = relationship(
         back_populates="user", cascade="all, delete-orphan"

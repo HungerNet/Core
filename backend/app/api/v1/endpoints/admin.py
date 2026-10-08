@@ -41,6 +41,7 @@ from app.schemas.admin import (
     UserStatusUpdateRequest,
 )
 from app.services.permission_service import PERMISSION_REGISTRY, role_identifier
+from app.services.username_service import ReservedUsernameError, resolve_edited_username
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -186,12 +187,16 @@ async def update_user(
 
     updates = payload.model_dump(exclude_unset=True)
     username = updates.get("username")
-    if username is not None:
-        conflict = await db.scalar(
-            select(User.id).where(func.lower(User.username) == username, User.id != user.id)
-        )
-        if conflict:
-            raise HTTPException(status_code=409, detail="Username is already in use")
+    if username is not None and username != user.username:
+        try:
+            updates["username"] = await resolve_edited_username(
+                db,
+                username,
+                current_username=user.username,
+                user_id=user.id,
+            )
+        except (ReservedUsernameError, ValueError) as error:
+            raise HTTPException(status_code=409, detail=str(error)) from error
     if "email" in updates and updates["email"] is not None:
         conflict = await db.scalar(
             select(User.id).where(func.lower(User.email) == updates["email"], User.id != user.id)

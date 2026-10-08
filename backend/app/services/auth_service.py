@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import re
 import secrets
 from datetime import UTC, datetime, timedelta
 from uuid import uuid4
@@ -19,6 +18,7 @@ from app.core.security import (
 from app.db.models import AuditEvent, Identity, OAuthTransaction, Session, User, UserRole
 from app.integrations.oauth import OAuthIdentity
 from app.services.permission_service import PermissionService
+from app.services.username_service import generate_username
 
 
 class AuthFlowError(Exception):
@@ -35,23 +35,20 @@ class AuthService:
         db: AsyncSession,
         *,
         email: str,
-        username: str,
+        display_name: str,
         password: str,
     ) -> tuple[User, str]:
-        existing = await db.scalar(
-            select(User).where(
-                (func.lower(User.email) == email) | (User.username == username)
-            )
-        )
+        existing = await db.scalar(select(User).where(func.lower(User.email) == email))
         if existing is not None:
-            raise AuthFlowError("account_exists", "Email or username is already registered", 409)
+            raise AuthFlowError("account_exists", "Email is already registered", 409)
 
+        username = await generate_username(db, display_name)
         secret = new_totp_secret()
         user = User(
             id=str(uuid4()),
             username=username,
             email=email,
-            display_name=username,
+            display_name=display_name,
             password_hash=hash_password(password),
             totp_secret=secret,
             totp_enabled=False,
@@ -200,14 +197,7 @@ class AuthService:
                     409,
                 )
 
-        base_username = re.sub(r"[^a-z0-9_-]", "", identity_data.username.lower())[:48].strip("-_")
-        if len(base_username) < 3:
-            base_username = f"user-{identity_data.provider_subject[-8:]}"
-        username = base_username
-        suffix = 1
-        while await db.scalar(select(User.id).where(User.username == username)) is not None:
-            suffix += 1
-            username = f"{base_username[:56]}-{suffix}"
+        username = await generate_username(db, identity_data.display_name)
 
         user = User(
             id=str(uuid4()),

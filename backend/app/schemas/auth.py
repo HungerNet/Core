@@ -7,7 +7,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 class RegisterRequest(BaseModel):
     email: str = Field(min_length=3, max_length=254)
-    username: str = Field(min_length=3, max_length=48)
+    display_name: str = Field(min_length=1, max_length=120)
     password: str = Field(min_length=12, max_length=128)
 
     @field_validator("email")
@@ -18,13 +18,12 @@ class RegisterRequest(BaseModel):
             raise ValueError("Enter a valid email address")
         return normalized
 
-    @field_validator("username")
+    @field_validator("display_name")
     @classmethod
-    def validate_username(cls, value: str) -> str:
-        normalized = value.strip().lower()
-        if not re.fullmatch(r"[a-z0-9_-]{3,48}", normalized):
-            raise ValueError("Use 3-48 letters, numbers, underscores, or hyphens")
-        return normalized
+    def validate_display_name(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("Display name cannot be empty")
+        return value
 
 
 class CredentialsRequest(BaseModel):

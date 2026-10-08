@@ -15,6 +15,7 @@ const api = createApiClient();
 
 export function ProfilePage() {
   const [username, setUsername] = useState("");
+  const [savedUsername, setSavedUsername] = useState("");
   const [email, setEmail] = useState("");
   const [bio, setBio] = useState("");
   const [displayName, setDisplayName] = useState("");
@@ -22,12 +23,14 @@ export function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [usernameNotice, setUsernameNotice] = useState("");
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     void api.get<ProfileRecord>("/users/me")
       .then((profile) => {
         setUsername(profile.username);
+        setSavedUsername(profile.username);
         setEmail(profile.email ?? "");
         setDisplayName(profile.display_name);
         setBio(profile.bio ?? "");
@@ -41,25 +44,48 @@ export function ProfilePage() {
     setSaving(true);
     setSaved(false);
     setError("");
+    setUsernameNotice("");
     try {
-      const profile = await api.patch<ProfileRecord>("/users/me", {
-        username,
+      const requestedUsername = username;
+      const updates: Record<string, string | null> = {
         ...(email.trim() ? { email: email.trim() } : {}),
         display_name: displayName,
         bio: bio || null,
-      });
+      };
+      if (username !== savedUsername) updates.username = username;
+      const profile = await api.patch<ProfileRecord>("/users/me", updates);
       setUsername(profile.username);
+      setSavedUsername(profile.username);
       setEmail(profile.email ?? "");
       setDisplayName(profile.display_name);
       setBio(profile.bio ?? "");
       setAvatarUrl(profile.avatar_url ?? "");
+      if (username !== savedUsername && profile.username !== requestedUsername) {
+        setUsernameNotice(`That username is already in use. Assigned ${profile.username} instead.`);
+      }
       setSaved(true);
     } catch (cause) {
-      setError(cause instanceof ApiClientError ? cause.message : "Could not save your profile.");
+      setError(
+        cause instanceof ApiClientError && cause.status === 409
+          ? "That username or email is already in use."
+          : cause instanceof ApiClientError
+            ? cause.message
+            : "Could not save your profile.",
+      );
     } finally {
       setSaving(false);
     }
   }
+
+  const usernameChanged = username !== savedUsername;
+  const reservedBase = savedUsername.match(/^([a-z0-9_]+)#\d{4}$/)?.[1];
+  const usernameError = !usernameChanged
+    ? ""
+    : !/^[a-z0-9_]{1,64}$/.test(username)
+      ? "Use lowercase letters, numbers, and underscores only."
+      : username === reservedBase
+        ? "The base of your generated username is reserved."
+        : "";
 
   async function uploadAvatar(file: File, onProgress: (percent: number) => void) {
     setSaving(true);
@@ -80,16 +106,25 @@ export function ProfilePage() {
   }
 
   return (
-    <SettingsLayout title="Profile settings" actions={<GlassButton variant="primary" size="sm" onClick={() => void saveProfile()} disabled={loading || saving}>{saving ? "Saving…" : "Save profile"}</GlassButton>}>
+    <SettingsLayout title="Profile settings" actions={<GlassButton variant="primary" size="sm" onClick={() => void saveProfile()} disabled={loading || saving || Boolean(usernameError)}>{saving ? "Saving…" : "Save profile"}</GlassButton>}>
       <div style={{ display: "grid", gap: "1rem" }}>
         {loading && <p role="status">Loading profile…</p>}
         {error && <p role="alert" className="site-error">{error}</p>}
         {saved && <p role="status">Profile saved.</p>}
+        {usernameNotice && <p role="status">{usernameNotice}</p>}
         <GlassCard style={{ padding: "1rem" }}>
           <div className="input-row">
             <div className="input-field">
               <label htmlFor="profile-username">Username</label>
-              <InputBox id="profile-username" value={username} onChange={setUsername} placeholder="username" />
+              <InputBox id="profile-username" value={username} onChange={(value) => {
+                if (value.includes("#")) {
+                  setUsernameNotice("The discriminator is generated automatically.");
+                  return;
+                }
+                setUsernameNotice("");
+                setUsername(value);
+              }} placeholder="username" maxLength={64} pattern="[a-z0-9_]+" autoComplete="username" autoCapitalize="none" spellCheck={false} aria-invalid={Boolean(usernameError)} />
+              {usernameError && <span className="site-error" role="alert">{usernameError}</span>}
             </div>
             <div className="input-field">
               <label htmlFor="profile-display-name">Display name</label>

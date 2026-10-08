@@ -546,7 +546,7 @@ async def register(
         user, secret = await AuthService.register_local_user(
             db,
             email=payload.email,
-            username=payload.username,
+            display_name=payload.display_name,
             password=payload.password,
         )
     except AuthFlowError as error:
@@ -554,7 +554,7 @@ async def register(
     except IntegrityError as error:
         await db.rollback()
         raise HTTPException(
-            status_code=409, detail="Email or username is already registered"
+            status_code=409, detail="Email is already registered"
         ) from error
     return {
         "setupSecret": secret,
