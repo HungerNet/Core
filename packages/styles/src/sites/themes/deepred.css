@@ -1,4 +1,5 @@
-:root[data-theme="red"] {
+/* hungernet deep-red */
+:root[data-theme="deepred"] {
   --accent-1: #c6283d;
   --accent-2: #e04a5f;
   --accent-3: #f0808a;

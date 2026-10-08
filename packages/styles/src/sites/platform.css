@@ -1,10 +1,10 @@
-@import "./themes/default.css";
-@import "./themes/red.css";
-@import "./themes/red-orange.css";
-@import "./themes/red-light.css";
-@import "./themes/periwinkle.css";
-@import "./themes/cyan.css";
 @import "./themes/amber.css";
+@import "./themes/brightred.css";
+@import "./themes/cyan.css";
+@import "./themes/deepred.css";
+@import "./themes/default.css";
+@import "./themes/fire.css";
+@import "./themes/periwinkle.css";
 
 :root {
   --site-theme: default;
@@ -28,7 +28,7 @@
 
 /* Site-to-theme assignments */
 :root[data-site="hungernet"] {
-  --site-theme: red;
+  --site-theme: brightred;
 }
 
 :root[data-site="hungersmp"] {
