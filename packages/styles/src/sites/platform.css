@@ -26,7 +26,7 @@
 
 /* Site-to-theme assignments */
 :root[data-site="hungernet"] {
-  --site-theme: red;
+  --site-theme: default;
 }
 
 :root[data-site="hungersmp"] {
