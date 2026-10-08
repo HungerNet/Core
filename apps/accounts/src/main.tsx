@@ -9,7 +9,7 @@ import "./accounts.css";
 import "../../../packages/styles/src/sites/platform.css";
 import { App } from "./App";
 
-document.documentElement.dataset.site = "ifamished";
+document.documentElement.dataset.site = "accounts";
 document.documentElement.dataset.theme =
   getComputedStyle(document.documentElement).getPropertyValue("--site-theme").trim() || "default";
 

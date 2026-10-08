@@ -43,6 +43,14 @@
   --site-theme: amber;
 }
 
+:root[data-site="admin"] {
+  --site-theme: fire;
+}
+
+:root[data-site="accounts"] {
+  --site-theme: fire;
+}
+
 html {
   background: var(--site-bg, #07111b);
 }
