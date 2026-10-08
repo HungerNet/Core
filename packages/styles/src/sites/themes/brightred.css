@@ -1,5 +1,5 @@
-/* hungernet red */
-:root[data-site="brightred"] {
+/* HungerNet bright red theme. */
+:root[data-theme="brightred"] {
   --accent-1: #f04452;
   --accent-2: #ff6875;
   --accent-3: #ff9aa2;
