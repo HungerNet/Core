@@ -1,0 +1,229 @@
+.settings-layout {
+  display: grid;
+  gap: 1.4rem;
+}
+
+.settings-layout-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.settings-layout-heading h2 {
+  margin-top: 0.25rem;
+}
+
+.settings-layout-content {
+  min-width: 0;
+}
+
+.input-field {
+  display: grid;
+  align-content: start;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.input-field label {
+  color: var(--text-secondary);
+  font-size: 0.84rem;
+  font-weight: 650;
+}
+
+.input-field .inputbox {
+  justify-content: stretch;
+  margin: 0;
+}
+
+.input-field .inputbox input {
+  max-width: none;
+  min-width: 0;
+  margin: 0;
+  animation: none;
+}
+
+.input-field textarea {
+  width: 100%;
+  min-width: 0;
+  padding: 0.65rem 0.8rem;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+  background: var(--glass-bg);
+  color: var(--text-primary);
+  font: inherit;
+}
+
+.input-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+  gap: 1rem;
+}
+
+.site-error {
+  color: #ff9b9b;
+}
+
+.site-meta {
+  color: var(--text-muted);
+  font-size: 0.76rem;
+}
+
+.muted {
+  color: var(--text-muted);
+}
+
+.authorization-page {
+  display: grid;
+  place-items: center;
+  width: min(100% - 2rem, 64rem);
+  min-height: 100vh;
+  margin-inline: auto;
+  padding-block: 2rem;
+}
+
+.authorization-card {
+  display: grid;
+  gap: 1.5rem;
+  width: 100%;
+  max-width: 38rem;
+  padding: 2rem;
+}
+
+.authorization-brand,
+.authorization-account,
+.authorization-scope,
+.authorization-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+}
+
+.authorization-brand {
+  color: var(--text-primary);
+  font-weight: 750;
+}
+
+.authorization-mark {
+  display: grid;
+  place-items: center;
+  width: 2.4rem;
+  aspect-ratio: 1;
+  border: 1px solid var(--glass-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--tag-bg);
+  color: var(--accent-1);
+}
+
+.authorization-copy {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.authorization-copy h1 {
+  font-size: 1.8rem;
+}
+
+.authorization-copy p,
+.authorization-note,
+.authorization-scope p {
+  color: var(--text-secondary);
+}
+
+.authorization-account,
+.authorization-scope {
+  padding: 0.9rem;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.authorization-account > img,
+.authorization-account > span:first-child {
+  display: grid;
+  place-items: center;
+  width: 2.8rem;
+  height: 2.8rem;
+  flex: 0 0 auto;
+  overflow: hidden;
+  border-radius: 50%;
+  background: var(--tag-bg);
+  color: var(--accent-1);
+  object-fit: cover;
+}
+
+.authorization-account > div,
+.authorization-scope > div {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.authorization-account small {
+  color: var(--text-muted);
+}
+
+.scope-icon {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--tag-bg);
+  color: var(--accent-1);
+  font-family: var(--mono);
+  font-size: 0.72rem;
+}
+
+.authorization-actions {
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.authorization-progress {
+  display: grid;
+  justify-items: center;
+  gap: 0.8rem;
+  padding-block: 2rem;
+  color: var(--text-secondary);
+}
+
+.loading-orb {
+  width: 1.4rem;
+  aspect-ratio: 1;
+  border: 2px solid var(--glass-border);
+  border-top-color: var(--accent-1);
+  border-radius: 50%;
+  animation: authorization-spin 800ms linear infinite;
+}
+
+.auth-error {
+  color: #ff9b9b;
+}
+
+@keyframes authorization-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 520px) {
+  .authorization-page {
+    width: min(100% - 1rem, 64rem);
+    padding-block: 0.5rem;
+  }
+
+  .authorization-card {
+    padding: 1.25rem;
+  }
+
+  .authorization-copy h1 {
+    font-size: 1.5rem;
+  }
+
+  .authorization-actions > button {
+    flex: 1 1 9rem;
+  }
+}

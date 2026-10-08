@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Button, GlassCard } from "@hungernet/ui";
+import { GlassButton as Button, GlassCard } from "@hungernet/ui/components";
 import { OAuthSignIn, useAuth } from "@hungernet/auth";
 import { createApiClient, resolveApiBaseUrl } from "@hungernet/api-client";
 import { useLocation, useSearchParams } from "react-router-dom";

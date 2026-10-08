@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { createApiClient } from "@hungernet/api-client";
-import { GlassCard } from "@hungernet/ui";
+import { GlassCard } from "@hungernet/ui/components";
 import { AdminLayout } from "../components/AdminLayout";
 
 interface AuditRecord {

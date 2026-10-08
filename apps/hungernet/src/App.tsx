@@ -24,12 +24,13 @@ export function App() {
     return <HungerNetAuthCallback clientId="hungernet" />;
   }
 
+  const isProfilePage = /^\/user\/[^/]+\/?$/.test(location.pathname);
   const returnTo = `${location.pathname}${location.search}${location.hash}`;
 
   return <>
-    <Navbar brand="HungerNet" brandDotColor="#7ef9d2" navItems={navItems} />
+    {!isProfilePage && <Navbar brand="HungerNet" brandDotColor="#7ef9d2" navItems={navItems} />}
     <ScrollToTop />
-    <div className="container">
+    <div className={isProfilePage ? "profile-route-container" : "container"}>
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/hosting" element={<Hosting />} />
@@ -40,11 +41,15 @@ export function App() {
         <Route path="/user/:username" element={<UserProfile />} />
       </Routes>
     </div>
-    <Footer
-      brand="HungerNet"
-      socials={socials}
-      footerNote={`© ${new Date().getFullYear()} HungerNet. All rights reserved.`}
-    />
-    <FloatingAuthButton clientId="hungernet" appName="HungerNet" returnTo={returnTo} />
+    {!isProfilePage && (
+      <>
+        <Footer
+          brand="HungerNet"
+          socials={socials}
+          footerNote={`© ${new Date().getFullYear()} HungerNet. All rights reserved.`}
+        />
+        <FloatingAuthButton clientId="hungernet" appName="HungerNet" returnTo={returnTo} />
+      </>
+    )}
   </>;
 }

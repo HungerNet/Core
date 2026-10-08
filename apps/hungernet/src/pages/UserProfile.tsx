@@ -2,7 +2,7 @@ import { useEffect, useState, type CSSProperties } from "react";
 import { Link, useParams } from "react-router-dom";
 import { createApiClient, getDomainConfig } from "@hungernet/api-client";
 import { useAuth } from "@hungernet/auth";
-import { GlassCard, usePageTitle } from "@hungernet/ui";
+import { usePageTitle } from "@hungernet/ui";
 
 interface ProfileRole {
   id: string;
@@ -28,6 +28,7 @@ export default function UserProfile() {
   const [profile, setProfile] = useState<PublicProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [avatarFailed, setAvatarFailed] = useState(false);
+  const [copied, setCopied] = useState(false);
   const [error, setError] = useState("");
   const canManageUsers = viewer?.permissions?.includes("platform.admin.users.read") ?? false;
 
@@ -54,28 +55,42 @@ export default function UserProfile() {
     };
   }, [username]);
 
+  async function copyProfileLink() {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1800);
+    } catch {
+      setError("This browser could not copy the profile link.");
+    }
+  }
+
   if (loading) {
-    return <main className="page public-profile-page"><GlassCard className="user-profile-card"><p role="status">Loading profile…</p></GlassCard></main>;
+    return <main className="public-profile-page"><p className="profile-loading" role="status">Loading profile…</p></main>;
   }
 
   if (!profile) {
     return (
-      <main className="page public-profile-page">
-        <GlassCard className="user-profile-card">
+      <main className="public-profile-page">
+        <section className="profile-unavailable">
           <div className="section-label">User profile</div>
           <h1>Profile unavailable</h1>
           <p role="alert" className="user-profile-error">{error}</p>
-          <Link className="glass-button glass-button--secondary glass-button--sm" to="/">Back to HungerNet</Link>
-        </GlassCard>
+          <Link className="profile-copy-link" to="/">Back to HungerNet</Link>
+        </section>
       </main>
     );
   }
 
   return (
-    <main className="page public-profile-page">
-      <GlassCard className="user-profile-card">
-        <div className="user-profile-cover" aria-hidden="true" />
-        <div className="user-profile-heading">
+    <main className="public-profile-page">
+      <Link className="profile-back-link" to="/" aria-label="Back to HungerNet home">
+        <span aria-hidden="true">←</span> HungerNet
+      </Link>
+      <article className="user-profile">
+        <header className="user-profile-hero">
+          <div className="user-profile-cover" aria-hidden="true" />
+          <div className="user-profile-heading">
           <div className="user-profile-avatar">
             {profile.avatar_url && !avatarFailed
               ? <img src={profile.avatar_url} alt={`${profile.display_name}'s avatar`} onError={() => setAvatarFailed(true)} />
@@ -87,7 +102,7 @@ export default function UserProfile() {
               title={profile.is_online ? "Online" : "Offline"}
             />
           </div>
-          <div className="user-profile-names">
+            <div className="user-profile-names">
             <h1>{profile.display_name}</h1>
             <p>@{profile.username}</p>
           </div>
@@ -98,16 +113,14 @@ export default function UserProfile() {
               aria-label={`Manage ${profile.username}`}
               title="Manage user"
             >
-              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="m14.5 6.5 3 3M4 20l4.5-.9L19 8.6a2.12 2.12 0 0 0-3-3L5.5 16.1 4 20Z" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
               <span>Manage</span>
             </a>
           )}
-        </div>
+          </div>
+        </header>
 
         {profile.roles.length > 0 && (
-          <div className="user-profile-roles" aria-label="Roles">
+          <div className="user-profile-roles" aria-label="Account roles">
             {profile.roles.map((role) => (
               <span key={role.id} className="user-profile-role" style={{ "--role-color": role.color } as CSSProperties}>
                 {role.name}
@@ -116,11 +129,24 @@ export default function UserProfile() {
           </div>
         )}
 
-        <section className="user-profile-bio" aria-labelledby="profile-bio-title">
-          <h2 id="profile-bio-title">About</h2>
-          <p>{profile.bio?.trim() || "This user has not added a bio yet."}</p>
-        </section>
-      </GlassCard>
+        <div className="user-profile-content">
+          <section className="user-profile-bio" aria-labelledby="profile-bio-title">
+            <div className="section-label">Profile</div>
+            <h2 id="profile-bio-title">About {profile.display_name}</h2>
+            <p>{profile.bio?.trim() || "This user has not added a bio yet."}</p>
+          </section>
+          <aside className="user-profile-side">
+            <div className="profile-presence-line">
+              <span className={`profile-presence-dot${profile.is_online ? " is-online" : ""}`} aria-hidden="true" />
+              <span>{profile.is_online ? "Online now" : "Offline"}</span>
+            </div>
+            <button className="profile-copy-link" type="button" onClick={() => void copyProfileLink()}>
+              {copied ? "Link copied" : "Copy profile link"}
+            </button>
+            {error && <p className="user-profile-error" role="alert">{error}</p>}
+          </aside>
+        </div>
+      </article>
     </main>
   );
 }

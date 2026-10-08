@@ -1,6 +1,6 @@
 import { useEffect, useState, type CSSProperties } from "react";
 import { ApiClientError, createApiClient } from "@hungernet/api-client";
-import { Button, GlassCard, InputBox } from "@hungernet/ui";
+import { GlassButton as Button, GlassCard, InputBox } from "@hungernet/ui/components";
 import { useAuth } from "@hungernet/auth";
 import { AdminLayout } from "../components/AdminLayout";
 
@@ -201,7 +201,7 @@ export function RolesPage() {
       {!loading && !error && roles.length === 0 && <p>No roles found.</p>}
       <div className="role-grid">
         {roles.map((role) => (
-          <GlassCard key={role.id} className="role-card" style={{ "--role-color": role.color } as CSSProperties}>
+          <GlassCard key={role.id} className="role-card" style={{ "--role-color": role.color }}>
             <div className="role-card-heading">
               <div className="role-identity">
                 <span className="role-color-dot" aria-hidden="true" />

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { FileUpload, GlassButton, GlassCard, InputBox } from "@hungernet/ui";
+import { FileUpload, GlassButton, GlassCard, InputBox } from "@hungernet/ui/components";
 import { ApiClientError, createApiClient } from "@hungernet/api-client";
 import { SettingsLayout } from "../components/SettingsLayout";
 

@@ -2,11 +2,13 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import { AuthProvider } from "@hungernet/auth";
-import "@hungernet/styles";
+import "../../../packages/styles/src/sites/index.css";
 import "./profile.css";
+import "./accounts.css";
+import "../../../packages/styles/src/sites/platform.css";
 import { App } from "./App";
 
-document.documentElement.dataset.site = "accounts";
+document.documentElement.dataset.site = "ifamished";
 
 const root = document.getElementById("root");
 

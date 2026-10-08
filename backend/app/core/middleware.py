@@ -81,8 +81,6 @@ class RedisRateLimitMiddleware(BaseHTTPMiddleware):
             return f"auth:{path}"
         if method in {"POST", "PATCH", "PUT", "DELETE"} and path.startswith("/api/v1/users/me"):
             return "user-mutations"
-        if method in {"POST", "PATCH", "PUT", "DELETE"} and path.startswith("/api/v1/projects"):
-            return "project-mutations"
         if method in {"POST", "PATCH", "PUT", "DELETE"} and path.startswith("/api/v1/announcements"):
             return "announcement-mutations"
         if path.startswith("/api/v1/admin/"):

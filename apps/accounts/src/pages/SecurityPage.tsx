@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { createApiClient } from "@hungernet/api-client";
-import { GlassButton, GlassCard } from "@hungernet/ui";
+import { GlassButton, GlassCard } from "@hungernet/ui/components";
 import { SettingsLayout } from "../components/SettingsLayout";
 
 type Provider = "google" | "github" | "discord";

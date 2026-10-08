@@ -67,7 +67,10 @@ async def get_current_user_id(
     if user is None or not user.is_active:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Account is unavailable")
 
-    if (now - db_session.last_seen_at).total_seconds() >= 60:
+    last_seen_at = db_session.last_seen_at
+    if last_seen_at.tzinfo is None:
+        last_seen_at = last_seen_at.replace(tzinfo=UTC)
+    if (now - last_seen_at).total_seconds() >= 60:
         db_session.last_seen_at = now
         await db.commit()
     return user_id

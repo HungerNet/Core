@@ -12,9 +12,6 @@ from app.db.models import Permission, Role, RolePermission, User
 PERMISSION_REGISTRY = {
     "platform.profile.read",
     "platform.profile.update",
-    "platform.projects.read",
-    "platform.projects.create",
-    "platform.projects.manage",
     "platform.announcements.read",
     "platform.announcements.manage",
     "platform.admin.users.read",
@@ -52,8 +49,7 @@ class PermissionService:
 
         for user_permission in user.permissions:
             if user_permission.permission in PERMISSION_REGISTRY and (
-                user_permission.expires_at is None
-                or user_permission.expires_at > datetime.now(UTC)
+                user_permission.expires_at is None or user_permission.expires_at > datetime.now(UTC)
             ):
                 permissions.add(user_permission.permission)
 
@@ -90,9 +86,7 @@ class PermissionService:
         else:
             role.permissions.clear()
         superuser_role = await db.scalar(
-            select(Role)
-            .where(Role.key == "superuser")
-            .options(selectinload(Role.permissions))
+            select(Role).where(Role.key == "superuser").options(selectinload(Role.permissions))
         )
         if superuser_role is None:
             superuser_role = Role(

@@ -1,18 +1,16 @@
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
-import { Button, GlassCard, SiteHeader } from "@hungernet/ui";
+import { Footer, GlassButton, GlassCard, Navbar, ScrollToTop } from "@hungernet/ui/components";
 import { HungerNetAuthButtons, HungerNetAuthCallback, RequirePermission } from "@hungernet/auth";
 import { useAuth } from "@hungernet/auth";
 
 import { UserListPage } from "./pages/UserListPage";
 import { UserDetailPage } from "./pages/UserDetailPage";
 import { RolesPage } from "./pages/RolesPage";
-import { ProjectsPage } from "./pages/ProjectsPage";
 import { AuditPage } from "./pages/AuditPage";
 
 const navItems = [
   { to: "/users", label: "Users" },
   { to: "/roles", label: "Roles" },
-  { to: "/projects", label: "Projects" },
   { to: "/audit", label: "Audit" },
 ];
 
@@ -21,67 +19,30 @@ function AdminShell() {
   const displayName = user?.displayName ?? "Operator";
 
   return (
-    <div className="app-shell">
-      <div className="accent-grid accent-grid--warm" aria-hidden="true" />
-      <SiteHeader
-        className="platform-header"
+    <>
+      <Navbar
         brand="HungerNet Admin"
+        brandDotColor="#4ad9e6"
         navItems={navItems}
-        accountAction={<Button onClick={() => void signOut()}>Sign out</Button>}
+        rightSlot={<GlassButton size="sm" onClick={() => void signOut()}>Sign out</GlassButton>}
       />
-
-      <div className="app-panel">
-        <header className="top-bar glass-card">
-          <div className="brand-block">
-            <div className="section-label">Admin</div>
-            <h1>HungerNet dashboard</h1>
-          </div>
-
-          <div className="top-actions">
-            <span className="status-chip status-chip--warn">live</span>
-            <span className="muted user-pill">{displayName}</span>
-          </div>
+      <ScrollToTop />
+      <main className="container page">
+        <header className="page-header">
+          <div className="section-label">Admin</div>
+          <h1>Account management</h1>
+          <p>Signed in as {displayName}. Manage users, roles, and platform activity.</p>
         </header>
-
-        <div className="hero-row">
-          <div className="spotlight-card glass-card spotlight-card--warm">
-            <div className="spotlight-kicker">Operations center</div>
-            <h2>{displayName}</h2>
-            <p>Monitor access, permissions, projects, and account health from one control surface.</p>
-
-          </div>
-
-          <div className="stat-grid">
-            <div className="stat-card glass-card">
-              <span className="stat-label">Users</span>
-              <strong>1,284</strong>
-              <small>total</small>
-            </div>
-            <div className="stat-card glass-card">
-              <span className="stat-label">Incidents</span>
-              <strong>03</strong>
-              <small>open</small>
-            </div>
-            <div className="stat-card glass-card">
-              <span className="stat-label">Uptime</span>
-              <strong>99.9%</strong>
-              <small>healthy</small>
-            </div>
-          </div>
-        </div>
-
-        <div className="route-panel glass-card">
-          <Routes>
-            <Route path="/users" element={<UserListPage />} />
-            <Route path="/users/:id" element={<UserDetailPage />} />
-            <Route path="/roles" element={<RolesPage />} />
-            <Route path="/projects" element={<ProjectsPage />} />
-            <Route path="/audit" element={<AuditPage />} />
-            <Route path="*" element={<Navigate to="/users" replace />} />
-          </Routes>
-        </div>
-      </div>
-    </div>
+        <Routes>
+          <Route path="/users" element={<UserListPage />} />
+          <Route path="/users/:id" element={<UserDetailPage />} />
+          <Route path="/roles" element={<RolesPage />} />
+          <Route path="/audit" element={<AuditPage />} />
+          <Route path="*" element={<Navigate to="/users" replace />} />
+        </Routes>
+      </main>
+      <Footer brand="HungerNet Admin" socials={[]} footerNote={`© ${new Date().getFullYear()} HungerNet`} />
+    </>
   );
 }
 
@@ -95,10 +56,8 @@ export function App() {
 
   if (status === "loading") {
     return (
-      <main className="app-shell page-loading-shell">
-        <div className="accent-grid accent-grid--warm" aria-hidden="true" />
-        <GlassCard className="loading-card">
-          <div className="loading-orb" aria-hidden="true" />
+      <main className="container page">
+        <GlassCard style={{ maxWidth: "36rem", padding: "2rem", marginInline: "auto" }}>
           <p>Loading admin session…</p>
         </GlassCard>
       </main>
@@ -107,9 +66,8 @@ export function App() {
 
   if (!user) {
     return (
-      <main className="app-shell page-loading-shell">
-        <div className="accent-grid accent-grid--warm" aria-hidden="true" />
-        <GlassCard className="auth-landing-card">
+      <main className="container page">
+        <GlassCard style={{ maxWidth: "36rem", padding: "2rem", marginInline: "auto" }}>
           <div className="section-label">Authentication</div>
           <h2>Access the control room</h2>
           <HungerNetAuthButtons clientId="admin" appName="HungerNet Admin" />
@@ -122,9 +80,8 @@ export function App() {
     <RequirePermission
       permission="platform.admin.users.read"
       fallback={
-        <main className="app-shell page-loading-shell">
-          <div className="accent-grid accent-grid--warm" aria-hidden="true" />
-          <GlassCard className="auth-landing-card">
+        <main className="container page">
+          <GlassCard style={{ maxWidth: "36rem", padding: "2rem", marginInline: "auto" }}>
             <div className="section-label">Restricted</div>
             <h2>Admin access required</h2>
             <p className="muted">Your account does not have permission to open this dashboard.</p>
