@@ -1,0 +1,33 @@
+:root[data-theme="periwinkle"] {
+  --accent-1: #a9b7ff;
+  --accent-2: #8cd8ff;
+  --accent-3: #d5c7ff;
+  --accent-glow-1: rgba(169, 183, 255, 0.26);
+  --accent-glow-2: rgba(140, 216, 255, 0.2);
+  --glass-border-strong: rgba(169, 183, 255, 0.42);
+  --bg-1: #090d1e;
+  --bg-2: #171d38;
+  --bg-3: #1b2a45;
+  --bg-4: #1d243d;
+  --glow-1: rgba(169, 183, 255, 0.15);
+  --glow-2: rgba(140, 216, 255, 0.12);
+  --glow-3: rgba(213, 199, 255, 0.11);
+  --site-glow-primary: rgba(163, 175, 255, 0.2);
+  --site-glow-secondary: rgba(121, 205, 255, 0.14);
+  --btn-primary-start: rgba(169, 183, 255, 0.22);
+  --btn-primary-end: rgba(140, 216, 255, 0.18);
+  --btn-primary-hover-start: rgba(169, 183, 255, 0.34);
+  --btn-primary-hover-end: rgba(140, 216, 255, 0.26);
+  --btn-primary-shadow: rgba(169, 183, 255, 0.18);
+  --btn-border: rgba(169, 183, 255, 0.34);
+  --btn-hover-shadow: rgba(169, 183, 255, 0.14);
+  --tag-bg: rgba(169, 183, 255, 0.08);
+  --tag-border: rgba(169, 183, 255, 0.22);
+  --tag-text: #c4d0ff;
+  --focus-outline: #c4d0ff;
+  --focus-ring: rgba(169, 183, 255, 0.15);
+  --hover-glow: rgba(169, 183, 255, 0.1);
+  --link-color: #d0d7ff;
+  --link-hover-color: #9fe6ff;
+  --link-visited-color: #cdd8ff;
+}

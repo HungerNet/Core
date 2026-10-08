@@ -1,0 +1,33 @@
+:root[data-theme="default"] {
+  --accent-1: #7ef9d2;
+  --accent-2: #4fc7ff;
+  --accent-3: #8fa2ff;
+  --accent-glow-1: rgba(126, 249, 210, 0.22);
+  --accent-glow-2: rgba(79, 199, 255, 0.14);
+  --glass-border-strong: rgba(126, 249, 210, 0.4);
+  --bg-1: #07111b;
+  --bg-2: #0b1623;
+  --bg-3: #111b2a;
+  --bg-4: #101729;
+  --glow-1: rgba(126, 249, 210, 0.08);
+  --glow-2: rgba(143, 162, 255, 0.08);
+  --glow-3: rgba(79, 199, 255, 0.06);
+  --site-glow-primary: rgba(99, 246, 214, 0.15);
+  --site-glow-secondary: rgba(155, 140, 255, 0.18);
+  --btn-primary-start: rgba(99, 246, 214, 0.18);
+  --btn-primary-end: rgba(107, 199, 255, 0.14);
+  --btn-primary-hover-start: rgba(99, 246, 214, 0.3);
+  --btn-primary-hover-end: rgba(107, 199, 255, 0.26);
+  --btn-primary-shadow: rgba(99, 246, 214, 0.18);
+  --btn-border: rgba(126, 249, 210, 0.28);
+  --btn-hover-shadow: rgba(99, 246, 214, 0.12);
+  --tag-bg: rgba(126, 249, 210, 0.08);
+  --tag-border: rgba(126, 249, 210, 0.2);
+  --tag-text: #7ef9d2;
+  --focus-outline: #7ef9d2;
+  --focus-ring: rgba(126, 249, 210, 0.1);
+  --hover-glow: rgba(99, 246, 214, 0.08);
+  --link-color: #7ef9d2;
+  --link-hover-color: #8ecfff;
+  --link-visited-color: #b3c2ff;
+}
