@@ -2,6 +2,8 @@ export { default as CopyField } from "./CopyField";
 export { default as Dropdown } from "./Dropdown";
 export { default as FaqAccordion } from "./FaqAccordion";
 export { default as Footer } from "./Footer";
+export { FileUpload } from "./FileUpload";
+export type { FileUploadProps } from "./FileUpload";
 export { default as GlassButton } from "./GlassButton";
 export { default as GlassCard } from "./GlassCard";
 export { default as Icon } from "./Icon";

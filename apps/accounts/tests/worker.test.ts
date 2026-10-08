@@ -5,13 +5,17 @@ import accountsWorker from "../worker";
 describe("Accounts Workers API proxy", () => {
   afterEach(() => vi.unstubAllGlobals());
 
-  it("uses a same-origin API path only for the Accounts Workers hostname", () => {
+  it("uses a same-origin API path for each first-party app", () => {
     expect(resolveApiBaseUrl("https://api.hungernet.dev/api/v1", "https://accounts.millered001.workers.dev"))
       .toBe("/api/v1");
     expect(resolveApiBaseUrl("/api/v1", "https://hungernet.millered001.workers.dev"))
-      .toBe("https://api.hacklets.dev/api/v1");
+      .toBe("/api/v1");
+    expect(resolveApiBaseUrl("/api/v1", "https://admin.millered001.workers.dev"))
+      .toBe("/api/v1");
     expect(resolveApiBaseUrl("https://api.hungernet.dev/api/v1", "https://accounts.hungernet.dev"))
-      .toBe("https://api.hungernet.dev/api/v1");
+      .toBe("/api/v1");
+    expect(resolveApiBaseUrl("/api/v1", "https://ifamished.com"))
+      .toBe("/api/v1");
   });
 
   it("forwards API requests with the Accounts origin and leaves static assets alone", async () => {

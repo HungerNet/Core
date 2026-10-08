@@ -22,4 +22,4 @@ backend/.venv/
 *.log
 *.sqlite3
 .DS_Store
-.wangler/
+.wrangler/

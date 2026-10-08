@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { GlassButton, GlassCard, InputBox } from "@hungernet/ui";
+import { FileUpload, GlassButton, GlassCard, InputBox } from "@hungernet/ui";
 import { ApiClientError, createApiClient } from "@hungernet/api-client";
 import { SettingsLayout } from "../components/SettingsLayout";
 
@@ -61,7 +61,7 @@ export function ProfilePage() {
     }
   }
 
-  async function uploadAvatar(file: File) {
+  async function uploadAvatar(file: File, onProgress: (percent: number) => void) {
     setSaving(true);
     setSaved(false);
     setError("");
@@ -70,11 +70,10 @@ export function ProfilePage() {
         method: "POST",
         body: file,
         headers: { "Content-Type": file.type },
+        onUploadProgress: onProgress,
       });
       setAvatarUrl(result.avatar_url);
       setSaved(true);
-    } catch (cause) {
-      setError(cause instanceof ApiClientError ? cause.message : "Could not upload your avatar.");
     } finally {
       setSaving(false);
     }
@@ -123,20 +122,14 @@ export function ProfilePage() {
                 {avatarUrl
                   ? <img src={avatarUrl} alt="Your current profile avatar" />
                   : <span aria-hidden="true">{displayName.slice(0, 1).toUpperCase() || "?"}</span>}
-                <div>
-                  <input
-                    id="profile-avatar"
-                    type="file"
-                    accept="image/png,image/jpeg,image/webp,image/gif"
-                    disabled={loading || saving}
-                    onChange={(event) => {
-                      const file = event.currentTarget.files?.[0];
-                      event.currentTarget.value = "";
-                      if (file) void uploadAvatar(file);
-                    }}
-                  />
-                  <span className="site-meta">PNG, JPEG, WebP, or GIF · up to 5 MB</span>
-                </div>
+                <FileUpload
+                  id="profile-avatar"
+                  accept="image/png,image/jpeg,image/webp,image/gif"
+                  disabled={loading || saving}
+                  maxSizeBytes={5 * 1024 * 1024}
+                  hint="PNG, JPEG, WebP, or GIF · up to 5 MB"
+                  onUpload={uploadAvatar}
+                />
               </div>
             </div>
           </div>

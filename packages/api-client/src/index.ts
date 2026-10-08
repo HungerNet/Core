@@ -8,6 +8,10 @@ export interface ApiClientOptions {
   clientId?: string;
 }
 
+export interface ApiRequestInit extends RequestInit {
+  onUploadProgress?: (percent: number) => void;
+}
+
 interface AppAccessToken {
   token: string;
   expiresAt: number;
@@ -67,6 +71,15 @@ function resolveUrl(baseUrl: string, path: string) {
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
 
   return `${normalizedBase}${normalizedPath}`;
+}
+
+function isXhrBody(
+  body: BodyInit | null | undefined,
+): body is XMLHttpRequestBodyInit | null {
+  return (
+    body == null ||
+    !(typeof ReadableStream !== "undefined" && body instanceof ReadableStream)
+  );
 }
 
 async function parseJsonResponse<T>(response: Response): Promise<T> {
@@ -208,9 +221,10 @@ export function createApiClient({
 
   const request = async <T>(
     path: string,
-    init: RequestInit = {},
+    init: ApiRequestInit = {},
   ): Promise<T> => {
     const method = (init.method ?? "GET").toUpperCase();
+    const { onUploadProgress, ...requestInit } = init;
     const normalizedPath = path.startsWith("/") ? path : `/${path}`;
     const canUseAppToken = Boolean(
       clientId &&
@@ -231,12 +245,82 @@ export function createApiClient({
     if (!["GET", "HEAD", "OPTIONS"].includes(method)) {
       headers.set("X-CSRF-Token", await getCsrfToken());
     }
-    const fetchRequest = () =>
-      fetch(resolveUrl(resolvedBaseUrl, path), {
-        ...init,
+    const fetchRequest = () => {
+      const body = requestInit.body;
+      if (
+        onUploadProgress &&
+        typeof XMLHttpRequest !== "undefined" &&
+        isXhrBody(body)
+      ) {
+        return new Promise<Response>((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            const url = resolveUrl(resolvedBaseUrl, path);
+            let settled = false;
+            const finish = (callback: () => void) => {
+              if (settled) return;
+              settled = true;
+              requestInit.signal?.removeEventListener("abort", abort);
+              callback();
+            };
+            const abort = () => xhr.abort();
+
+            xhr.open(method, url);
+            xhr.withCredentials = credentials === "include";
+            headers.forEach((value, name) => xhr.setRequestHeader(name, value));
+            xhr.upload.addEventListener("progress", (event) => {
+              if (event.lengthComputable) {
+                onUploadProgress(Math.round((event.loaded / event.total) * 100));
+              }
+            });
+            xhr.addEventListener("load", () => {
+              finish(() => {
+                if (xhr.status === 0) {
+                  reject(new TypeError("Network request failed"));
+                  return;
+                }
+                const responseHeaders = new Headers();
+                for (const line of xhr.getAllResponseHeaders().trim().split(/[\r\n]+/)) {
+                  const separator = line.indexOf(":");
+                  if (separator > 0) {
+                    responseHeaders.append(
+                      line.slice(0, separator).trim(),
+                      line.slice(separator + 1).trim(),
+                    );
+                  }
+                }
+                const responseBody =
+                  xhr.status === 204 || xhr.status === 205 || xhr.status === 304
+                    ? null
+                    : xhr.responseText;
+                resolve(
+                  new Response(responseBody, {
+                    status: xhr.status,
+                    statusText: xhr.statusText,
+                    headers: responseHeaders,
+                  }),
+                );
+              });
+            });
+            xhr.addEventListener("error", () =>
+              finish(() => reject(new TypeError("Network request failed"))),
+            );
+            xhr.addEventListener("abort", () =>
+              finish(() => reject(new DOMException("Upload aborted", "AbortError"))),
+            );
+            requestInit.signal?.addEventListener("abort", abort, { once: true });
+            if (requestInit.signal?.aborted) {
+              abort();
+              return;
+            }
+            xhr.send(body);
+          });
+      }
+      return fetch(resolveUrl(resolvedBaseUrl, path), {
+        ...requestInit,
         credentials,
         headers: Object.fromEntries(headers.entries()),
       });
+    };
     let response = await fetchRequest();
     if (response.status === 401 && accessToken && canUseAppToken && clientId) {
       headers.delete("Authorization");

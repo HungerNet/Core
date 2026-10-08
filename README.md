@@ -99,8 +99,9 @@ DATABASE_URL=postgresql+asyncpg://hungernet:local-development-only@localhost:543
 JWT_SECRET=replace-with-a-long-random-secret
 JWT_ALGORITHM=HS256
 ACCESS_TOKEN_EXPIRY_MINUTES=15
-SESSION_EXPIRY_DAYS=30
+SESSION_EXPIRY_DAYS=90
 REDIS_URL=redis://localhost:6379/0
+VITE_API_PROXY_TARGET=http://localhost:8000
 SESSION_COOKIE_SECURE=false
 SESSION_COOKIE_SAME_SITE=lax
 
@@ -116,7 +117,7 @@ POSTGRES_USER=hungernet
 POSTGRES_PASSWORD=local-development-only
 ```
 
-Frontend API and Accounts hosts are selected from the current site origin using hardcoded domain constants. Backend CORS, return origins, and OAuth callbacks are fixed in source; no domain environment settings are required.
+Production API and Accounts hosts are selected from the current site origin using hardcoded domain constants. Local Vite servers proxy `/api/v1` to `VITE_API_PROXY_TARGET` (default `http://localhost:8000`); Worker deployments retain their configured upstream API origin. Backend CORS, return origins, and OAuth callbacks are fixed in source.
 
 ## Publishing and deployment
 

@@ -89,7 +89,7 @@ class Settings(BaseSettings):
     jwt_secret: str = "development-only-change-me"
     jwt_algorithm: str = "HS256"
     access_token_expiry_minutes: int = Field(default=15, ge=1, le=60)
-    session_expiry_days: int = Field(default=30, ge=1, le=365)
+    session_expiry_days: int = Field(default=90, ge=1, le=365)
     recent_auth_window_minutes: int = Field(default=10, ge=1, le=60)
     allowed_oauth_providers: list[str] = Field(default_factory=lambda: ["google", "github", "discord"])
     google_client_id: str | None = None

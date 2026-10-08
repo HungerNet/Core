@@ -14,6 +14,8 @@ export { FaqAccordion } from "./FaqAccordion";
 export type { FaqAccordionProps } from "./FaqAccordion";
 export { Icon } from "./Icon";
 export type { IconName, IconProps } from "./Icon";
+export { FileUpload } from "./components/FileUpload";
+export type { FileUploadProps } from "./components/FileUpload";
 export { MarkdownRenderer } from "./MarkdownRenderer";
 export type { MarkdownRendererProps } from "./MarkdownRenderer";
 export { ScrollToTop } from "./ScrollToTop";

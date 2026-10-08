@@ -3,9 +3,11 @@ import hashlib
 import hmac
 import struct
 import time
+from datetime import timedelta
 
 import pytest
 from fastapi import HTTPException
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from starlette.requests import Request
 from starlette.responses import Response
@@ -121,6 +123,13 @@ async def test_registration_requires_totp_and_sets_workers_cookie_attributes(
         assert session.authenticated
         assert session.user is not None
         assert session.user.username == "member_one"
+        db_session = await db.scalar(
+            select(models.Session).where(
+                models.Session.user_id == user.id
+            )
+        )
+        assert db_session is not None
+        assert db_session.expires_at - db_session.created_at > timedelta(days=89)
 
     await engine.dispose()
 

@@ -5,6 +5,8 @@ import Home from "./pages/Home";
 import Info from "./pages/Info";
 import FAQ from "./pages/FAQ";
 import Rules from "./pages/Rules";
+import Projects from "./pages/Projects";
+import Announcements from "./pages/Announcements";
 
 const navItems = [
   { to: "/", label: "Home", end: true },
@@ -34,6 +36,8 @@ export function App() {
         <Route path="/info" element={<Info />} />
         <Route path="/faq" element={<FAQ />} />
         <Route path="/rules" element={<Rules />} />
+        <Route path="/projects" element={<Projects />} />
+        <Route path="/announcements" element={<Announcements />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </div>

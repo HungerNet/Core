@@ -1,5 +1,6 @@
 @import "./public-sites.css";
 @import "./roles.css";
+@import "./sites/components/FileUpload.css";
 
 @layer reset, tokens, base, components, utilities;
 

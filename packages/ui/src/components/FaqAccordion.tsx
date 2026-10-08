@@ -52,7 +52,7 @@ export default function FaqAccordion({ q, a, defaultOpen = false, style }: FaqAc
         aria-hidden={!open}
         onClick={(e: MouseEvent<HTMLDivElement>) => e.stopPropagation()}
       >
-        <p className="faq-answer">{a}</p>
+        <div className="faq-answer">{a}</div>
       </div>
     </GlassCard>
   )
