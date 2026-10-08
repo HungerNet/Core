@@ -56,7 +56,7 @@ export function App() {
 
   if (status === "loading") {
     return (
-      <main className="container page">
+      <main className="private-auth-page">
         <GlassCard style={{ maxWidth: "36rem", padding: "2rem", marginInline: "auto" }}>
           <p>Loading admin session…</p>
         </GlassCard>
@@ -66,11 +66,14 @@ export function App() {
 
   if (!user) {
     return (
-      <main className="container page">
-        <GlassCard style={{ maxWidth: "36rem", padding: "2rem", marginInline: "auto" }}>
-          <div className="section-label">Authentication</div>
-          <h2>Access the control room</h2>
+      <main className="private-auth-page admin-auth-stage">
+        <GlassCard className="private-admin-card">
+          <div className="private-auth-mark" aria-hidden="true">H</div>
+          <div className="section-label">Restricted workspace</div>
+          <h1>HungerNet Admin</h1>
+          <p className="private-auth-description">Sign in with an authorized HungerNet account to manage platform access.</p>
           <HungerNetAuthButtons clientId="admin" appName="HungerNet Admin" />
+          <p className="private-auth-note">Admin permissions are required to continue.</p>
         </GlassCard>
       </main>
     );
@@ -80,7 +83,7 @@ export function App() {
     <RequirePermission
       permission="platform.admin.users.read"
       fallback={
-        <main className="container page">
+        <main className="private-auth-page">
           <GlassCard style={{ maxWidth: "36rem", padding: "2rem", marginInline: "auto" }}>
             <div className="section-label">Restricted</div>
             <h2>Admin access required</h2>

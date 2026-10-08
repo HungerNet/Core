@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import { AuthProvider } from "@hungernet/auth";
 import "../../../packages/styles/src/sites/index.css";
+import "../../../packages/styles/src/sites/components/PrivateAuth.css";
 import "./admin.css";
 import "../../../packages/styles/src/sites/platform.css";
 import { App } from "./App";

@@ -63,12 +63,15 @@ export function App() {
   return (
     <RequireAuth
       fallback={
-        <main className="container page">
-          <GlassCard style={{ maxWidth: "36rem", padding: "2rem", marginInline: "auto" }}>
-            <div className="section-label">Sign in</div>
-            <h2>Access your account</h2>
-            <OAuthSignIn returnPath="/profile" />
-          </GlassCard>
+        <main className="private-auth-page account-auth-stage">
+          <header className="private-auth-intro">
+            <span className="private-auth-mark" aria-hidden="true">H</span>
+            <div className="section-label">HungerNet Accounts</div>
+            <h1>Your account, in one place.</h1>
+            <p>Manage your profile, connected identities, and active sessions.</p>
+          </header>
+          <OAuthSignIn returnPath="/profile" />
+          <p className="private-auth-note">Secure access to your HungerNet account.</p>
         </main>
       }
     >
