@@ -1,5 +1,7 @@
 @import "./themes/default.css";
 @import "./themes/red.css";
+@import "./themes/red-orange.css";
+@import "./themes/red-light.css";
 @import "./themes/periwinkle.css";
 @import "./themes/cyan.css";
 @import "./themes/amber.css";
@@ -26,7 +28,7 @@
 
 /* Site-to-theme assignments */
 :root[data-site="hungernet"] {
-  --site-theme: amber;
+  --site-theme: red;
 }
 
 :root[data-site="hungersmp"] {

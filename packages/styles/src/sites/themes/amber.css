@@ -1,10 +1,10 @@
+/* optifineforfabric */
 :root[data-theme="amber"] {
   --accent-1: #f5b15d;
   --accent-2: #f7d77a;
   --accent-3: #ff9a6b;
   --accent-glow-1: rgba(245, 177, 93, 0.28);
   --accent-glow-2: rgba(247, 215, 122, 0.22);
-  --glass-border-strong: rgba(245, 177, 93, 0.4);
   --bg-1: #170f08;
   --bg-2: #2b1d0f;
   --bg-3: #302312;
@@ -14,6 +14,7 @@
   --glow-3: rgba(255, 154, 107, 0.11);
   --site-glow-primary: rgba(255, 168, 92, 0.22);
   --site-glow-secondary: rgba(255, 212, 112, 0.18);
+  --glass-border-strong: rgba(245, 177, 93, 0.4);
   --btn-primary-start: rgba(245, 177, 93, 0.24);
   --btn-primary-end: rgba(247, 215, 122, 0.18);
   --btn-primary-hover-start: rgba(245, 177, 93, 0.38);

@@ -1,10 +1,10 @@
+/* hungersmp */
 :root[data-theme="periwinkle"] {
   --accent-1: #a9b7ff;
   --accent-2: #8cd8ff;
   --accent-3: #d5c7ff;
   --accent-glow-1: rgba(169, 183, 255, 0.26);
   --accent-glow-2: rgba(140, 216, 255, 0.2);
-  --glass-border-strong: rgba(169, 183, 255, 0.42);
   --bg-1: #090d1e;
   --bg-2: #171d38;
   --bg-3: #1b2a45;
@@ -14,6 +14,7 @@
   --glow-3: rgba(213, 199, 255, 0.11);
   --site-glow-primary: rgba(163, 175, 255, 0.2);
   --site-glow-secondary: rgba(121, 205, 255, 0.14);
+  --glass-border-strong: rgba(169, 183, 255, 0.42);
   --btn-primary-start: rgba(169, 183, 255, 0.22);
   --btn-primary-end: rgba(140, 216, 255, 0.18);
   --btn-primary-hover-start: rgba(169, 183, 255, 0.34);
