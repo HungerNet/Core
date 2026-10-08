@@ -1,7 +1,7 @@
 """Remove retired project management permissions.
 
 Revision ID: 20261008_retire_project_permissions
-Revises: 20261007_app_refresh
+Revises: 20261008_widen_alembic_version
 Create Date: 2026-10-08
 """
 
@@ -15,7 +15,7 @@ import sqlalchemy as sa
 from alembic import op
 
 revision = "20261008_retire_project_permissions"
-down_revision = "20261007_app_refresh"
+down_revision = "20261008_widen_alembic_version"
 branch_labels = None
 depends_on = None
 
