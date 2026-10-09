@@ -1,6 +1,6 @@
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { Footer, GlassCard, Navbar, ScrollToTop } from "@hungernet/ui/components";
-import { OAuthSignIn, ProfileButton, RequireAuth, useAuth } from "@hungernet/auth";
+import { FloatingAuthButton, OAuthSignIn, RequireAuth, useAuth } from "@hungernet/auth";
 import { AuthorizationPage } from "./pages/AuthorizationPage";
 
 import { ProfilePage } from "./pages/ProfilePage";
@@ -23,9 +23,6 @@ function AccountShell() {
         brand="HungerNet Accounts"
         brandDotColor="#c6283d"
         navItems={navItems}
-        rightSlot={
-          <ProfileButton clientId="accounts" appName="HungerNet Accounts" placement="inline" />
-        }
       />
       <ScrollToTop />
       <main className="container page">
@@ -42,6 +39,7 @@ function AccountShell() {
         </Routes>
       </main>
       <Footer brand="HungerNet Accounts" socials={[]} footerNote={`© ${new Date().getFullYear()} HungerNet`} />
+      <FloatingAuthButton clientId="accounts" appName="HungerNet Accounts" />
     </>
   );
 }

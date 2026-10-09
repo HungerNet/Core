@@ -1,6 +1,6 @@
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { Footer, GlassCard, Navbar, ScrollToTop } from "@hungernet/ui/components";
-import { HungerNetAuthButtons, HungerNetAuthCallback, ProfileButton, RequirePermission } from "@hungernet/auth";
+import { FloatingAuthButton, HungerNetAuthButtons, HungerNetAuthCallback, RequirePermission } from "@hungernet/auth";
 import { useAuth } from "@hungernet/auth";
 
 import { UserListPage } from "./pages/UserListPage";
@@ -26,7 +26,6 @@ function AdminShell() {
         brand="HungerNet Admin"
         brandDotColor="#c6283d"
         navItems={navItems}
-        rightSlot={<ProfileButton clientId="admin" appName="HungerNet Admin" placement="inline" />}
       />
       <ScrollToTop />
       <main className="container page">
@@ -45,6 +44,7 @@ function AdminShell() {
         </Routes>
       </main>
       <Footer brand="HungerNet Admin" socials={[]} footerNote={`© ${new Date().getFullYear()} HungerNet`} />
+      <FloatingAuthButton clientId="admin" appName="HungerNet Admin" />
     </>
   );
 }
