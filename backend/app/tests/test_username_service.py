@@ -10,9 +10,13 @@ from app.db.models import User
 from app.services.auth_service import AuthService
 from app.services.username_service import (
     ReservedUsernameError,
+    generate_username,
     resolve_edited_username,
+    resolve_new_username,
     username_base,
 )
+
+PASSWORD = "cobalt river lantern! 82"
 
 
 def test_username_base_normalizes_display_name() -> None:
@@ -34,13 +38,13 @@ async def test_signup_collision_suffix_and_reserved_base(monkeypatch: pytest.Mon
             db,
             email="first@example.test",
             display_name="✨Epic-Gamer✨",
-            password="correct horse battery staple",
+            password=PASSWORD,
         )
         second, _ = await AuthService.register_local_user(
             db,
             email="second@example.test",
             display_name="✨Epic-Gamer✨",
-            password="correct horse battery staple",
+            password=PASSWORD,
         )
 
         assert first.username == "epic_gamer"
@@ -75,5 +79,36 @@ async def test_signup_collision_suffix_and_reserved_base(monkeypatch: pytest.Mon
         assert len(generated_long_name) == 69
         assert generated_long_name.startswith(f"{long_name}#")
         assert re.fullmatch(r"[a-z0-9_]+#\d{4}", second.username)
+
+    await engine.dispose()
+
+
+@pytest.mark.asyncio
+async def test_signup_reserves_generated_username_base(monkeypatch: pytest.MonkeyPatch) -> None:
+    engine = create_async_engine("sqlite+aiosqlite://")
+    async with engine.begin() as connection:
+        await connection.run_sync(Base.metadata.create_all)
+    session_factory = async_sessionmaker(engine, expire_on_commit=False)
+
+    monkeypatch.setattr("app.services.username_service.secrets.randbelow", lambda _limit: 42)
+    async with session_factory() as db:
+        db.add(User(username="taken#0001", display_name="Taken"))
+        await db.flush()
+        assert await resolve_new_username(db, "taken", "Ignored") == "taken#0042"
+
+    await engine.dispose()
+
+
+@pytest.mark.asyncio
+async def test_underscores_are_literal_when_checking_reserved_username_bases() -> None:
+    engine = create_async_engine("sqlite+aiosqlite://")
+    async with engine.begin() as connection:
+        await connection.run_sync(Base.metadata.create_all)
+    session_factory = async_sessionmaker(engine, expire_on_commit=False)
+
+    async with session_factory() as db:
+        db.add(User(username="teamxfoo#1234", display_name="Team X Foo"))
+        await db.flush()
+        assert await generate_username(db, "Team_Foo") == "team_foo"
 
     await engine.dispose()

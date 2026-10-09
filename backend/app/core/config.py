@@ -91,13 +91,21 @@ class Settings(BaseSettings):
     access_token_expiry_minutes: int = Field(default=15, ge=1, le=60)
     session_expiry_days: int = Field(default=90, ge=1, le=365)
     recent_auth_window_minutes: int = Field(default=10, ge=1, le=60)
-    allowed_oauth_providers: list[str] = Field(default_factory=lambda: ["google", "github", "discord"])
+    allowed_oauth_providers: list[str] = Field(
+        default_factory=lambda: ["google", "github", "discord", "microsoft"]
+    )
     google_client_id: str | None = None
     google_client_secret: SecretStr | None = None
     github_client_id: str | None = None
     github_client_secret: SecretStr | None = None
     discord_client_id: str | None = None
     discord_client_secret: SecretStr | None = None
+    microsoft_client_id: str | None = None
+    microsoft_client_secret: SecretStr | None = None
+    totp_encryption_key: SecretStr | None = None
+    superuser_id: str | None = None
+    superuser_username: str | None = None
+    superuser_password: SecretStr | None = None
     session_cookie_name: str = "hungernet_session"
     csrf_cookie_name: str = "hungernet_csrf"
     session_cookie_secure: bool = True
@@ -117,6 +125,11 @@ class Settings(BaseSettings):
             len(self.jwt_secret) < 32 or self.jwt_secret == "development-only-change-me"
         ):
             raise ValueError("JWT_SECRET must be a unique secret of at least 32 characters in production")
+        if self.environment.lower() == "production" and (
+            self.totp_encryption_key is None
+            or len(self.totp_encryption_key.get_secret_value()) < 32
+        ):
+            raise ValueError("TOTP_ENCRYPTION_KEY must be a unique secret of at least 32 characters in production")
         if self.environment.lower() == "production" and not self.session_cookie_secure:
             raise ValueError("SESSION_COOKIE_SECURE must be true in production")
         if self.session_cookie_same_site.lower() not in {"lax", "strict", "none"}:

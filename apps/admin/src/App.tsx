@@ -1,30 +1,32 @@
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
-import { Footer, GlassButton, GlassCard, Navbar, ScrollToTop } from "@hungernet/ui/components";
-import { HungerNetAuthButtons, HungerNetAuthCallback, RequirePermission } from "@hungernet/auth";
+import { Footer, GlassCard, Navbar, ScrollToTop } from "@hungernet/ui/components";
+import { HungerNetAuthButtons, HungerNetAuthCallback, ProfileButton, RequirePermission } from "@hungernet/auth";
 import { useAuth } from "@hungernet/auth";
 
 import { UserListPage } from "./pages/UserListPage";
 import { UserDetailPage } from "./pages/UserDetailPage";
 import { RolesPage } from "./pages/RolesPage";
 import { AuditPage } from "./pages/AuditPage";
+import { SSOSettingsPage } from "./pages/SSOSettingsPage";
 
 const navItems = [
   { to: "/users", label: "Users" },
   { to: "/roles", label: "Roles" },
   { to: "/audit", label: "Audit" },
+  { to: "/sso", label: "SSO" },
 ];
 
 function AdminShell() {
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
   const displayName = user?.displayName ?? "Operator";
 
   return (
     <>
       <Navbar
         brand="HungerNet Admin"
-        brandDotColor="#4ad9e6"
+        brandDotColor="#c6283d"
         navItems={navItems}
-        rightSlot={<GlassButton size="sm" onClick={() => void signOut()}>Sign out</GlassButton>}
+        rightSlot={<ProfileButton clientId="admin" appName="HungerNet Admin" placement="inline" />}
       />
       <ScrollToTop />
       <main className="container page">
@@ -38,6 +40,7 @@ function AdminShell() {
           <Route path="/users/:id" element={<UserDetailPage />} />
           <Route path="/roles" element={<RolesPage />} />
           <Route path="/audit" element={<AuditPage />} />
+          <Route path="/sso" element={<SSOSettingsPage />} />
           <Route path="*" element={<Navigate to="/users" replace />} />
         </Routes>
       </main>

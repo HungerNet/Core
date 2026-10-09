@@ -5,7 +5,7 @@ This repository is the source of truth for the HungerNet platform: shared TypeSc
 ## Project layout
 
 - Shared packages: `packages/ui`, `packages/styles`, `packages/types`, `packages/auth`, `packages/api-client`
-- Frontend apps: `apps/accounts`, `apps/admin`, `apps/hungernet`, `apps/hungersmp`, `apps/ifamished`, `apps/optifineforfabric`
+- Frontend apps: `apps/account`, `apps/admin`, `apps/hungernet`, `apps/hungersmp`, `apps/ifamished`, `apps/optifineforfabric`
 - Backend: `backend/` with FastAPI, SQLAlchemy, OAuth integrations, permissions, sessions, projects, and announcements
 - Infrastructure: `infra/docker-compose.yml`, `infra/Caddyfile`, and deployment scripts
 
@@ -51,7 +51,7 @@ Run an app individually:
 
 ```bash
 cd /Core
-pnpm --filter @hungernet/accounts dev
+pnpm --filter @hungernet/account dev
 pnpm --filter @hungernet/admin dev
 pnpm --filter @hungernet/hungernet-site dev
 pnpm --filter @hungernet/hungersmp dev
@@ -111,6 +111,9 @@ GITHUB_CLIENT_ID=
 GITHUB_CLIENT_SECRET=
 DISCORD_CLIENT_ID=
 DISCORD_CLIENT_SECRET=
+MICROSOFT_CLIENT_ID=
+MICROSOFT_CLIENT_SECRET=
+TOTP_ENCRYPTION_KEY=
 
 POSTGRES_DB=hungernet
 POSTGRES_USER=hungernet
@@ -118,6 +121,8 @@ POSTGRES_PASSWORD=local-development-only
 ```
 
 Production API and Accounts hosts are selected from the current site origin using hardcoded domain constants. Local Vite servers proxy `/api/v1` to `VITE_API_PROXY_TARGET` (default `http://localhost:8000`); Worker deployments retain their configured upstream API origin. Backend CORS, return origins, and OAuth callbacks are fixed in source.
+
+The account app supports local sign-in/sign-up, authenticator MFA, password changes, and linked Google, GitHub, Discord, and Microsoft identities. SSO credentials can be tested and managed from the admin app; provider secrets are encrypted at rest. MFA-enforcing roles and superusers must complete authenticator setup before receiving a session.
 
 ## Publishing and deployment
 
@@ -138,7 +143,7 @@ uv run alembic upgrade head
 
 Use Cloudflare Pages or another static host for each app. Configure each one with its own build command and output directory:
 
-- `@hungernet/accounts` → `apps/accounts/dist`
+- `@hungernet/account` → `apps/account/dist`
 - `@hungernet/admin` → `apps/admin/dist`
 - `@hungernet/hungernet-site` → `apps/hungernet/dist`
 - `@hungernet/hungersmp` → `apps/hungersmp/dist`
@@ -147,8 +152,8 @@ Use Cloudflare Pages or another static host for each app. Configure each one wit
 
 Example for the account app:
 
-- Build command: `pnpm --filter @hungernet/accounts build`
-- Output directory: `apps/accounts/dist`
+- Build command: `pnpm --filter @hungernet/account build`
+- Output directory: `apps/account/dist`
 
 API and Accounts hosts are selected from the current origin using hardcoded source constants; no build-time URL setting is needed.
 

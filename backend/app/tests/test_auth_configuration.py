@@ -10,7 +10,13 @@ from app.core.config import (
     is_allowed_origin,
     settings,
 )
-from app.core.security import hash_password, new_totp_secret, verify_password, verify_totp
+from app.core.security import (
+    hash_password,
+    new_totp_secret,
+    validate_password,
+    verify_password,
+    verify_totp,
+)
 from app.integrations.oauth import (
     configured_oauth_providers,
     is_discord_configured,
@@ -57,6 +63,7 @@ def test_missing_oauth_credentials_do_not_block_production_settings() -> None:
         environment="production",
         jwt_secret="production-secret-that-is-long-enough-123456",
         session_cookie_secure=True,
+        totp_encryption_key=SecretStr("totp-production-secret-that-is-long-enough"),
     )
 
     assert configured.google_client_id is None
@@ -124,9 +131,17 @@ def test_configured_provider_list_skips_incomplete_providers(
 
 
 def test_password_hash_and_totp_validation() -> None:
-    encoded = hash_password("correct horse battery staple")
-    assert verify_password("correct horse battery staple", encoded)
+    password = "cobalt river lantern! 82"
+    encoded = hash_password(password)
+    assert verify_password(password, encoded)
     assert not verify_password("incorrect", encoded)
+    assert validate_password(password) == password
+    with pytest.raises(ValueError, match="12 characters"):
+        validate_password("short!")
+    with pytest.raises(ValueError, match="symbol"):
+        validate_password("manycharacters")
+    with pytest.raises(ValueError, match="common"):
+        validate_password("CorrectHorseBatteryStaple!")
     assert len(new_totp_secret()) == 32
     assert verify_totp("GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ", "287082", at_time=59)
     assert not verify_totp("GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ", "000000", at_time=59)

@@ -9,8 +9,7 @@ import "../../../packages/styles/src/sites/platform.css";
 import { App } from "./App";
 
 document.documentElement.dataset.site = "admin";
-document.documentElement.dataset.theme =
-  getComputedStyle(document.documentElement).getPropertyValue("--site-theme").trim() || "default";
+document.documentElement.dataset.theme = "brightred";
 
 const root = document.getElementById("root");
 

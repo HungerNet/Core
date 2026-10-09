@@ -5,6 +5,8 @@ from datetime import datetime
 
 from pydantic import BaseModel, Field, field_validator
 
+from app.core.security import validate_password
+
 
 class PublicUserResponse(BaseModel):
     id: str
@@ -24,6 +26,8 @@ class UserMeResponse(BaseModel):
     profile_visibility: str = "public"
     is_active: bool = True
     is_superuser: bool = False
+    totp_enabled: bool = False
+    mfa_required: bool = False
 
 
 class UserUpdateRequest(BaseModel):
@@ -63,6 +67,21 @@ class UserUpdateRequest(BaseModel):
         if value is None:
             raise ValueError("Profile visibility cannot be null")
         return value
+
+
+class PasswordChangeRequest(BaseModel):
+    current_password: str = Field(min_length=1, max_length=128)
+    new_password: str = Field(min_length=12, max_length=128)
+
+    @field_validator("new_password")
+    @classmethod
+    def validate_new_password(cls, value: str) -> str:
+        return validate_password(value)
+
+
+class MfaDisableRequest(BaseModel):
+    current_password: str = Field(min_length=1, max_length=128)
+    code: str = Field(pattern=r"^\d{6}$")
 
 
 class LinkedIdentityResponse(BaseModel):

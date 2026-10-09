@@ -139,6 +139,41 @@ export function useAuth() {
   return context;
 }
 
+function ProviderIcon({ provider }: { provider: string }) {
+  if (provider === "google") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path fill="#4285F4" d="M21.6 12.2c0-.7-.1-1.4-.2-2H12v3.8h5.4a4.6 4.6 0 0 1-2 3v2.5h3.2c1.9-1.8 3-4.4 3-7.3Z" />
+        <path fill="#34A853" d="M12 22c2.7 0 5-.9 6.6-2.5l-3.2-2.5c-.9.6-2 1-3.4 1-2.6 0-4.8-1.8-5.6-4.1H4.1v2.6A10 10 0 0 0 12 22Z" />
+        <path fill="#FBBC05" d="M6.4 13.9a6 6 0 0 1 0-3.8V7.5H3.1a10 10 0 0 0 0 9Z" />
+        <path fill="#EA4335" d="M12 5.9c1.5 0 2.9.5 4 1.6l3-3A9.8 9.8 0 0 0 12 2a10 10 0 0 0-8.9 5.5l3.3 2.6c.8-2.4 3-4.2 5.6-4.2Z" />
+      </svg>
+    );
+  }
+  if (provider === "microsoft") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path fill="#F25022" d="M2 2h9.4v9.4H2z" />
+        <path fill="#7FBA00" d="M12.6 2H22v9.4h-9.4z" />
+        <path fill="#00A4EF" d="M2 12.6h9.4V22H2z" />
+        <path fill="#FFB900" d="M12.6 12.6H22V22h-9.4z" />
+      </svg>
+    );
+  }
+  if (provider === "github") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor">
+        <path d="M12 .9a11.1 11.1 0 0 0-3.5 21.6c.6.1.8-.3.8-.6v-2.1c-3.1.7-3.8-1.3-3.8-1.3-.5-1.3-1.2-1.6-1.2-1.6-1-.7.1-.7.1-.7 1.1.1 1.7 1.1 1.7 1.1 1 .1.8 2.4 3.8 1.7.1-.7.4-1.2.7-1.5-2.5-.3-5.2-1.2-5.2-5.5 0-1.2.4-2.1 1.1-2.9-.1-.3-.5-1.4.1-2.9 0 0 .9-.3 3 1.1a10.3 10.3 0 0 1 5.5 0c2.1-1.4 3-1.1 3-1.1.6 1.5.2 2.6.1 2.9.7.8 1.1 1.7 1.1 2.9 0 4.3-2.7 5.2-5.2 5.5.4.3.8 1 .8 2v2.9c0 .3.2.7.8.6A11.1 11.1 0 0 0 12 .9Z" />
+      </svg>
+    );
+  }
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor">
+      <path d="M19.7 5.3a18 18 0 0 0-4.5-1.4l-.6 1.2a16.7 16.7 0 0 0-5.2 0l-.6-1.2a18 18 0 0 0-4.5 1.4C1.5 9.5.7 13.6 1.1 17.7a18 18 0 0 0 5.5 2.8l1.2-2a11.7 11.7 0 0 1-1.9-.9l.5-.4a12.8 12.8 0 0 0 11.2 0l.5.4-1.9.9 1.2 2a18 18 0 0 0 5.5-2.8c.5-4.7-.8-8.8-3.2-12.4ZM8.8 14.8c-1 0-1.8-.9-1.8-2s.8-2 1.8-2 1.8.9 1.8 2-.8 2-1.8 2Zm6.4 0c-1 0-1.8-.9-1.8-2s.8-2 1.8-2 1.8.9 1.8 2-.8 2-1.8 2Z" />
+    </svg>
+  );
+}
+
 export function OAuthSignIn({
   returnPath = "/",
   initialMode = "signin",
@@ -148,12 +183,19 @@ export function OAuthSignIn({
 }) {
   const apiUrl = resolveApiBaseUrl();
   const returnTo = new URL(returnPath, window.location.origin).toString();
+  const [oauthChallenge] = useState(
+    () => new URLSearchParams(window.location.search).get("mfa_challenge") ?? "",
+  );
+  const [oauthSetupRequired] = useState(
+    () => new URLSearchParams(window.location.search).get("mfa_setup") === "1",
+  );
   const [providers, setProviders] = useState<string[]>([]);
-  const [mode, setMode] = useState<"signin" | "register" | "setup">(
+  const [mode, setMode] = useState<"signin" | "register" | "setup" | "mfa">(
     initialMode,
   );
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
+  const [displayName, setDisplayName] = useState("");
   const [password, setPassword] = useState("");
   const [identifier, setIdentifier] = useState("");
   const [code, setCode] = useState("");
@@ -170,7 +212,7 @@ export function OAuthSignIn({
         if (active && Array.isArray(payload?.providers)) {
           setProviders(
             payload.providers.filter((provider): provider is string =>
-              ["google", "github", "discord"].includes(String(provider)),
+              ["google", "github", "discord", "microsoft"].includes(String(provider)),
             ),
           );
         }
@@ -181,6 +223,23 @@ export function OAuthSignIn({
     };
   }, [apiUrl]);
 
+  useEffect(() => {
+    if (!oauthChallenge) return;
+    if (!oauthSetupRequired) {
+      setMode("mfa");
+      return;
+    }
+    const client = createApiClient({ credentials: "include" });
+    void client
+      .post<{ setupSecret: string }>("/auth/mfa/challenge/setup", {
+        challenge: oauthChallenge,
+      })
+      .then((result) => setSetupSecret(result.setupSecret))
+      .catch((cause: unknown) =>
+        setError(cause instanceof Error ? cause.message : "MFA enrollment could not be started."),
+      );
+  }, [oauthChallenge, oauthSetupRequired]);
+
   const finishSignIn = () => window.location.assign(returnTo);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -189,6 +248,14 @@ export function OAuthSignIn({
     setBusy(true);
     const client = createApiClient({ credentials: "include" });
     try {
+      if (oauthChallenge) {
+        await client.post("/auth/mfa/challenge/verify", {
+          challenge: oauthChallenge,
+          code,
+        });
+        finishSignIn();
+        return;
+      }
       if (setupSecret) {
         await client.post("/auth/mfa/verify", {
           identifier: pendingIdentifier,
@@ -198,18 +265,19 @@ export function OAuthSignIn({
         finishSignIn();
         return;
       }
+      if (mode === "mfa") {
+        await client.post("/auth/mfa/verify", { identifier, password, code });
+        finishSignIn();
+        return;
+      }
       if (mode === "register") {
-        const result = await client.post<{ setupSecret: string }>(
-          "/auth/register",
-          {
-            email,
-            username,
-            password,
-          },
-        );
-        setPendingIdentifier(email);
-        setSetupSecret(result.setupSecret);
-        setCode("");
+        await client.post("/auth/register", {
+          email,
+          username,
+          display_name: displayName,
+          password,
+        });
+        finishSignIn();
         return;
       }
       if (mode === "setup") {
@@ -225,31 +293,33 @@ export function OAuthSignIn({
         setCode("");
         return;
       }
-      await client.post("/auth/login", { identifier, password, code });
-      finishSignIn();
-    } catch (cause) {
-      if (
-        mode === "signin" &&
-        cause instanceof ApiClientError &&
-        cause.status === 401
-      ) {
-        const attemptedIdentifier = identifier.trim();
-        if (attemptedIdentifier.includes("@")) {
-          setEmail(attemptedIdentifier);
-        } else {
-          setUsername(attemptedIdentifier);
-        }
-        setPassword("");
+      const result = await client.post<{
+        authenticated: boolean;
+        mfaRequired?: boolean;
+        mfaSetupRequired?: boolean;
+      }>("/auth/login", { identifier, password });
+      if (result.authenticated) {
+        finishSignIn();
+      } else if (result.mfaSetupRequired) {
+        const setup = await client.post<{ setupSecret: string }>("/auth/mfa/setup", {
+          identifier,
+          password,
+        });
+        setPendingIdentifier(identifier);
+        setSetupSecret(setup.setupSecret);
         setCode("");
-        setMode("register");
-        setError(
-          "We couldn't sign you in. Create an account if you're new, or return to sign in.",
-        );
-      } else {
-        setError(
-          cause instanceof Error ? cause.message : "Authentication failed",
-        );
+      } else if (result.mfaRequired) {
+        setMode("mfa");
+        setCode("");
       }
+    } catch (cause) {
+      setError(
+        cause instanceof ApiClientError
+          ? cause.message
+          : cause instanceof Error
+            ? cause.message
+            : "Authentication failed",
+      );
     } finally {
       setBusy(false);
     }
@@ -259,6 +329,7 @@ export function OAuthSignIn({
     google: "Google",
     github: "GitHub",
     discord: "Discord",
+    microsoft: "Microsoft",
   };
 
   const panelTitle = setupSecret
@@ -267,22 +338,25 @@ export function OAuthSignIn({
       ? "Create your account"
       : mode === "setup"
         ? "Add MFA protection"
+        : mode === "mfa"
+          ? "Verify your identity"
         : "Welcome back";
 
   return (
     <div className="auth-shell">
       <div className="auth-panel">
-        {setupSecret ? (
+        {setupSecret || mode === "mfa" ? (
           <form onSubmit={handleSubmit} className="auth-form">
             <div className="auth-header">
               <span className="auth-badge">Secure sign-in</span>
               <h3 className="auth-title">{panelTitle}</h3>
+              <p className="auth-subtitle">
+                {setupSecret
+                  ? "Add this key to your authenticator app, then confirm the six-digit code below."
+                  : "Your password is verified. Enter the current six-digit authenticator code to continue."}
+              </p>
             </div>
-            <p className="auth-subtitle">
-              Add this key to your authenticator app, then confirm the six-digit
-              code below.
-            </p>
-            <code className="auth-token">{setupSecret}</code>
+            {setupSecret && <code className="auth-token">{setupSecret}</code>}
             <div className="auth-field">
               <label htmlFor="auth-code">Authenticator code</label>
               <input
@@ -302,6 +376,21 @@ export function OAuthSignIn({
             >
               Verify and continue
             </button>
+            {!oauthChallenge && (
+              <button
+                className="glass-button glass-button--secondary glass-button--md"
+                disabled={busy}
+                type="button"
+                onClick={() => {
+                  setError("");
+                  setMode("signin");
+                  setSetupSecret("");
+                  setCode("");
+                }}
+              >
+                Back to sign in
+              </button>
+            )}
           </form>
         ) : (
           <>
@@ -351,16 +440,31 @@ export function OAuthSignIn({
                     />
                   </div>
                   <div className="auth-field">
+                    <label htmlFor="auth-display-name">Display name</label>
+                    <input
+                      id="auth-display-name"
+                      autoComplete="name"
+                      maxLength={120}
+                      required
+                      value={displayName}
+                      onChange={(event) => setDisplayName(event.target.value)}
+                    />
+                  </div>
+                  <div className="auth-field">
                     <label htmlFor="auth-username">Username</label>
                     <input
                       id="auth-username"
                       autoComplete="username"
-                      minLength={3}
-                      maxLength={48}
+                      minLength={1}
+                      maxLength={64}
+                      pattern="[a-z0-9_]+"
                       required
                       value={username}
-                      onChange={(event) => setUsername(event.target.value)}
+                      onChange={(event) =>
+                        setUsername(event.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ""))
+                      }
                     />
+                    <span className="auth-hint">Lowercase letters, numbers, and underscores. A number suffix is added if needed.</span>
                   </div>
                 </>
               ) : (
@@ -384,28 +488,16 @@ export function OAuthSignIn({
                     mode === "register" ? "new-password" : "current-password"
                   }
                   minLength={mode === "register" ? 12 : undefined}
+                  maxLength={128}
                   required
                   type="password"
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
                 />
+                {mode === "register" && (
+                  <span className="auth-hint">At least 12 characters and one symbol; no case or number rules.</span>
+                )}
               </div>
-
-              {mode === "signin" && (
-                <div className="auth-field">
-                  <label htmlFor="auth-code">Authenticator code</label>
-                  <input
-                    id="auth-code"
-                    autoComplete="one-time-code"
-                    inputMode="numeric"
-                    maxLength={6}
-                    pattern="[0-9]{6}"
-                    required
-                    value={code}
-                    onChange={(event) => setCode(event.target.value)}
-                  />
-                </div>
-              )}
 
               <div className="auth-actions">
                 <button
@@ -415,9 +507,7 @@ export function OAuthSignIn({
                 >
                   {mode === "register"
                     ? "Create account"
-                    : mode === "setup"
-                      ? "Continue"
-                      : "Sign in"}
+                    : mode === "setup" ? "Continue" : "Sign in"}
                 </button>
                 {mode === "signin" && (
                   <button
@@ -449,14 +539,17 @@ export function OAuthSignIn({
             {providers.length > 0 && (
               <>
                 <div className="auth-divider">Or continue with</div>
-                <div className="auth-provider-list">
+                <div className={`auth-provider-list auth-provider-list--${providers.length === 1 ? "full" : providers.length > 3 ? "icon" : "hybrid"}`}>
                   {providers.map((provider) => (
                     <a
                       key={provider}
                       className="auth-provider-link"
+                      aria-label={`Continue with ${providerLabels[provider] ?? provider}`}
+                      title={providerLabels[provider] ?? provider}
                       href={`${apiUrl}/auth/oauth/${provider}/start?redirect_to=${encodeURIComponent(returnTo)}`}
                     >
-                      {providerLabels[provider] ?? provider}
+                      <ProviderIcon provider={provider} />
+                      <span>{providerLabels[provider] ?? provider}</span>
                     </a>
                   ))}
                 </div>
@@ -607,14 +700,16 @@ export function HungerNetAuthButtons({
   );
 }
 
-export function FloatingAuthButton({
+export function ProfileButton({
   clientId,
   appName,
   returnTo,
+  placement = "floating",
 }: {
   clientId: string;
   appName: string;
   returnTo?: string;
+  placement?: "floating" | "inline";
 }) {
   const { status, user, signOut } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -643,75 +738,87 @@ export function FloatingAuthButton({
   }, [menuOpen]);
 
   const handleClick = () => {
-    if (status === "authenticated") {
-      setMenuOpen((open) => !open);
-      return;
-    }
-    if (status !== "unauthenticated") return;
+    if (status !== "loading") setMenuOpen((open) => !open);
+  };
+
+  const startSignIn = () => {
     setError("");
-    void beginAuthorization(
-      clientId,
-      appName,
-      accountsUrl,
-      resolvedReturnTo,
-    ).catch(() => {
+    void beginAuthorization(clientId, appName, accountsUrl, resolvedReturnTo).catch(() => {
       setError("Secure sign-in could not be started in this browser.");
     });
   };
 
   return (
-    <div className="floating-auth" ref={controlRef}>
+    <div
+      className={`profile-control profile-control--${placement} ${menuOpen ? "is-open" : ""}`}
+      ref={controlRef}
+    >
       <button
-        className="floating-auth-trigger"
+        className="profile-control-trigger"
         type="button"
         aria-label={
           status === "authenticated"
-            ? "Open account menu"
+            ? "Open profile menu"
             : status === "loading"
               ? "Checking account"
-              : "Sign in with HungerNet"
+              : "Open sign-in options"
         }
-        aria-haspopup={status === "authenticated" ? "menu" : undefined}
-        aria-expanded={status === "authenticated" ? menuOpen : undefined}
+        aria-haspopup={status !== "loading" ? "menu" : undefined}
+        aria-expanded={status !== "loading" ? menuOpen : undefined}
         disabled={status === "loading"}
         onClick={handleClick}
-        title={status === "authenticated" ? "Account" : "Sign in"}
+        title={status === "authenticated" ? "Profile" : "Sign in"}
       >
-        <svg
-          viewBox="0 0 24 24"
-          aria-hidden="true"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.8"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <circle cx="12" cy="8" r="3.5" />
-          <path d="M5.5 20a6.5 6.5 0 0 1 13 0" />
-        </svg>
-      </button>
-      {status === "authenticated" && menuOpen && (
-        <div
-          className="floating-auth-menu"
-          role="menu"
-          aria-label="Account options"
-        >
-          <span className="floating-auth-name">
-            {user?.displayName || "My account"}
-          </span>
-          <a role="menuitem" href={new URL("/profile", accountsUrl).toString()}>
-            Manage account
-          </a>
-          <button
-            role="menuitem"
-            type="button"
-            onClick={() => {
-              setMenuOpen(false);
-              void signOut();
-            }}
+        {user?.avatarUrl ? (
+          <img src={user.avatarUrl} alt="" />
+        ) : (
+          <svg
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
           >
-            Sign out
-          </button>
+            <circle cx="12" cy="8" r="3.5" />
+            <path d="M5.5 20a6.5 6.5 0 0 1 13 0" />
+          </svg>
+        )}
+        <span className="profile-control-trigger-label">
+          {status === "authenticated" ? user?.displayName || "Profile" : "Sign in"}
+        </span>
+      </button>
+      {status !== "loading" && (
+        <div
+          className="profile-control-menu"
+          role="menu"
+          aria-label={status === "authenticated" ? "Profile options" : "Sign-in options"}
+          aria-hidden={!menuOpen}
+          inert={!menuOpen}
+        >
+          {status === "authenticated" ? (
+            <>
+              <span className="profile-control-name">{user?.displayName || "My account"}</span>
+              <a role="menuitem" href={new URL("/profile", accountsUrl).toString()}>
+                Profile
+              </a>
+              <button
+                role="menuitem"
+                type="button"
+                onClick={() => {
+                  setMenuOpen(false);
+                  void signOut();
+                }}
+              >
+                Sign out
+              </button>
+            </>
+          ) : (
+            <button role="menuitem" type="button" onClick={startSignIn}>
+              Sign in
+            </button>
+          )}
         </div>
       )}
       {error && (
@@ -721,6 +828,14 @@ export function FloatingAuthButton({
       )}
     </div>
   );
+}
+
+export function FloatingAuthButton(props: {
+  clientId: string;
+  appName: string;
+  returnTo?: string;
+}) {
+  return <ProfileButton {...props} />;
 }
 
 export function HungerNetAuthCallback({ clientId }: { clientId: string }) {

@@ -5,7 +5,7 @@ import hashlib
 import re
 import secrets
 from datetime import UTC, datetime, timedelta
-from urllib.parse import quote, urlencode, urlsplit
+from urllib.parse import parse_qsl, quote, urlencode, urlsplit, urlunsplit
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
 from fastapi.responses import RedirectResponse
@@ -30,8 +30,11 @@ from app.core.config import (
 )
 from app.core.deps import bearer_scheme, get_current_user_id, get_db, require_csrf
 from app.core.security import (
+    decrypt_totp_secret,
+    encrypt_totp_secret,
     generate_session_token,
     hash_token,
+    hash_totp_secret,
     new_totp_secret,
     verify_password,
     verify_session_token,
@@ -41,12 +44,15 @@ from app.db.models import AppRefreshToken, OAuthTransaction, Role, Session, User
 from app.integrations.oauth import (
     OAuthProviderError,
     authorization_url,
-    configured_oauth_providers,
+    configured_oauth_providers_from_db,
     fetch_identity,
+    load_provider_config,
 )
 from app.schemas.auth import (
     CredentialsRequest,
+    MfaChallengeRequest,
     MfaRequest,
+    MfaSetupChallengeRequest,
     RegisterRequest,
     SessionStatusResponse,
     SessionUserResponse,
@@ -98,15 +104,42 @@ def _registered_app(client_id: str, redirect_uri: str) -> str:
 async def _local_user(db: AsyncSession, identifier: str) -> User | None:
     normalized = identifier.strip().lower()
     return await db.scalar(
-        select(User).where(
+        select(User)
+        .where(
             (func.lower(User.email) == normalized) | (func.lower(User.username) == normalized)
         )
+        .options(selectinload(User.roles))
     )
+
+
+def _requires_mfa(user: User) -> bool:
+    return user.is_superuser or any(role.requires_mfa for role in user.roles)
 
 
 def _totp_uri(email: str, secret: str) -> str:
     label = quote(f"HungerNet:{email}", safe="")
     return f"otpauth://totp/{label}?secret={secret}&issuer=HungerNet&algorithm=SHA1&digits=6&period=30"
+
+
+def _mfa_challenge_return_url(return_to: str, challenge: str, *, setup_required: bool) -> str:
+    destination = urlsplit(return_to)
+    query = [
+        (key, value)
+        for key, value in parse_qsl(destination.query, keep_blank_values=True)
+        if key not in {"mfa_challenge", "mfa_setup"}
+    ]
+    query.append(("mfa_challenge", challenge))
+    if setup_required:
+        query.append(("mfa_setup", "1"))
+    return urlunsplit(
+        (
+            destination.scheme,
+            destination.netloc,
+            destination.path,
+            urlencode(query),
+            destination.fragment,
+        )
+    )
 
 
 def _require_trusted_auth_origin(request: Request = None) -> None:
@@ -221,8 +254,8 @@ async def _create_login_response(
 
 
 @router.get("/providers")
-async def oauth_providers() -> dict[str, list[str]]:
-    return {"providers": configured_oauth_providers()}
+async def oauth_providers(db: AsyncSession = Depends(get_db)) -> dict[str, list[str]]:
+    return {"providers": await configured_oauth_providers_from_db(db)}
 
 
 @router.get("/authorize")
@@ -540,12 +573,16 @@ async def register(
     payload: RegisterRequest,
     db: AsyncSession = Depends(get_db),
     request: Request = None,
-) -> dict[str, str]:
+    response: Response = None,
+) -> dict[str, bool]:
     _require_trusted_auth_origin(request)
+    if response is None:
+        response = Response()
     try:
-        user, secret = await AuthService.register_local_user(
+        user, _ = await AuthService.register_local_user(
             db,
             email=payload.email,
+            username=payload.username,
             display_name=payload.display_name,
             password=payload.password,
         )
@@ -556,10 +593,7 @@ async def register(
         raise HTTPException(
             status_code=409, detail="Email is already registered"
         ) from error
-    return {
-        "setupSecret": secret,
-        "provisioningUri": _totp_uri(user.email or payload.email, secret),
-    }
+    return await _create_login_response(request, response, db, user)
 
 
 @router.post("/mfa/setup")
@@ -570,17 +604,36 @@ async def setup_mfa(
 ) -> dict[str, str]:
     _require_trusted_auth_origin(request)
     user = await _local_user(db, payload.identifier)
-    if user is None or not verify_password(payload.password, user.password_hash):
+    if (
+        user is None
+        or not user.is_active
+        or not verify_password(payload.password, user.password_hash)
+    ):
         raise HTTPException(status_code=401, detail="Invalid email, username, or password")
-    if user.totp_enabled:
+    user = await db.scalar(
+        select(User).where(User.id == user.id).with_for_update()
+    )
+    if user is None:
+        raise HTTPException(status_code=401, detail="Invalid email, username, or password")
+    if user.totp_enabled and user.totp_secret:
         raise HTTPException(
             status_code=409, detail="Multi-factor authentication is already enabled"
         )
-    user.totp_secret = new_totp_secret()
-    await db.commit()
+    if user.totp_secret:
+        secret = decrypt_totp_secret(user.totp_secret)
+        if user.totp_secret_hash and not secrets.compare_digest(
+            user.totp_secret_hash,
+            hash_totp_secret(secret),
+        ):
+            raise HTTPException(status_code=409, detail="Stored authenticator secret is invalid")
+    else:
+        secret = new_totp_secret()
+        user.totp_secret = encrypt_totp_secret(secret)
+        user.totp_secret_hash = hash_totp_secret(secret)
+        await db.commit()
     return {
-        "setupSecret": user.totp_secret,
-        "provisioningUri": _totp_uri(user.email or user.username, user.totp_secret),
+        "setupSecret": secret,
+        "provisioningUri": _totp_uri(user.email or user.username, secret),
     }
 
 
@@ -597,9 +650,15 @@ async def verify_mfa(
     user = await _local_user(db, payload.identifier)
     if (
         user is None
+        or not user.is_active
         or not verify_password(payload.password, user.password_hash)
         or not user.totp_secret
-        or not verify_totp(user.totp_secret, payload.code)
+    ):
+        raise HTTPException(status_code=401, detail="Credentials or authenticator code are invalid")
+    secret = decrypt_totp_secret(user.totp_secret)
+    if (
+        (user.totp_secret_hash and not secrets.compare_digest(user.totp_secret_hash, hash_totp_secret(secret)))
+        or not verify_totp(secret, payload.code)
     ):
         raise HTTPException(status_code=401, detail="Credentials or authenticator code are invalid")
     if not user.totp_enabled:
@@ -610,7 +669,7 @@ async def verify_mfa(
 
 @router.post("/login")
 async def login(
-    payload: MfaRequest,
+    payload: CredentialsRequest,
     request: Request = None,
     response_obj: Response = None,
     db: AsyncSession = Depends(get_db),
@@ -621,12 +680,101 @@ async def login(
     user = await _local_user(db, payload.identifier)
     if (
         user is None
-        or not user.totp_enabled
-        or not user.totp_secret
+        or not user.is_active
         or not verify_password(payload.password, user.password_hash)
-        or not verify_totp(user.totp_secret, payload.code)
     ):
-        raise HTTPException(status_code=401, detail="Credentials or authenticator code are invalid")
+        raise HTTPException(status_code=401, detail="Invalid email, username, or password")
+    if _requires_mfa(user) and (not user.totp_enabled or not user.totp_secret):
+        return {"authenticated": False, "mfaSetupRequired": True}
+    if user.totp_enabled and user.totp_secret:
+        return {"authenticated": False, "mfaRequired": True}
+    return await _create_login_response(request, response_obj, db, user)
+
+
+@router.post("/mfa/challenge/setup")
+async def setup_mfa_challenge(
+    payload: MfaSetupChallengeRequest,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+) -> dict[str, str]:
+    _require_trusted_auth_origin(request)
+    transaction = await db.scalar(
+        select(OAuthTransaction)
+        .where(
+            OAuthTransaction.state_hash == hash_token(payload.challenge),
+            OAuthTransaction.provider == "mfa",
+            OAuthTransaction.purpose == "mfa_setup",
+            OAuthTransaction.consumed_at.is_(None),
+            OAuthTransaction.expires_at > datetime.now(UTC),
+        )
+        .with_for_update()
+    )
+    if transaction is None or not transaction.user_id:
+        raise HTTPException(status_code=401, detail="MFA setup request is invalid or expired")
+    user = await db.scalar(
+        select(User).where(User.id == transaction.user_id).with_for_update()
+    )
+    if user is None or not user.is_active or user.totp_enabled:
+        raise HTTPException(status_code=401, detail="MFA setup request is invalid or expired")
+
+    if user.totp_secret:
+        secret = decrypt_totp_secret(user.totp_secret)
+        if user.totp_secret_hash and not secrets.compare_digest(
+            user.totp_secret_hash,
+            hash_totp_secret(secret),
+        ):
+            raise HTTPException(status_code=409, detail="Stored authenticator secret is invalid")
+    else:
+        secret = new_totp_secret()
+        user.totp_secret = encrypt_totp_secret(secret)
+        user.totp_secret_hash = hash_totp_secret(secret)
+        await db.commit()
+    return {
+        "setupSecret": secret,
+        "provisioningUri": _totp_uri(user.email or user.username, secret),
+    }
+
+
+@router.post("/mfa/challenge/verify")
+async def verify_mfa_challenge(
+    payload: MfaChallengeRequest,
+    request: Request,
+    response_obj: Response,
+    db: AsyncSession = Depends(get_db),
+) -> dict[str, bool]:
+    _require_trusted_auth_origin(request)
+    transaction = await db.scalar(
+        select(OAuthTransaction)
+        .where(
+            OAuthTransaction.state_hash == hash_token(payload.challenge),
+            OAuthTransaction.provider == "mfa",
+            OAuthTransaction.purpose.in_(("mfa_setup", "mfa_challenge")),
+            OAuthTransaction.consumed_at.is_(None),
+            OAuthTransaction.expires_at > datetime.now(UTC),
+        )
+        .with_for_update()
+    )
+    if transaction is None or not transaction.user_id:
+        raise HTTPException(status_code=401, detail="MFA request is invalid or expired")
+    user = await db.scalar(
+        select(User)
+        .where(User.id == transaction.user_id, User.is_active.is_(True))
+        .options(selectinload(User.roles))
+    )
+    if user is None or not user.totp_secret:
+        raise HTTPException(status_code=401, detail="MFA request is invalid or expired")
+    secret = decrypt_totp_secret(user.totp_secret)
+    if (
+        (user.totp_secret_hash and not secrets.compare_digest(user.totp_secret_hash, hash_totp_secret(secret)))
+        or not verify_totp(secret, payload.code)
+    ):
+        raise HTTPException(status_code=401, detail="Authenticator code is invalid")
+    if transaction.purpose == "mfa_setup":
+        user.totp_enabled = True
+    elif not user.totp_enabled or not _requires_mfa(user):
+        raise HTTPException(status_code=401, detail="MFA request is invalid or expired")
+    transaction.consumed_at = datetime.now(UTC)
+    await db.commit()
     return await _create_login_response(request, response_obj, db, user)
 
 
@@ -709,7 +857,12 @@ async def oauth_start(
     db: AsyncSession = Depends(get_db),
 ) -> RedirectResponse:
     provider = provider.lower()
-    if provider not in configured_oauth_providers():
+    if provider not in {item.lower() for item in settings.allowed_oauth_providers}:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Unsupported OAuth provider")
+    if provider not in await configured_oauth_providers_from_db(db):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Unsupported OAuth provider")
+    provider_settings = await load_provider_config(provider, db)
+    if provider_settings is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Unsupported OAuth provider")
     fallback = RETURN_ORIGINS[0]
     destination = redirect_to or f"{fallback}/profile"
@@ -738,6 +891,7 @@ async def oauth_start(
             nonce=transaction.nonce,
             code_challenge=challenge,
             redirect_uri=redirect_uri,
+            config=provider_settings,
         )
     except (AuthFlowError, OAuthProviderError) as error:
         raise HTTPException(status_code=503, detail="OAuth provider is unavailable") from error
@@ -767,7 +921,12 @@ async def oauth_callback(
     db: AsyncSession = Depends(get_db),
 ) -> RedirectResponse:
     provider = provider.lower()
-    if provider not in configured_oauth_providers():
+    if provider not in {item.lower() for item in settings.allowed_oauth_providers}:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Unsupported OAuth provider")
+    if provider not in await configured_oauth_providers_from_db(db):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Unsupported OAuth provider")
+    provider_settings = await load_provider_config(provider, db)
+    if provider_settings is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Unsupported OAuth provider")
     cookie_name = f"{settings.csrf_cookie_name}_oauth"
     cookie_state = request.cookies.get(cookie_name)
@@ -795,6 +954,7 @@ async def oauth_callback(
             code_verifier=transaction.code_verifier,
             expected_nonce=transaction.nonce,
             redirect_uri=transaction.redirect_uri,
+            config=provider_settings,
         )
         user = await AuthService.resolve_identity(
             db,
@@ -803,6 +963,11 @@ async def oauth_callback(
             purpose=transaction.purpose,
             linking_user_id=transaction.user_id,
         )
+        user = await db.scalar(
+            select(User).where(User.id == user.id).options(selectinload(User.roles))
+        )
+        if user is None or not user.is_active:
+            raise AuthFlowError("user_unavailable", "Account is unavailable", 401)
     except AuthFlowError as exception:
         raise HTTPException(status_code=exception.status_code, detail=exception.message) from exception
     except OAuthProviderError as exception:
@@ -811,15 +976,32 @@ async def oauth_callback(
     response = RedirectResponse(transaction.return_to, status_code=303)
     return_origin = f"{urlsplit(transaction.return_to).scheme}://{urlsplit(transaction.return_to).netloc}"
     cookie_domain, _ = _auth_cookie_policy(return_origin, same_site="lax")
-    response.delete_cookie(
-        cookie_name,
-        domain=cookie_domain,
-        path=f"{API_ROUTE_PREFIX}/auth/oauth/{provider}/callback",
-        secure=settings.session_cookie_secure,
-        httponly=True,
-        samesite="lax",
-    )
-    if transaction.purpose == "login":
+    if transaction.purpose == "login" and _requires_mfa(user):
+        challenge = secrets.token_urlsafe(32)
+        challenge_purpose = "mfa_challenge" if user.totp_enabled and user.totp_secret else "mfa_setup"
+        db.add(
+            OAuthTransaction(
+                state_hash=hash_token(challenge),
+                provider="mfa",
+                redirect_uri=transaction.redirect_uri,
+                return_to=transaction.return_to,
+                code_verifier="",
+                nonce="",
+                purpose=challenge_purpose,
+                user_id=user.id,
+                expires_at=datetime.now(UTC) + timedelta(minutes=5),
+            )
+        )
+        await db.commit()
+        response = RedirectResponse(
+            _mfa_challenge_return_url(
+                transaction.return_to,
+                challenge,
+                setup_required=challenge_purpose == "mfa_setup",
+            ),
+            status_code=303,
+        )
+    elif transaction.purpose == "login":
         token, session = await AuthService.issue_session(
             db,
             user=user,
@@ -838,6 +1020,14 @@ async def oauth_callback(
             domain=session_domain,
             path="/",
         )
+    response.delete_cookie(
+        cookie_name,
+        domain=cookie_domain,
+        path=f"{API_ROUTE_PREFIX}/auth/oauth/{provider}/callback",
+        secure=settings.session_cookie_secure,
+        httponly=True,
+        samesite="lax",
+    )
     return response
 
 

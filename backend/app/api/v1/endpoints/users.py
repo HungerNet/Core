@@ -2,13 +2,15 @@ from __future__ import annotations
 
 import logging
 import re
+import secrets
 from datetime import UTC, datetime
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.core.config import (
     API_ROUTE_PREFIX,
@@ -26,12 +28,21 @@ from app.core.deps import (
     require_permission,
     require_recent_auth,
 )
-from app.core.security import verify_session_token
-from app.db.models import AuditEvent, Identity, Session, User
-from app.integrations.oauth import OAuthProviderError, authorization_url
+from app.core.security import (
+    decrypt_totp_secret,
+    hash_password,
+    hash_totp_secret,
+    verify_password,
+    verify_session_token,
+    verify_totp,
+)
+from app.db.models import AppRefreshToken, AuditEvent, Identity, Session, User
+from app.integrations.oauth import OAuthProviderError, authorization_url, load_provider_config
 from app.schemas.public import PublicProfileResponse
 from app.schemas.user import (
     LinkedIdentityResponse,
+    MfaDisableRequest,
+    PasswordChangeRequest,
     SessionDeviceResponse,
     UserMeResponse,
     UserUpdateRequest,
@@ -71,6 +82,8 @@ async def read_current_user(user: User = Depends(get_current_user)) -> UserMeRes
         profile_visibility=user.profile_visibility,
         is_active=user.is_active,
         is_superuser=user.is_superuser,
+        totp_enabled=user.totp_enabled,
+        mfa_required=user.is_superuser or any(role.requires_mfa for role in user.roles),
     )
 
 
@@ -130,6 +143,7 @@ async def update_current_user(
         await db.rollback()
         raise HTTPException(status_code=409, detail="Profile value conflicts with another account") from error
     await db.refresh(user)
+    await db.refresh(user, attribute_names=["roles"])
     return UserMeResponse(
         id=user.id,
         username=user.username,
@@ -140,7 +154,96 @@ async def update_current_user(
         profile_visibility=user.profile_visibility,
         is_active=user.is_active,
         is_superuser=user.is_superuser,
+        totp_enabled=user.totp_enabled,
+        mfa_required=user.is_superuser or any(role.requires_mfa for role in user.roles),
     )
+
+
+@router.post("/me/password", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(require_csrf)])
+async def change_current_user_password(
+    payload: PasswordChangeRequest,
+    request: Request,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> Response:
+    if not verify_password(payload.current_password, user.password_hash):
+        raise HTTPException(status_code=401, detail="Current password is incorrect")
+
+    user.password_hash = hash_password(payload.new_password)
+    claims = verify_session_token(request.cookies.get(settings.session_cookie_name, ""))
+    current_session_id = claims.get("sid") if claims and claims.get("sub") == user.id else None
+    revoked_at = datetime.now(UTC)
+    session_query = (
+        update(Session)
+        .where(Session.user_id == user.id, Session.revoked_at.is_(None))
+    )
+    if current_session_id:
+        session_query = session_query.where(Session.id != current_session_id)
+    await db.execute(session_query.values(revoked_at=revoked_at))
+
+    refresh_query = update(AppRefreshToken).where(
+        AppRefreshToken.user_id == user.id,
+        AppRefreshToken.revoked_at.is_(None),
+    )
+    if current_session_id:
+        refresh_query = refresh_query.where(AppRefreshToken.session_id != current_session_id)
+    await db.execute(refresh_query.values(revoked_at=revoked_at))
+    db.add(
+        AuditEvent(
+            actor_user_id=user.id,
+            action="user.password_changed",
+            target_type="user",
+            target_id=user.id,
+            details="Account password changed",
+        )
+    )
+    await db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.post(
+    "/me/mfa/disable",
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[Depends(require_csrf)],
+)
+async def disable_current_user_mfa(
+    payload: MfaDisableRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> Response:
+    user = await db.scalar(
+        select(User)
+        .where(User.id == current_user.id)
+        .options(selectinload(User.roles))
+    )
+    if user is None or not user.totp_enabled or not user.totp_secret:
+        raise HTTPException(status_code=409, detail="Multi-factor authentication is not enabled")
+    if user.is_superuser or any(role.requires_mfa for role in user.roles):
+        raise HTTPException(status_code=409, detail="Your account policy requires MFA")
+    if not verify_password(payload.current_password, user.password_hash):
+        raise HTTPException(status_code=401, detail="Current password is incorrect")
+
+    secret = decrypt_totp_secret(user.totp_secret)
+    if (
+        user.totp_secret_hash
+        and not secrets.compare_digest(user.totp_secret_hash, hash_totp_secret(secret))
+    ) or not verify_totp(secret, payload.code):
+        raise HTTPException(status_code=401, detail="Authenticator code is invalid")
+
+    user.totp_enabled = False
+    user.totp_secret = None
+    user.totp_secret_hash = None
+    db.add(
+        AuditEvent(
+            actor_user_id=user.id,
+            action="user.mfa_disabled",
+            target_type="user",
+            target_id=user.id,
+            details="Authenticator-based MFA disabled",
+        )
+    )
+    await db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.post("/me/avatar", dependencies=[Depends(require_csrf)])
@@ -230,6 +333,9 @@ async def start_identity_link(
     provider = provider.lower()
     if provider not in settings.allowed_oauth_providers:
         raise HTTPException(status_code=404, detail="Unsupported OAuth provider")
+    provider_settings = await load_provider_config(provider, db)
+    if provider_settings is None:
+        raise HTTPException(status_code=404, detail="Unsupported OAuth provider")
     token = request.cookies.get(settings.session_cookie_name)
     if not token:
         credentials = request.headers.get("authorization", "")
@@ -256,6 +362,7 @@ async def start_identity_link(
             nonce=transaction.nonce,
             code_challenge=challenge,
             redirect_uri=redirect_uri,
+            config=provider_settings,
         )
     except (AuthFlowError, OAuthProviderError) as error:
         raise HTTPException(status_code=503, detail="OAuth provider is unavailable") from error

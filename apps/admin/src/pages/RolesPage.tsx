@@ -11,6 +11,7 @@ interface RoleRecord {
   description: string | null;
   color: string;
   is_system: boolean;
+  requires_mfa: boolean;
   permissions: string[];
 }
 
@@ -28,6 +29,7 @@ export function RolesPage() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [color, setColor] = useState("#7ef9d2");
+  const [requiresMfa, setRequiresMfa] = useState(false);
   const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -53,6 +55,7 @@ export function RolesPage() {
     setName("");
     setDescription("");
     setColor("#7ef9d2");
+    setRequiresMfa(false);
     setSelectedPermissions([]);
   }
 
@@ -62,6 +65,7 @@ export function RolesPage() {
     setName(role.name);
     setDescription(role.description ?? "");
     setColor(role.color);
+    setRequiresMfa(role.requires_mfa);
     setSelectedPermissions(role.permissions);
     setShowForm(true);
   }
@@ -74,6 +78,7 @@ export function RolesPage() {
         name: name.trim(),
         description: description.trim() || null,
         color,
+        requires_mfa: requiresMfa,
         permission_keys: selectedPermissions,
       };
       const role = editingId
@@ -183,6 +188,14 @@ export function RolesPage() {
               ))}
             </div>
           </fieldset>
+          <label className="admin-toggle">
+            <input
+              type="checkbox"
+              checked={requiresMfa}
+              onChange={(event) => setRequiresMfa(event.target.checked)}
+            />
+            <span>Require authenticator verification for this role</span>
+          </label>
           <div className="role-editor-actions">
             <Button variant="secondary" size="sm" onClick={resetForm} disabled={saving}>Cancel</Button>
             <Button
@@ -217,6 +230,9 @@ export function RolesPage() {
                 )}
             </div>
             {role.description && <p className="role-description">{role.description}</p>}
+            <p className="role-mfa-policy">
+              {role.requires_mfa ? "MFA required" : "MFA optional"}
+            </p>
             <div className="role-permission-summary">
               <span>{role.permissions.length === 0 ? "No permission nodes" : `${role.permissions.length} permission nodes`}</span>
               {role.permissions.length > 0 && (

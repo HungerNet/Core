@@ -9,7 +9,49 @@ import struct
 import time
 from datetime import UTC, datetime, timedelta
 
+from cryptography.fernet import Fernet, InvalidToken
+
 from app.core.config import settings
+
+_ENCRYPTED_SECRET_PREFIX = "fernet:v1:"
+_COMMON_PASSWORDS = frozenset(
+    {
+        "123456",
+        "123456789",
+        "12345678",
+        "1234567",
+        "1234567890",
+        "111111",
+        "123123",
+        "abc123",
+        "password",
+        "password1",
+        "password123",
+        "passw0rd",
+        "qwerty",
+        "qwerty123",
+        "qwertyuiop",
+        "1q2w3e4r",
+        "letmein",
+        "welcome",
+        "admin",
+        "login",
+        "princess",
+        "football",
+        "iloveyou",
+        "monkey",
+        "dragon",
+        "sunshine",
+        "master",
+        "whatever",
+        "freedom",
+        "starwars",
+        "trustno1",
+        "changeme",
+        "hunter2",
+        "correcthorsebatterystaple",
+    }
+)
 
 
 def _b64url_encode(data: bytes) -> str:
@@ -118,8 +160,58 @@ def verify_password(password: str, encoded: str | None) -> bool:
         return False
 
 
+def validate_password(password: str) -> str:
+    if len(password) < 12:
+        raise ValueError("Password must be at least 12 characters")
+    if not any(not character.isalnum() and not character.isspace() for character in password):
+        raise ValueError("Password must contain at least one symbol")
+    normalized = "".join(character for character in password.casefold() if character.isalnum())
+    if normalized in _COMMON_PASSWORDS:
+        raise ValueError("Choose a less common password")
+    return password
+
+
 def new_totp_secret() -> str:
     return base64.b32encode(secrets.token_bytes(20)).decode("ascii").rstrip("=")
+
+
+def hash_totp_secret(secret: str) -> str:
+    return hashlib.sha256(secret.encode("ascii")).hexdigest()
+
+
+def encrypt_secret(value: str) -> str:
+    return _ENCRYPTED_SECRET_PREFIX + _totp_fernet().encrypt(value.encode("utf-8")).decode("ascii")
+
+
+def decrypt_secret(value: str) -> str:
+    if not value.startswith(_ENCRYPTED_SECRET_PREFIX):
+        return value
+    try:
+        plaintext = _totp_fernet().decrypt(
+            value[len(_ENCRYPTED_SECRET_PREFIX) :].encode("ascii")
+        )
+    except (InvalidToken, ValueError) as error:
+        raise ValueError("Stored secret could not be decrypted") from error
+    return plaintext.decode("utf-8")
+
+
+def _totp_fernet() -> Fernet:
+    configured_key = settings.totp_encryption_key
+    key_material = (
+        configured_key.get_secret_value().encode("utf-8")
+        if configured_key is not None
+        else settings.jwt_secret.encode("utf-8")
+    )
+    derived_key = hashlib.sha256(b"HungerNet TOTP encryption v1\0" + key_material).digest()
+    return Fernet(base64.urlsafe_b64encode(derived_key))
+
+
+def encrypt_totp_secret(secret: str) -> str:
+    return encrypt_secret(secret)
+
+
+def decrypt_totp_secret(value: str) -> str:
+    return decrypt_secret(value)
 
 
 def verify_totp(secret: str, code: str, *, at_time: int | None = None) -> bool:

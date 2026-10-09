@@ -1,5 +1,5 @@
 {
-  "name": "@hungernet/accounts",
+  "name": "@hungernet/account",
   "version": "0.1.0",
   "private": true,
   "type": "module",

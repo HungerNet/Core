@@ -11,6 +11,7 @@ class RoleCreateRequest(BaseModel):
     name: str = Field(..., min_length=1, max_length=120)
     description: str | None = Field(default=None, max_length=500)
     color: str = Field(default="#7ef9d2", pattern="^#[0-9a-fA-F]{6}$")
+    requires_mfa: bool = False
     permission_keys: list[str] = Field(default_factory=list, max_length=64)
 
 
@@ -18,6 +19,7 @@ class RoleUpdateRequest(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=120)
     description: str | None = Field(default=None, max_length=500)
     color: str | None = Field(default=None, pattern="^#[0-9a-fA-F]{6}$")
+    requires_mfa: bool | None = None
     permission_keys: list[str] | None = Field(default=None, max_length=64)
 
 
@@ -28,6 +30,7 @@ class RoleResponse(BaseModel):
     description: str | None = None
     color: str = "#7ef9d2"
     is_system: bool = False
+    requires_mfa: bool = False
     permissions: list[str] = Field(default_factory=list)
 
 
@@ -139,3 +142,16 @@ class RoleAssignmentRequest(BaseModel):
 class UserStatusUpdateRequest(BaseModel):
     active: bool
     reason: str | None = Field(default=None, max_length=255)
+
+
+class OAuthProviderConfigRequest(BaseModel):
+    provider: str = Field(pattern="^(google|github|discord|microsoft)$")
+    client_id: str = Field(min_length=1, max_length=255)
+    client_secret: str = Field(min_length=1, max_length=4096)
+
+
+class OAuthProviderConfigResponse(BaseModel):
+    provider: str
+    enabled: bool
+    client_id: str | None = None
+    updated_at: datetime | None = None

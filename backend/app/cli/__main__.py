@@ -1,3 +1,3 @@
-from app.cli.bootstrap_admin import app
+from app.cli.superuser import app
 
 app()

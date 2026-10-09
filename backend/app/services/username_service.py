@@ -35,8 +35,20 @@ async def _username_exists(
 
 
 async def generate_username(db: AsyncSession, display_name: str) -> str:
-    base = username_base(display_name)
-    if not await _username_exists(db, base):
+    return await resolve_new_username(db, None, display_name)
+
+
+async def resolve_new_username(db: AsyncSession, requested_username: str | None, display_name: str) -> str:
+    base = requested_username if requested_username is not None else username_base(display_name)
+    if not USERNAME_PATTERN.fullmatch(base):
+        raise ValueError("Username must contain only lowercase letters, numbers, and underscores")
+    reserved = await db.scalars(
+        select(User.username).where(User.username.startswith(f"{base}#", autoescape=True))
+    )
+    if not await _username_exists(db, base) and not any(
+        (match := GENERATED_USERNAME_PATTERN.fullmatch(username)) and match.group(1) == base
+        for username in reserved
+    ):
         return base
 
     for _ in range(10000):
@@ -59,6 +71,20 @@ async def resolve_edited_username(
     generated_match = GENERATED_USERNAME_PATTERN.fullmatch(current_username)
     if generated_match and requested_username == generated_match.group(1):
         raise ReservedUsernameError("The base of your generated username is reserved")
+
+    generated_names = await db.scalars(
+        select(User.username)
+        .where(
+            User.username.startswith(f"{requested_username}#", autoescape=True),
+            User.id != user_id,
+        )
+    )
+    if any(
+        (match := GENERATED_USERNAME_PATTERN.fullmatch(username))
+        and match.group(1) == requested_username
+        for username in generated_names
+    ):
+        raise ReservedUsernameError("The base of a generated username is reserved")
 
     if not await _username_exists(db, requested_username, exclude_user_id=user_id):
         return requested_username

@@ -18,22 +18,33 @@ from app.core.deps import (
     require_csrf,
     require_permission,
 )
+from app.core.security import encrypt_secret
 from app.db.models import (
     Announcement,
     AppRefreshToken,
     AuditEvent,
+    OAuthProviderConfig,
     OAuthTransaction,
     Permission,
     Project,
     Role,
     Session,
     User,
+    UserRole,
+)
+from app.integrations.oauth import (
+    OAuthProviderError,
+    load_provider_config,
+    provider_config_metadata,
+    verify_provider_credentials,
 )
 from app.schemas.admin import (
     AdminUserDetailResponse,
     AdminUserResponse,
     AdminUserUpdateRequest,
     AuditEventResponse,
+    OAuthProviderConfigRequest,
+    OAuthProviderConfigResponse,
     RoleAssignmentRequest,
     RoleCreateRequest,
     RoleResponse,
@@ -64,6 +75,25 @@ async def find_role(db: AsyncSession, identifier: str) -> Role | None:
     return next(
         (candidate for candidate in roles if role_identifier(candidate) == identifier),
         None,
+    )
+
+
+async def revoke_user_sessions(db: AsyncSession, user_ids: list[str]) -> None:
+    if not user_ids:
+        return
+    revoked_at = datetime.now(UTC)
+    await db.execute(
+        update(Session)
+        .where(Session.user_id.in_(user_ids), Session.revoked_at.is_(None))
+        .values(revoked_at=revoked_at)
+    )
+    await db.execute(
+        update(AppRefreshToken)
+        .where(
+            AppRefreshToken.user_id.in_(user_ids),
+            AppRefreshToken.revoked_at.is_(None),
+        )
+        .values(revoked_at=revoked_at)
     )
 
 
@@ -111,6 +141,7 @@ async def list_roles(
             description=role.description,
             color=role.color,
             is_system=role.is_system,
+            requires_mfa=role.requires_mfa,
             permissions=sorted(permission.key for permission in role.permissions),
         )
         for role in roles
@@ -234,6 +265,8 @@ async def update_user(
         user.totp_secret = None
     if updates.get("is_superuser") is False:
         user.roles = [role for role in user.roles if role.key != "superuser"]
+    if updates.get("is_superuser") is True and not user.is_superuser:
+        await revoke_user_sessions(db, [user.id])
 
     for field, value in updates.items():
         setattr(user, field, value)
@@ -291,6 +324,7 @@ async def create_role(
         description=payload.description,
         color=payload.color.lower(),
         is_system=False,
+        requires_mfa=payload.requires_mfa,
     )
     role.permissions = permissions
     db.add(role)
@@ -312,6 +346,7 @@ async def create_role(
         description=role.description,
         color=role.color,
         is_system=role.is_system,
+        requires_mfa=role.requires_mfa,
         permissions=sorted(item.key for item in permissions),
     )
 
@@ -338,6 +373,7 @@ async def update_role(
 
     updates = payload.model_dump(exclude_unset=True)
     permission_keys = updates.pop("permission_keys", None)
+    enforce_mfa = updates.get("requires_mfa") is True and not role.requires_mfa
     if permission_keys is not None:
         permission_keys = list(dict.fromkeys(permission_keys))
         if any(key not in PERMISSION_REGISTRY for key in permission_keys):
@@ -363,6 +399,15 @@ async def update_role(
         updates["color"] = updates["color"].lower()
     for field, value in updates.items():
         setattr(role, field, value)
+    if enforce_mfa:
+        user_ids = list(
+            (
+                await db.scalars(
+                    select(UserRole.user_id).where(UserRole.role_id == role.id)
+                )
+            ).all()
+        )
+        await revoke_user_sessions(db, user_ids)
     db.add(
         AuditEvent(
             actor_user_id=actor.id,
@@ -382,6 +427,7 @@ async def update_role(
         description=role.description,
         color=role.color,
         is_system=role.is_system,
+        requires_mfa=role.requires_mfa,
         permissions=sorted(permission.key for permission in role.permissions),
     )
 
@@ -434,6 +480,8 @@ async def assign_role(
         raise HTTPException(status_code=404, detail="User or role not found")
     if role not in user.roles:
         user.roles.append(role)
+        if role.requires_mfa:
+            await revoke_user_sessions(db, [user.id])
     reason = payload.reason.strip() if payload and payload.reason else None
     db.add(
         AuditEvent(
@@ -661,3 +709,140 @@ async def list_audit_events(
         select(AuditEvent).order_by(AuditEvent.created_at.desc()).offset(offset).limit(limit)
     )
     return [AuditEventResponse.model_validate(event, from_attributes=True) for event in events]
+
+
+@router.get("/sso/providers", response_model=list[OAuthProviderConfigResponse])
+async def list_sso_providers(
+    _: User = Depends(require_permission("platform.admin.roles.manage")),
+    db: AsyncSession = Depends(get_db),
+) -> list[OAuthProviderConfigResponse]:
+    supported = {"google", "github", "discord", "microsoft"}
+    providers = list(
+        dict.fromkeys(
+            provider.lower()
+            for provider in settings.allowed_oauth_providers
+            if provider.lower() in supported
+        )
+    )
+    results = []
+    for provider in providers:
+        stored = await db.get(OAuthProviderConfig, provider)
+        config = await load_provider_config(provider, db)
+        results.append(
+            OAuthProviderConfigResponse(
+                provider=provider,
+                enabled=config is not None,
+                client_id=stored.client_id if stored else (
+                    config.client_id if config else None
+                ),
+                updated_at=stored.updated_at if stored else None,
+            )
+        )
+    return results
+
+
+@router.post(
+    "/sso/providers/test",
+    dependencies=[
+        Depends(require_csrf),
+        Depends(require_permission("platform.admin.roles.manage")),
+    ],
+)
+async def test_sso_provider(
+    payload: OAuthProviderConfigRequest,
+) -> dict[str, bool]:
+    provider = payload.provider.lower()
+    if provider not in {item.lower() for item in settings.allowed_oauth_providers}:
+        raise HTTPException(status_code=422, detail="OAuth provider is not allowed")
+    try:
+        await verify_provider_credentials(provider, payload.client_id, payload.client_secret)
+    except OAuthProviderError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+    return {"verified": True}
+
+
+@router.post(
+    "/sso/providers",
+    response_model=OAuthProviderConfigResponse,
+    dependencies=[
+        Depends(require_csrf),
+        Depends(require_permission("platform.admin.roles.manage")),
+    ],
+)
+async def save_sso_provider(
+    payload: OAuthProviderConfigRequest,
+    actor: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> OAuthProviderConfigResponse:
+    provider = payload.provider.lower()
+    if provider not in {item.lower() for item in settings.allowed_oauth_providers}:
+        raise HTTPException(status_code=422, detail="OAuth provider is not allowed")
+    try:
+        await verify_provider_credentials(provider, payload.client_id, payload.client_secret)
+    except OAuthProviderError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+
+    config = await db.get(OAuthProviderConfig, provider)
+    if config is None:
+        config = OAuthProviderConfig(provider=provider)
+        db.add(config)
+    config.client_id = payload.client_id.strip()
+    config.encrypted_client_secret = encrypt_secret(payload.client_secret)
+    config.enabled = True
+    db.add(
+        AuditEvent(
+            actor_user_id=actor.id,
+            action="sso.provider.configured",
+            target_type="oauth_provider",
+            target_id=provider,
+            details="OAuth provider credentials verified and saved",
+        )
+    )
+    await db.commit()
+    await db.refresh(config)
+    return OAuthProviderConfigResponse(
+        provider=provider,
+        enabled=True,
+        client_id=config.client_id,
+        updated_at=config.updated_at,
+    )
+
+
+@router.delete(
+    "/sso/providers/{provider}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[
+        Depends(require_csrf),
+        Depends(require_permission("platform.admin.roles.manage")),
+    ],
+)
+async def disable_sso_provider(
+    provider: str,
+    actor: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> None:
+    provider = provider.lower()
+    try:
+        provider_config_metadata(provider)
+    except OAuthProviderError as error:
+        raise HTTPException(status_code=404, detail="Unsupported OAuth provider") from error
+    if provider not in {item.lower() for item in settings.allowed_oauth_providers}:
+        raise HTTPException(status_code=404, detail="Unsupported OAuth provider")
+    config = await db.get(OAuthProviderConfig, provider)
+    if config is None:
+        config = OAuthProviderConfig(provider=provider, enabled=False)
+        db.add(config)
+    else:
+        config.enabled = False
+        config.client_id = None
+        config.encrypted_client_secret = None
+    db.add(
+        AuditEvent(
+            actor_user_id=actor.id,
+            action="sso.provider.disabled",
+            target_type="oauth_provider",
+            target_id=provider,
+            details="OAuth provider credentials removed",
+        )
+    )
+    await db.commit()

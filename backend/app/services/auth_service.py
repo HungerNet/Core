@@ -13,12 +13,12 @@ from app.core.security import (
     generate_session_token,
     hash_password,
     hash_token,
-    new_totp_secret,
+    validate_password,
 )
 from app.db.models import AuditEvent, Identity, OAuthTransaction, Session, User, UserRole
 from app.integrations.oauth import OAuthIdentity
 from app.services.permission_service import PermissionService
-from app.services.username_service import generate_username
+from app.services.username_service import resolve_new_username
 
 
 class AuthFlowError(Exception):
@@ -37,20 +37,22 @@ class AuthService:
         email: str,
         display_name: str,
         password: str,
-    ) -> tuple[User, str]:
+        username: str | None = None,
+    ) -> tuple[User, str | None]:
+        validate_password(password)
         existing = await db.scalar(select(User).where(func.lower(User.email) == email))
         if existing is not None:
             raise AuthFlowError("account_exists", "Email is already registered", 409)
 
-        username = await generate_username(db, display_name)
-        secret = new_totp_secret()
+        username = await resolve_new_username(db, username, display_name)
         user = User(
             id=str(uuid4()),
             username=username,
             email=email,
             display_name=display_name,
             password_hash=hash_password(password),
-            totp_secret=secret,
+            totp_secret=None,
+            totp_secret_hash=None,
             totp_enabled=False,
         )
         db.add(user)
@@ -68,7 +70,7 @@ class AuthService:
         )
         await db.commit()
         await db.refresh(user)
-        return user, secret
+        return user, None
 
     @staticmethod
     async def begin_oauth(
@@ -197,7 +199,7 @@ class AuthService:
                     409,
                 )
 
-        username = await generate_username(db, identity_data.display_name)
+        username = await resolve_new_username(db, None, identity_data.display_name)
 
         user = User(
             id=str(uuid4()),

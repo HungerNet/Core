@@ -1,6 +1,6 @@
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
-import { Footer, GlassButton, GlassCard, Navbar, ScrollToTop } from "@hungernet/ui/components";
-import { OAuthSignIn, RequireAuth, useAuth } from "@hungernet/auth";
+import { Footer, GlassCard, Navbar, ScrollToTop } from "@hungernet/ui/components";
+import { OAuthSignIn, ProfileButton, RequireAuth, useAuth } from "@hungernet/auth";
 import { AuthorizationPage } from "./pages/AuthorizationPage";
 
 import { ProfilePage } from "./pages/ProfilePage";
@@ -14,16 +14,18 @@ const navItems = [
 ];
 
 function AccountShell() {
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
   const displayName = user?.displayName ?? "Member";
 
   return (
     <>
       <Navbar
         brand="HungerNet Accounts"
-        brandDotColor="#4ad9e6"
+        brandDotColor="#c6283d"
         navItems={navItems}
-        rightSlot={<GlassButton size="sm" onClick={() => void signOut()}>Sign out</GlassButton>}
+        rightSlot={
+          <ProfileButton clientId="accounts" appName="HungerNet Accounts" placement="inline" />
+        }
       />
       <ScrollToTop />
       <main className="container page">

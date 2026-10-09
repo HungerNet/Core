@@ -95,10 +95,13 @@ class PermissionService:
                 description="All platform permission nodes",
                 color="#ffbf69",
                 is_system=True,
+                requires_mfa=True,
                 permissions=[],
             )
             db.add(superuser_role)
             await db.flush()
+        elif not superuser_role.requires_mfa:
+            superuser_role.requires_mfa = True
 
         permission_rows = list((await db.scalars(select(Permission))).all())
         existing = {row.key for row in permission_rows}

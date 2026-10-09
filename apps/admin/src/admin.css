@@ -183,6 +183,150 @@
   font-size: 0.76rem;
 }
 
+.sso-provider-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 19rem), 1fr));
+  gap: 0.85rem;
+  margin-top: 1rem;
+}
+
+.sso-provider-card,
+.sso-editor {
+  padding: 1rem;
+  animation: admin-card-enter 420ms both;
+}
+
+.sso-provider-card:nth-child(2) { animation-delay: 45ms; }
+.sso-provider-card:nth-child(3) { animation-delay: 90ms; }
+.sso-provider-card:nth-child(4) { animation-delay: 135ms; }
+
+.sso-status {
+  padding: 0.28rem 0.58rem;
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.sso-status.is-enabled {
+  border-color: rgba(198, 40, 61, 0.4);
+  color: var(--accent-1);
+}
+
+.sso-form {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.sso-form label {
+  display: grid;
+  gap: 0.4rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.sso-form input {
+  width: 100%;
+  min-width: 0;
+  padding: 0.72rem 0.85rem;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+  background: var(--glass-surface);
+  color: var(--text-primary);
+}
+
+.sso-form input:focus-visible {
+  outline: 2px solid var(--accent-1);
+  outline-offset: 2px;
+}
+
+.admin-notice {
+  color: var(--accent-1);
+}
+
+@keyframes admin-card-enter {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.role-mfa-policy {
+  width: fit-content;
+  padding: 0.25rem 0.55rem;
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  color: var(--text-secondary);
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sso-provider-card,
+  .sso-editor {
+    animation: none;
+  }
+}
+
+:root[data-site="admin"] .navbar-link {
+  justify-content: flex-start;
+  text-align: left;
+}
+
+@media (max-width: 768px) {
+  :root[data-site="admin"] .navbar-toggle {
+    margin-left: auto;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  :root[data-site="admin"] .admin-layout-content > * {
+    animation: admin-panel-enter 420ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+
+  :root[data-site="admin"] .glass-card {
+    position: relative;
+    overflow: hidden;
+    transition:
+      transform 260ms cubic-bezier(0.2, 0.8, 0.2, 1),
+      border-color 220ms ease,
+      box-shadow 220ms ease;
+  }
+
+  :root[data-site="admin"] .glass-card::after {
+    position: absolute;
+    top: -55%;
+    left: -65%;
+    width: 42%;
+    height: 210%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.09), transparent);
+    content: "";
+    opacity: 0;
+    pointer-events: none;
+    transform: rotate(18deg);
+  }
+
+  :root[data-site="admin"] .glass-card:hover {
+    transform: translateY(-3px);
+    border-color: var(--glass-border-strong);
+    box-shadow: var(--glass-shadow), 0 18px 38px var(--hover-glow);
+  }
+
+  :root[data-site="admin"] .glass-card:hover::after {
+    animation: admin-card-glint 900ms ease-out;
+  }
+}
+
+@keyframes admin-panel-enter {
+  from { opacity: 0; transform: translateY(0.75rem); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes admin-card-glint {
+  0% { left: -65%; opacity: 0; }
+  20% { opacity: 1; }
+  100% { left: 130%; opacity: 0; }
+}
+
 .role-preview {
   display: inline-flex;
   align-items: center;
@@ -347,6 +491,14 @@
 }
 
 @media (max-width: 600px) {
+  .admin-layout-heading {
+    align-items: stretch;
+  }
+
+  .admin-layout-heading > button {
+    width: 100%;
+  }
+
   .admin-danger-zone {
     align-items: stretch;
   }
@@ -367,5 +519,18 @@
   .user-role-row > button {
     grid-column: 2;
     grid-row: 1 / span 2;
+  }
+
+  .admin-pagination {
+    align-items: stretch;
+  }
+
+  .admin-pagination > div {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .admin-pagination > div > button {
+    flex: 1;
   }
 }

@@ -4,9 +4,12 @@ import re
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from app.core.security import validate_password
+
 
 class RegisterRequest(BaseModel):
     email: str = Field(min_length=3, max_length=254)
+    username: str | None = Field(default=None, min_length=1, max_length=64)
     display_name: str = Field(min_length=1, max_length=120)
     password: str = Field(min_length=12, max_length=128)
 
@@ -18,12 +21,24 @@ class RegisterRequest(BaseModel):
             raise ValueError("Enter a valid email address")
         return normalized
 
+    @field_validator("username")
+    @classmethod
+    def validate_username(cls, value: str | None) -> str | None:
+        if value is not None and not re.fullmatch(r"[a-z0-9_]+", value):
+            raise ValueError("Username must contain only lowercase letters, numbers, and underscores")
+        return value
+
     @field_validator("display_name")
     @classmethod
     def validate_display_name(cls, value: str) -> str:
         if not value.strip():
             raise ValueError("Display name cannot be empty")
         return value
+
+    @field_validator("password")
+    @classmethod
+    def validate_password_policy(cls, value: str) -> str:
+        return validate_password(value)
 
 
 class CredentialsRequest(BaseModel):
@@ -33,6 +48,15 @@ class CredentialsRequest(BaseModel):
 
 class MfaRequest(CredentialsRequest):
     code: str = Field(pattern=r"^\d{6}$")
+
+
+class MfaChallengeRequest(BaseModel):
+    challenge: str = Field(min_length=32, max_length=128)
+    code: str = Field(pattern=r"^\d{6}$")
+
+
+class MfaSetupChallengeRequest(BaseModel):
+    challenge: str = Field(min_length=32, max_length=128)
 
 
 class TokenResponse(BaseModel):
