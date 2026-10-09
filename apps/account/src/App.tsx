@@ -20,7 +20,7 @@ function AccountShell() {
   return (
     <>
       <Navbar
-        brand="HungerNet Accounts"
+        brand="HungerNet Account"
         brandDotColor="#c6283d"
         navItems={navItems}
       />
@@ -38,8 +38,8 @@ function AccountShell() {
           <Route path="*" element={<Navigate to="/profile" replace />} />
         </Routes>
       </main>
-      <Footer brand="HungerNet Accounts" socials={[]} footerNote={`© ${new Date().getFullYear()} HungerNet`} />
-      <FloatingAuthButton clientId="accounts" appName="HungerNet Accounts" />
+      <Footer brand="HungerNet Account" socials={[]} footerNote={`© ${new Date().getFullYear()} HungerNet`} />
+      <FloatingAuthButton clientId="account" appName="HungerNet Account" />
     </>
   );
 }
@@ -66,7 +66,7 @@ export function App() {
         <main className="private-auth-page account-auth-stage">
           <header className="private-auth-intro">
             <span className="private-auth-mark" aria-hidden="true">H</span>
-            <div className="section-label">HungerNet Accounts</div>
+            <div className="section-label">HungerNet Account</div>
             <h1>Your account, in one place.</h1>
             <p>Manage your profile, connected identities, and active sessions.</p>
           </header>

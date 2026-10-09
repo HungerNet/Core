@@ -81,7 +81,7 @@
     --focus-ring: 0 0 0 3px color-mix(in srgb, var(--color-primary) 40%, transparent);
   }
 
-  :root[data-site="accounts"] {
+  :root[data-site="account"] {
     --color-primary: #7ef9d2;
     --color-primary-strong: #4fc7ff;
     --color-secondary: #8fa2ff;

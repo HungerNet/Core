@@ -34,6 +34,6 @@ pnpm --filter @hungernet/admin build
 - Build command: `pnpm --filter @hungernet/admin build`
 - Output directory: `apps/admin/dist`
 
-The API and Accounts hosts are selected from the current origin using hardcoded domain constants; no build-time URL setting is required.
+The API and Account hosts are selected from the current origin using hardcoded domain constants; no build-time URL setting is required.
 
 This app should only consume the authenticated platform API; do not add credentials or private tokens to the frontend bundle.

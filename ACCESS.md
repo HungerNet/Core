@@ -6,7 +6,7 @@ Each application has a normal public domain and a Cloudflare Workers preview dom
 
 | App | Normal domain | Workers.dev domain |
 | --- | --- | --- |
-| Accounts | [accounts.hungernet.dev](https://accounts.hungernet.dev) | [accounts.millered001.workers.dev](https://accounts.millered001.workers.dev) |
+| Account | [account.hungernet.dev](https://account.hungernet.dev) | [account.millered001.workers.dev](https://account.millered001.workers.dev) |
 | Admin | [admin.hungernet.dev](https://admin.hungernet.dev) | [admin.millered001.workers.dev](https://admin.millered001.workers.dev) |
 | HungerNet | [hungernet.dev](https://hungernet.dev) | [hungernet.millered001.workers.dev](https://hungernet.millered001.workers.dev) |
 | Hunger SMP | [hungersmp.com](https://hungersmp.com) | [hungersmp.millered001.workers.dev](https://hungersmp.millered001.workers.dev) |
@@ -26,9 +26,9 @@ Both API hosts use the `/api/v1` path. The `@hungernet/api-client` package conta
 
 ## Browser connections
 
-From a Workers.dev app, the browser uses `api.hacklets.dev` for API requests and `accounts.millered001.workers.dev` for HungerNet authorization. It does not need to call an `*.hungernet.dev` host.
+From a Workers.dev app, the browser uses `api.hacklets.dev` for API requests and `account.millered001.workers.dev` for HungerNet authorization. It does not need to call an `*.hungernet.dev` host.
 
-From a normal app domain, API calls use `api.hungernet.dev` and authorization uses `accounts.hungernet.dev`. OAuth providers and external avatar/image URLs remain separate destinations.
+From a normal app domain, API calls use `api.hungernet.dev` and authorization uses `account.hungernet.dev`. OAuth providers and external avatar/image URLs remain separate destinations.
 
 The backend has exact hardcoded CORS and OAuth return allowlists for all listed normal and Workers.dev app origins. Unlisted preview subdomains are rejected. Redeploy the API after changing these source constants.
 

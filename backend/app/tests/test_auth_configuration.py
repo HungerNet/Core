@@ -5,7 +5,7 @@ import app.integrations.oauth as oauth_module
 from app.core.config import (
     CORS_ORIGINS,
     RETURN_ORIGINS,
-    WORKERS_DEV_ACCOUNTS_ORIGIN,
+    WORKERS_DEV_ACCOUNT_ORIGIN,
     Settings,
     is_allowed_origin,
     settings,
@@ -42,7 +42,7 @@ def test_provider_requires_credentials_and_shared_redirect_configuration(
     monkeypatch.setattr(settings, client_id_field, "client-id")
     monkeypatch.setattr(settings, secret_field, SecretStr("client-secret"))
     monkeypatch.setattr(oauth_module, "OAUTH_CALLBACK_ENDPOINT", "https://auth.example.test/api/v1")
-    monkeypatch.setattr(oauth_module, "RETURN_ORIGINS", ("https://accounts.example.test",))
+    monkeypatch.setattr(oauth_module, "RETURN_ORIGINS", ("https://account.example.test",))
     assert validator()
 
     monkeypatch.setattr(settings, client_id_field, " ")
@@ -74,7 +74,7 @@ def test_missing_oauth_credentials_do_not_block_production_settings() -> None:
 @pytest.mark.parametrize(
     ("origin", "expected"),
     [
-        ("https://accounts.millered001.workers.dev", True),
+        ("https://account.millered001.workers.dev", True),
         ("https://admin.millered001.workers.dev", True),
         ("https://preview.millered001.workers.dev", False),
         ("https://nested.preview.millered001.workers.dev", False),
@@ -89,18 +89,18 @@ def test_origins_must_match_hardcoded_allowlist(origin: str, expected: bool) -> 
 
 
 def test_all_normal_and_workers_hosts_are_hardcoded() -> None:
-    assert WORKERS_DEV_ACCOUNTS_ORIGIN in CORS_ORIGINS
+    assert WORKERS_DEV_ACCOUNT_ORIGIN in CORS_ORIGINS
     assert set(RETURN_ORIGINS) == set(CORS_ORIGINS)
     assert "https://admin.hungernet.dev" in RETURN_ORIGINS
     assert "https://admin.millered001.workers.dev" in RETURN_ORIGINS
 
 
-def test_accounts_workers_origin_passes_cors_preflight() -> None:
+def test_account_workers_origin_passes_cors_preflight() -> None:
     from fastapi.testclient import TestClient
 
     from app.main import app
 
-    origin = "https://accounts.millered001.workers.dev"
+    origin = "https://account.millered001.workers.dev"
     response = TestClient(app).options(
         "/api/v1/auth/session",
         headers={
@@ -124,7 +124,7 @@ def test_configured_provider_list_skips_incomplete_providers(
     monkeypatch.setattr(settings, "github_client_id", "client-id")
     monkeypatch.setattr(settings, "github_client_secret", SecretStr("client-secret"))
     monkeypatch.setattr(oauth_module, "OAUTH_CALLBACK_ENDPOINT", "https://auth.example.test/api/v1")
-    monkeypatch.setattr(oauth_module, "RETURN_ORIGINS", ("https://accounts.example.test",))
+    monkeypatch.setattr(oauth_module, "RETURN_ORIGINS", ("https://account.example.test",))
 
     assert configured_oauth_providers(log_warnings=True) == ["github"]
     assert "oauth_provider_disabled" in caplog.text

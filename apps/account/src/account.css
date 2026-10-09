@@ -277,7 +277,7 @@
 }
 
 @media (max-width: 768px) {
-  :root[data-site="accounts"] .navbar-toggle {
+  :root[data-site="account"] .navbar-toggle {
     margin-left: auto;
   }
 }
@@ -307,7 +307,7 @@
     width: 100%;
   }
 
-  :root[data-site="accounts"] .navbar-link {
+  :root[data-site="account"] .navbar-link {
     justify-content: flex-start;
     text-align: left;
   }
@@ -319,11 +319,11 @@
   }
 
   @media (prefers-reduced-motion: no-preference) {
-    :root[data-site="accounts"] .settings-layout-content > * {
+    :root[data-site="account"] .settings-layout-content > * {
       animation: account-panel-enter 420ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
     }
 
-    :root[data-site="accounts"] .glass-card {
+    :root[data-site="account"] .glass-card {
       position: relative;
       overflow: hidden;
       transition:
@@ -332,7 +332,7 @@
         box-shadow 220ms ease;
     }
 
-    :root[data-site="accounts"] .glass-card::after {
+    :root[data-site="account"] .glass-card::after {
       position: absolute;
       top: -55%;
       left: -65%;
@@ -345,13 +345,13 @@
       transform: rotate(18deg);
     }
 
-    :root[data-site="accounts"] .glass-card:hover {
+    :root[data-site="account"] .glass-card:hover {
       transform: translateY(-3px);
       border-color: var(--glass-border-strong);
       box-shadow: var(--glass-shadow), 0 18px 38px var(--hover-glow);
     }
 
-    :root[data-site="accounts"] .glass-card:hover::after {
+    :root[data-site="account"] .glass-card:hover::after {
       animation: account-card-glint 900ms ease-out;
     }
   }

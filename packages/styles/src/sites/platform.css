@@ -47,7 +47,7 @@
   --site-theme: fire;
 }
 
-:root[data-site="accounts"] {
+:root[data-site="account"] {
   --site-theme: fire;
 }
 

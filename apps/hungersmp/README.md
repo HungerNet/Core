@@ -25,6 +25,6 @@ pnpm --filter @hungernet/hungersmp build
 - Build command: `pnpm --filter @hungernet/hungersmp build`
 - Output directory: `apps/hungersmp/dist`
 
-The API and Accounts hosts are selected from the current origin using hardcoded domain constants; no build-time URL setting is required.
+The API and Account hosts are selected from the current origin using hardcoded domain constants; no build-time URL setting is required.
 
 Do not expose private API keys or session data in the frontend build.

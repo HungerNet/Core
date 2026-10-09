@@ -1,4 +1,4 @@
-# HungerNet Accounts Dashboard
+# HungerNet Account Dashboard
 
 This app is the platform account dashboard for profile editing, session/device management, and linked identity flows.
 
@@ -34,6 +34,6 @@ pnpm --filter @hungernet/account build
 - Build command: `pnpm --filter @hungernet/account build`
 - Output directory: `apps/account/dist`
 
-The API and Accounts hosts are selected from the current origin using hardcoded domain constants; no build-time URL setting is required.
+The API and Account hosts are selected from the current origin using hardcoded domain constants; no build-time URL setting is required.
 
 No secrets belong in this app or in the repository. Keep all OAuth credentials in the backend deployment environment or a secret manager.

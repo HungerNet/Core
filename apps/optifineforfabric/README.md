@@ -25,6 +25,6 @@ pnpm --filter @hungernet/optifineforfabric build
 - Build command: `pnpm --filter @hungernet/optifineforfabric build`
 - Output directory: `apps/optifineforfabric/dist`
 
-The API and Accounts hosts are selected from the current origin using hardcoded domain constants; no build-time URL setting is required.
+The API and Account hosts are selected from the current origin using hardcoded domain constants; no build-time URL setting is required.
 
 The Modrinth integration is intentionally kept in the shared client layer so it is not duplicated across multiple app code paths.

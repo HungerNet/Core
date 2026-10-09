@@ -120,7 +120,7 @@ POSTGRES_USER=hungernet
 POSTGRES_PASSWORD=local-development-only
 ```
 
-Production API and Accounts hosts are selected from the current site origin using hardcoded domain constants. Local Vite servers proxy `/api/v1` to `VITE_API_PROXY_TARGET` (default `http://localhost:8000`); Worker deployments retain their configured upstream API origin. Backend CORS, return origins, and OAuth callbacks are fixed in source.
+Production API and Account hosts are selected from the current site origin using hardcoded domain constants. Local Vite servers proxy `/api/v1` to `VITE_API_PROXY_TARGET` (default `http://localhost:8000`); Worker deployments retain their configured upstream API origin. Backend CORS, return origins, and OAuth callbacks are fixed in source.
 
 The account app supports local sign-in/sign-up, authenticator MFA, password changes, and linked Google, GitHub, Discord, and Microsoft identities. SSO credentials can be tested and managed from the admin app; provider secrets are encrypted at rest. MFA-enforcing roles and superusers must complete authenticator setup before receiving a session.
 
@@ -155,7 +155,7 @@ Example for the account app:
 - Build command: `pnpm --filter @hungernet/account build`
 - Output directory: `apps/account/dist`
 
-API and Accounts hosts are selected from the current origin using hardcoded source constants; no build-time URL setting is needed.
+API and Account hosts are selected from the current origin using hardcoded source constants; no build-time URL setting is needed.
 
 ## Validation and release sanity checks
 

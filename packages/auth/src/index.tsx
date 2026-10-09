@@ -50,7 +50,7 @@ function mapSessionToUser(session: AuthSession | null): User | null {
 }
 
 export function AuthProvider({ children, clientId }: AuthProviderProps) {
-  const apiClientId = clientId === "accounts" ? undefined : clientId;
+  const apiClientId = clientId === "account" ? undefined : clientId;
   const client = useMemo(
     () =>
       createApiClient({
@@ -603,8 +603,8 @@ function requestKey(clientId: string) {
   return `hungernet.authorization_request:${clientId}`;
 }
 
-export function resolveAccountsBaseUrl(accountsBaseUrl?: string): string {
-  return accountsBaseUrl ?? getDomainConfig().accounts;
+export function resolveAccountBaseUrl(accountBaseUrl?: string): string {
+  return accountBaseUrl ?? getDomainConfig().account;
 }
 
 function encodeBase64Url(bytes: Uint8Array) {
@@ -623,7 +623,7 @@ function randomState() {
 async function beginAuthorization(
   clientId: string,
   appName: string,
-  accountsBaseUrl: string,
+  accountBaseUrl: string,
   returnTo = `${window.location.pathname}${window.location.search}${window.location.hash}`,
 ) {
   const verifier =
@@ -643,7 +643,7 @@ async function beginAuthorization(
     requestKey(clientId),
     JSON.stringify({ state, verifier, returnTo }),
   );
-  const authorizationUrl = new URL("/authorize", accountsBaseUrl);
+  const authorizationUrl = new URL("/authorize", accountBaseUrl);
   authorizationUrl.search = new URLSearchParams({
     client_id: clientId,
     redirect_uri: redirectUri,
@@ -659,22 +659,22 @@ async function beginAuthorization(
 export function HungerNetAuthButtons({
   clientId,
   appName,
-  accountsBaseUrl,
+  accountBaseUrl,
   returnTo = `${window.location.pathname}${window.location.search}`,
 }: {
   clientId: string;
   appName: string;
-  accountsBaseUrl?: string;
+  accountBaseUrl?: string;
   returnTo?: string;
 }) {
   const [error, setError] = useState("");
-  const resolvedAccountsBaseUrl = resolveAccountsBaseUrl(accountsBaseUrl);
+  const resolvedAccountBaseUrl = resolveAccountBaseUrl(accountBaseUrl);
   const startAuthorization = async () => {
     try {
       await beginAuthorization(
         clientId,
         appName,
-        resolvedAccountsBaseUrl,
+        resolvedAccountBaseUrl,
         returnTo,
       );
     } catch {
@@ -715,7 +715,7 @@ export function ProfileButton({
   const [menuOpen, setMenuOpen] = useState(false);
   const [error, setError] = useState("");
   const controlRef = useRef<HTMLDivElement>(null);
-  const accountsUrl = resolveAccountsBaseUrl();
+  const accountUrl = resolveAccountBaseUrl();
   const resolvedReturnTo =
     returnTo ??
     `${window.location.pathname}${window.location.search}${window.location.hash}`;
@@ -743,7 +743,7 @@ export function ProfileButton({
 
   const startSignIn = () => {
     setError("");
-    void beginAuthorization(clientId, appName, accountsUrl, resolvedReturnTo).catch(() => {
+    void beginAuthorization(clientId, appName, accountUrl, resolvedReturnTo).catch(() => {
       setError("Secure sign-in could not be started in this browser.");
     });
   };
@@ -800,7 +800,7 @@ export function ProfileButton({
           {status === "authenticated" ? (
             <>
               <span className="profile-control-name">{user?.displayName || "My account"}</span>
-              <a role="menuitem" href={new URL("/profile", accountsUrl).toString()}>
+              <a role="menuitem" href={new URL("/profile", accountUrl).toString()}>
                 Profile
               </a>
               <button

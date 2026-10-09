@@ -5,11 +5,11 @@ import { AuthProvider } from "@hungernet/auth";
 import "../../../packages/styles/src/sites/index.css";
 import "../../../packages/styles/src/sites/components/PrivateAuth.css";
 import "./profile.css";
-import "./accounts.css";
+import "./account.css";
 import "../../../packages/styles/src/sites/platform.css";
 import { App } from "./App";
 
-document.documentElement.dataset.site = "accounts";
+document.documentElement.dataset.site = "account";
 document.documentElement.dataset.theme = "brightred";
 
 const root = document.getElementById("root");

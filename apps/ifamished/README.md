@@ -25,6 +25,6 @@ pnpm --filter @hungernet/ifamished build
 - Build command: `pnpm --filter @hungernet/ifamished build`
 - Output directory: `apps/ifamished/dist`
 
-The API and Accounts hosts are selected from the current origin using hardcoded domain constants; no build-time URL setting is required.
+The API and Account hosts are selected from the current origin using hardcoded domain constants; no build-time URL setting is required.
 
 This app is front-end only; keep any secret or sensitive configuration on the backend.

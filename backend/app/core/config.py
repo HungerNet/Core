@@ -5,9 +5,9 @@ from urllib.parse import urlsplit
 from pydantic import Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-WORKERS_DEV_ACCOUNTS_ORIGIN = "https://accounts.millered001.workers.dev"
+WORKERS_DEV_ACCOUNT_ORIGIN = "https://account.millered001.workers.dev"
 NORMAL_ALLOWED_ORIGINS = (
-    "https://accounts.hungernet.dev",
+    "https://account.hungernet.dev",
     "https://hungernet.dev",
     "https://admin.hungernet.dev",
     "https://ifamished.com",
@@ -15,7 +15,7 @@ NORMAL_ALLOWED_ORIGINS = (
     "https://hungersmp.com",
 )
 WORKERS_DEV_ALLOWED_ORIGINS = (
-    WORKERS_DEV_ACCOUNTS_ORIGIN,
+    WORKERS_DEV_ACCOUNT_ORIGIN,
     "https://hungernet.millered001.workers.dev",
     "https://admin.millered001.workers.dev",
     "https://ifamished.millered001.workers.dev",

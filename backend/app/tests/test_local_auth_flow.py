@@ -73,7 +73,7 @@ def _request(
 
 
 def test_mfa_setup_return_url_replaces_untrusted_challenge_parameters() -> None:
-    return_to = "https://accounts.hungernet.dev/profile?tab=security&mfa_setup=0&mfa_challenge=bad#top"
+    return_to = "https://account.hungernet.dev/profile?tab=security&mfa_setup=0&mfa_challenge=bad#top"
 
     challenge_url = _mfa_challenge_return_url(
         return_to,
@@ -82,7 +82,7 @@ def test_mfa_setup_return_url_replaces_untrusted_challenge_parameters() -> None:
     )
 
     assert challenge_url == (
-        "https://accounts.hungernet.dev/profile?tab=security"
+        "https://account.hungernet.dev/profile?tab=security"
         "&mfa_challenge=new-challenge&mfa_setup=1#top"
     )
 
@@ -101,7 +101,7 @@ async def test_optional_mfa_enrollment_and_sequential_login(
     monkeypatch.setattr(settings, "session_cookie_secure", True)
     monkeypatch.setattr(settings, "session_cookie_same_site", "lax")
     engine, session_factory = await _database()
-    origin = "https://accounts.millered001.workers.dev"
+    origin = "https://account.millered001.workers.dev"
 
     async with session_factory() as db:
         created = await register(
@@ -302,7 +302,7 @@ async def test_workers_origin_gets_cross_site_csrf_cookie(
     monkeypatch.setattr(settings, "session_cookie_same_site", "lax")
     response = Response()
 
-    await issue_csrf_token(_request("https://accounts.millered001.workers.dev"), response)
+    await issue_csrf_token(_request("https://account.millered001.workers.dev"), response)
 
     set_cookie = response.headers["set-cookie"].lower()
     assert "hungernet_csrf=" in set_cookie
