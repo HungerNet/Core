@@ -84,9 +84,8 @@ def is_allowed_origin(origin: str, allowed_origins: Collection[str]) -> bool:
 
 class Settings(BaseSettings):
     app_name: str = "HungerNet Platform API"
-    environment: str = "development"
     database_url: str = "postgresql+asyncpg://hungernet:local-development-only@localhost:5432/hungernet"
-    jwt_secret: str = "development-only-change-me"
+    jwt_secret: str = ""
     jwt_algorithm: str = "HS256"
     access_token_expiry_minutes: int = Field(default=15, ge=1, le=60)
     session_expiry_days: int = Field(default=90, ge=1, le=365)
@@ -94,15 +93,6 @@ class Settings(BaseSettings):
     allowed_oauth_providers: list[str] = Field(
         default_factory=lambda: ["google", "github", "discord", "microsoft"]
     )
-    google_client_id: str | None = None
-    google_client_secret: SecretStr | None = None
-    github_client_id: str | None = None
-    github_client_secret: SecretStr | None = None
-    discord_client_id: str | None = None
-    discord_client_secret: SecretStr | None = None
-    microsoft_client_id: str | None = None
-    microsoft_client_secret: SecretStr | None = None
-    totp_encryption_key: SecretStr | None = None
     superuser_id: str | None = None
     superuser_username: str | None = None
     superuser_password: SecretStr | None = None
@@ -117,21 +107,18 @@ class Settings(BaseSettings):
     avatar_storage_dir: Path = Path("media")
     avatar_public_base_url: str = "https://api.hungernet.dev"
     log_level: str = "INFO"
-    model_config = SettingsConfigDict(extra="ignore")
+    model_config = SettingsConfigDict(
+        env_file=Path(__file__).resolve().parents[3] / ".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
 
     @model_validator(mode="after")
-    def require_production_session_secret(self) -> "Settings":
-        if self.environment.lower() == "production" and (
-            len(self.jwt_secret) < 32 or self.jwt_secret == "development-only-change-me"
-        ):
-            raise ValueError("JWT_SECRET must be a unique secret of at least 32 characters in production")
-        if self.environment.lower() == "production" and (
-            self.totp_encryption_key is None
-            or len(self.totp_encryption_key.get_secret_value()) < 32
-        ):
-            raise ValueError("TOTP_ENCRYPTION_KEY must be a unique secret of at least 32 characters in production")
-        if self.environment.lower() == "production" and not self.session_cookie_secure:
-            raise ValueError("SESSION_COOKIE_SECURE must be true in production")
+    def require_production_security(self) -> "Settings":
+        if len(self.jwt_secret) < 32:
+            raise ValueError("JWT_SECRET must be a unique secret of at least 32 characters")
+        if not self.session_cookie_secure:
+            raise ValueError("SESSION_COOKIE_SECURE must be true")
         if self.session_cookie_same_site.lower() not in {"lax", "strict", "none"}:
             raise ValueError("SESSION_COOKIE_SAME_SITE must be lax, strict, or none")
         if self.session_cookie_same_site.lower() == "none" and not self.session_cookie_secure:

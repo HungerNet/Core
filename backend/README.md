@@ -10,9 +10,9 @@ This is the FastAPI backend for the Core platform. It includes async SQLAlchemy 
 - The `member` role has no permission nodes. `superuser` has every node in `PERMISSION_REGISTRY`; the `roles.create` node specifically gates role creation. Role IDs are lowercase alphanumeric strings and role colors are `#RRGGBB`.
 - `requires_mfa` on a role enforces authenticator verification at sign-in. Superusers always require MFA. Authenticator seeds are encrypted at rest and accompanied by a one-way hash; encryption is required because TOTP verification must reproduce time-based codes.
 - Local passwords must be at least 12 characters, include a symbol, and not match the built-in common-password blacklist. Breach-list checks are not enabled.
-- `SUPERUSER_ID`, `SUPERUSER_USERNAME`, and `SUPERUSER_PASSWORD` configure CLI provisioning. Run `uv run python -m app.cli setup-superuser` to create or rotate the superuser's password and OTP seed. The seed is printed once per run; rerunning rotates it and invalidates existing sessions.
-- Production must provide a unique `TOTP_ENCRYPTION_KEY` of at least 32 characters in the secret manager. Losing or rotating this key without re-encrypting stored seeds prevents MFA verification.
-- SSO providers are optional. Microsoft, Google, GitHub, and Discord can be configured in the admin SSO settings after a successful provider check, or supplied as environment credentials. Secrets configured in the admin app are encrypted at rest.
+- `SUPERUSER_ID`, `SUPERUSER_USERNAME`, and `SUPERUSER_PASSWORD` configure CLI provisioning. Run `uv run python -m app.cli setup-superuser` to create or rotate the superuser's password and OTP seed. The seed is printed once per run; rerunning rotates it and invalidates existing sessions. The CLI normalizes the username to lowercase.
+- MFA and admin-managed OAuth credentials are encrypted using a key derived from `JWT_SECRET`. Keep `JWT_SECRET` stable or re-encrypt stored secrets before rotating it.
+- Microsoft, Google, GitHub, and Discord credentials are configured in the admin SSO settings after a successful provider check; provider credentials are not read from environment variables.
 - Optional MFA enrollment and password changes are available in the account app. MFA is enforced for superusers and roles marked `requires_mfa`.
 
 Run `uv run alembic upgrade head` before deploying so the default roles, permissions, and role color column are available.
@@ -40,15 +40,11 @@ Set all production values in a secure environment file outside the repository. T
 
 Required environment variables include:
 
-- `ENVIRONMENT`
 - `DATABASE_URL`
 - `JWT_SECRET` (32+ random characters)
 - `REDIS_URL`
-- `SESSION_COOKIE_SECURE`
-- `SESSION_COOKIE_SAME_SITE`
-- `TOTP_ENCRYPTION_KEY` (required in production)
 
-Provider credentials are optional; Microsoft uses `MICROSOFT_CLIENT_ID` and `MICROSOFT_CLIENT_SECRET`.
+`SESSION_COOKIE_SECURE=true` and `SESSION_COOKIE_SAME_SITE=lax` are secure defaults and cannot be disabled. The backend always runs in production mode; these settings are not deployment environment switches.
 
 Example local values are in [../.env.example](../.env.example). Do not commit a real `.env` or production secret file.
 

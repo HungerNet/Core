@@ -22,14 +22,12 @@ from app.core.middleware import (
     SecurityHeadersMiddleware,
 )
 from app.core.observability import configure_logging
-from app.integrations.oauth import configured_oauth_providers
 
 configure_logging(settings.log_level)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    configured_oauth_providers(log_warnings=True)
     redis = Redis.from_url(settings.redis_url, decode_responses=True)
     if settings.rate_limit_enabled:
         await redis.ping()
@@ -43,8 +41,8 @@ app = FastAPI(
     title=settings.app_name,
     version="0.1.0",
     description="HungerNet platform API.",
-    docs_url=None if settings.environment.lower() == "production" else "/docs",
-    redoc_url=None if settings.environment.lower() == "production" else "/redoc",
+    docs_url=None,
+    redoc_url=None,
     lifespan=lifespan,
 )
 
@@ -82,7 +80,9 @@ async def http_error_handler(request: Request, exception: StarletteHTTPException
 
 
 @app.exception_handler(RequestValidationError)
-async def validation_error_handler(request: Request, exception: RequestValidationError) -> JSONResponse:
+async def validation_error_handler(
+    request: Request, exception: RequestValidationError
+) -> JSONResponse:
     return JSONResponse(
         status_code=422,
         content={

@@ -37,3 +37,5 @@ jobs:
       - run: uv sync --project backend --all-groups
       - run: uv run --project backend ruff check backend
       - run: uv run --project backend pytest
+        env:
+          JWT_SECRET: ci-only-jwt-secret-not-for-production-1234567890

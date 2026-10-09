@@ -30,6 +30,8 @@ jobs:
         run: uv run --project backend ruff check backend
       - name: Test backend
         run: uv run --project backend pytest
+        env:
+          JWT_SECRET: ci-only-jwt-secret-not-for-production-1234567890
       - id: meta
         shell: bash
         run: |

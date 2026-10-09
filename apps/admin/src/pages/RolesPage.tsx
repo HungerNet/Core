@@ -194,7 +194,7 @@ export function RolesPage() {
               checked={requiresMfa}
               onChange={(event) => setRequiresMfa(event.target.checked)}
             />
-            <span>Require authenticator verification for this role</span>
+            <span>Require MFA verification for this role</span>
           </label>
           <div className="role-editor-actions">
             <Button variant="secondary" size="sm" onClick={resetForm} disabled={saving}>Cancel</Button>

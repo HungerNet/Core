@@ -21,30 +21,28 @@ This repository is the source of truth for the HungerNet platform: shared TypeSc
 
 ```bash
 cd /Core
-corepack enable
 pnpm install
-cp .env.example .env
+
+JWT_SECRET=
 cd backend
 uv sync
 ```
 
+
 If `uv` is not installed yet:
+AVATAR_STORAGE_DIR=media
+AVATAR_PUBLIC_BASE_URL=https://api.hungernet.dev
 
-```bash
-curl -LsSf https://astral.sh/uv/install.sh | sh
+SUPERUSER_ID=hungernet
+SUPERUSER_USERNAME=HungerNet
+SUPERUSER_PASSWORD=HungerAdmin#8456123
+
 ```
 
-## Local development
+POSTGRES_PASSWORD=
 
-### Backend
 
-```bash
-cd /Core
-pnpm dev:backend
-```
-
-This launches the FastAPI app in reload mode on port 8000 using the environment from the local root `.env` file.
-
+Set `JWT_SECRET` to a unique random value of at least 32 characters and set `POSTGRES_PASSWORD` before starting the backend. Replace the example superuser password before deploying; backend settings load this root `.env` file directly.
 ### Frontend apps
 
 Run an app individually:
@@ -91,38 +89,35 @@ This starts Postgres and Redis for the backend. Do not put production secrets in
 
 ## Required environment variables
 
-### Root `.env` for local dev
+### Root `.env` configuration
 
 ```env
-ENVIRONMENT=development
 DATABASE_URL=postgresql+asyncpg://hungernet:local-development-only@localhost:5432/hungernet
-JWT_SECRET=replace-with-a-long-random-secret
+
+JWT_SECRET=
 JWT_ALGORITHM=HS256
 ACCESS_TOKEN_EXPIRY_MINUTES=15
 SESSION_EXPIRY_DAYS=90
+
 REDIS_URL=redis://localhost:6379/0
 VITE_API_PROXY_TARGET=http://localhost:8000
-SESSION_COOKIE_SECURE=false
-SESSION_COOKIE_SAME_SITE=lax
+AVATAR_STORAGE_DIR=media
+AVATAR_PUBLIC_BASE_URL=https://api.hungernet.dev
 
-GOOGLE_CLIENT_ID=
-GOOGLE_CLIENT_SECRET=
-GITHUB_CLIENT_ID=
-GITHUB_CLIENT_SECRET=
-DISCORD_CLIENT_ID=
-DISCORD_CLIENT_SECRET=
-MICROSOFT_CLIENT_ID=
-MICROSOFT_CLIENT_SECRET=
-TOTP_ENCRYPTION_KEY=
+SUPERUSER_ID=hungernet
+SUPERUSER_USERNAME=HungerNet
+SUPERUSER_PASSWORD=HungerAdmin#8456123
 
 POSTGRES_DB=hungernet
 POSTGRES_USER=hungernet
-POSTGRES_PASSWORD=local-development-only
+POSTGRES_PASSWORD=
 ```
+
+Set `JWT_SECRET` to a unique random value of at least 32 characters and set `POSTGRES_PASSWORD` before starting the backend. Replace the example superuser password before deploying; backend settings load this root `.env` file directly.
 
 Production API and Account hosts are selected from the current site origin using hardcoded domain constants. Local Vite servers proxy `/api/v1` to `VITE_API_PROXY_TARGET` (default `http://localhost:8000`); Worker deployments retain their configured upstream API origin. Backend CORS, return origins, and OAuth callbacks are fixed in source.
 
-The account app supports local sign-in/sign-up, authenticator MFA, password changes, and linked Google, GitHub, Discord, and Microsoft identities. SSO credentials can be tested and managed from the admin app; provider secrets are encrypted at rest. MFA-enforcing roles and superusers must complete authenticator setup before receiving a session.
+The account app supports local sign-in/sign-up, authenticator MFA, password changes, and linked Google, GitHub, Discord, and Microsoft identities. SSO credentials are tested and managed from the admin app; provider and MFA secrets are encrypted at rest using a key derived from `JWT_SECRET`. Keep that secret stable or re-encrypt stored secrets before rotating it. MFA-enforcing roles and superusers must complete authenticator setup before receiving a session.
 
 ## Publishing and deployment
 

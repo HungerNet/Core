@@ -93,7 +93,9 @@ def generate_session_token(
     encoded_header = _b64url_encode(json.dumps(header, separators=(",", ":")).encode("utf-8"))
     encoded_payload = _b64url_encode(json.dumps(payload, separators=(",", ":")).encode("utf-8"))
     signing_input = f"{encoded_header}.{encoded_payload}".encode("ascii")
-    signature = hmac.new(settings.jwt_secret.encode("utf-8"), signing_input, hashlib.sha256).digest()
+    signature = hmac.new(
+        settings.jwt_secret.encode("utf-8"), signing_input, hashlib.sha256
+    ).digest()
     return f"{encoded_header}.{encoded_payload}.{_b64url_encode(signature)}"
 
 
@@ -196,12 +198,7 @@ def decrypt_secret(value: str) -> str:
 
 
 def _totp_fernet() -> Fernet:
-    configured_key = settings.totp_encryption_key
-    key_material = (
-        configured_key.get_secret_value().encode("utf-8")
-        if configured_key is not None
-        else settings.jwt_secret.encode("utf-8")
-    )
+    key_material = settings.jwt_secret.encode("utf-8")
     derived_key = hashlib.sha256(b"HungerNet TOTP encryption v1\0" + key_material).digest()
     return Fernet(base64.urlsafe_b64encode(derived_key))
 

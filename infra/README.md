@@ -20,7 +20,6 @@ Required GitHub environment secrets:
 Required VPS environment variables (configure in the protected VPS environment file, not in source control):
 
 - `POSTGRES_PASSWORD`, `DATABASE_URL`, and `JWT_SECRET` (at least 32 random characters)
-- `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, `DISCORD_CLIENT_ID`, and `DISCORD_CLIENT_SECRET`
 - Optional `POSTGRES_DB`, `POSTGRES_USER`, `JWT_ALGORITHM`, `ACCESS_TOKEN_EXPIRY_MINUTES`, `SESSION_EXPIRY_DAYS`, and rate-limit values
 
 Use the same password in `POSTGRES_PASSWORD` and `DATABASE_URL`. The database URL must use `postgresql+asyncpg://...@db:5432/...`; URL-encode any reserved characters in the password. CORS and OAuth return origins are hardcoded exact lists in backend source. Redeploy the API after changing those lists.
@@ -29,4 +28,4 @@ Use the same password in `POSTGRES_PASSWORD` and `DATABASE_URL`. The database UR
 
 The workflow runs on every push to `main` and can also be started manually. It builds and pushes `ghcr.io/<owner>/<repo>/api:<commit-sha>`, logs the VPS into GHCR, copies the Compose/Caddy files, pulls the image, runs `alembic upgrade head`, then restarts and waits for the API health check. A failed migration prevents the API restart.
 
-OAuth provider credentials are validated when `ENVIRONMENT=production`; unset or empty OAuth secrets fail startup. The Redis service is private to the Compose network and is required for rate-limited request handling.
+The API always runs in production mode. OAuth provider credentials are managed in the admin SSO settings and are not provided to the API through environment variables. `JWT_SECRET` also derives the encryption key for stored MFA and OAuth secrets, so keep it stable or re-encrypt stored values before rotating it. The Redis service is private to the Compose network and is required for rate-limited request handling.

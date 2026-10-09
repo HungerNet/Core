@@ -1,16 +1,15 @@
 from __future__ import annotations
 
-import logging
 import re
 from dataclasses import dataclass
 from typing import Any
-from urllib.parse import urlencode, urlsplit
+from urllib.parse import urlencode
 
 import httpx
 import jwt
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config import OAUTH_CALLBACK_ENDPOINT, RETURN_ORIGINS, settings
+from app.core.config import OAUTH_CALLBACK_ENDPOINT, settings
 from app.core.security import decrypt_secret
 from app.db.models import OAuthProviderConfig
 
@@ -37,149 +36,6 @@ class ProviderConfig:
     token_url: str
     user_url: str
     scopes: tuple[str, ...]
-
-
-def _shared_oauth_configuration_is_complete() -> bool:
-    try:
-        callback = urlsplit(OAUTH_CALLBACK_ENDPOINT.strip())
-        origins = [urlsplit(origin) for origin in RETURN_ORIGINS]
-    except ValueError:
-        return False
-    if (
-        callback.scheme != "https"
-        or not callback.netloc
-        or callback.username
-        or callback.password
-        or callback.query
-        or callback.fragment
-    ):
-        return False
-    if not RETURN_ORIGINS:
-        return False
-    return all(
-        origin.scheme == "https"
-        and bool(origin.netloc)
-        and not origin.username
-        and not origin.password
-        and origin.path in {"", "/"}
-        and not origin.query
-        and not origin.fragment
-        for origin in origins
-    )
-
-
-def is_google_configured() -> bool:
-    return bool(
-        settings.google_client_id
-        and settings.google_client_id.strip()
-        and settings.google_client_secret
-        and settings.google_client_secret.get_secret_value().strip()
-        and _shared_oauth_configuration_is_complete()
-    )
-
-
-def is_github_configured() -> bool:
-    return bool(
-        settings.github_client_id
-        and settings.github_client_id.strip()
-        and settings.github_client_secret
-        and settings.github_client_secret.get_secret_value().strip()
-        and _shared_oauth_configuration_is_complete()
-    )
-
-
-def is_discord_configured() -> bool:
-    return bool(
-        settings.discord_client_id
-        and settings.discord_client_id.strip()
-        and settings.discord_client_secret
-        and settings.discord_client_secret.get_secret_value().strip()
-        and _shared_oauth_configuration_is_complete()
-    )
-
-
-def is_microsoft_configured() -> bool:
-    return bool(
-        settings.microsoft_client_id
-        and settings.microsoft_client_id.strip()
-        and settings.microsoft_client_secret
-        and settings.microsoft_client_secret.get_secret_value().strip()
-        and _shared_oauth_configuration_is_complete()
-    )
-
-
-_PROVIDER_VALIDATORS = {
-    "google": is_google_configured,
-    "github": is_github_configured,
-    "discord": is_discord_configured,
-    "microsoft": is_microsoft_configured,
-}
-
-
-def configured_oauth_providers(*, log_warnings: bool = False) -> list[str]:
-    logger = logging.getLogger("hungernet.auth")
-    configured = []
-    for provider in settings.allowed_oauth_providers:
-        validator = _PROVIDER_VALIDATORS.get(provider.lower())
-        if validator and validator():
-            configured.append(provider.lower())
-        elif log_warnings:
-            logger.warning("oauth_provider_disabled", extra={"provider": provider})
-    return configured
-
-
-def provider_config(provider: str) -> ProviderConfig:
-    provider = provider.lower()
-    values: dict[str, Any] = {
-        "google": (
-            settings.google_client_id,
-            settings.google_client_secret,
-            "https://accounts.google.com/o/oauth2/v2/auth",
-            "https://oauth2.googleapis.com/token",
-            "https://openidconnect.googleapis.com/v1/userinfo",
-            ("openid", "profile", "email"),
-        ),
-        "github": (
-            settings.github_client_id,
-            settings.github_client_secret,
-            "https://github.com/login/oauth/authorize",
-            "https://github.com/login/oauth/access_token",
-            "https://api.github.com/user",
-            ("read:user", "user:email"),
-        ),
-        "discord": (
-            settings.discord_client_id,
-            settings.discord_client_secret,
-            "https://discord.com/oauth2/authorize",
-            "https://discord.com/api/oauth2/token",
-            "https://discord.com/api/users/@me",
-            ("identify", "email"),
-        ),
-        "microsoft": (
-            settings.microsoft_client_id,
-            settings.microsoft_client_secret,
-            "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
-            "https://login.microsoftonline.com/common/oauth2/v2.0/token",
-            "https://graph.microsoft.com/oidc/userinfo",
-            ("openid", "profile", "email"),
-        ),
-    }
-    if provider not in values:
-        raise OAuthProviderError("Unsupported OAuth provider")
-    client_id, secret, authorize_url, token_url, user_url, scopes = values[provider]
-    validator = _PROVIDER_VALIDATORS.get(provider)
-    if validator is None:
-        raise OAuthProviderError("Unsupported OAuth provider")
-    if not validator() or not client_id or secret is None:
-        raise OAuthProviderError(f"{provider.title()} OAuth is not configured")
-    return ProviderConfig(
-        client_id=client_id,
-        client_secret=secret.get_secret_value(),
-        authorize_url=authorize_url,
-        token_url=token_url,
-        user_url=user_url,
-        scopes=scopes,
-    )
 
 
 def provider_config_metadata(provider: str) -> ProviderConfig:
@@ -221,10 +77,7 @@ async def load_provider_config(provider: str, db: AsyncSession) -> ProviderConfi
     provider = provider.lower()
     stored = await db.get(OAuthProviderConfig, provider)
     if stored is None:
-        try:
-            return provider_config(provider)
-        except OAuthProviderError:
-            return None
+        return None
     if not stored.enabled or not stored.client_id or not stored.encrypted_client_secret:
         return None
     metadata = provider_config_metadata(provider)
@@ -292,9 +145,8 @@ def authorization_url(
     nonce: str,
     code_challenge: str,
     redirect_uri: str,
-    config: ProviderConfig | None = None,
+    config: ProviderConfig,
 ) -> str:
-    config = config or provider_config(provider)
     params = {
         "client_id": config.client_id,
         "redirect_uri": redirect_uri,
@@ -318,10 +170,9 @@ async def fetch_identity(
     code_verifier: str,
     expected_nonce: str,
     redirect_uri: str,
+    config: ProviderConfig,
     client: httpx.AsyncClient | None = None,
-    config: ProviderConfig | None = None,
 ) -> OAuthIdentity:
-    config = config or provider_config(provider)
     owns_client = client is None
     http = client or httpx.AsyncClient(timeout=httpx.Timeout(10.0, connect=5.0))
     try:

@@ -9,7 +9,6 @@ import pytest
 from cryptography.hazmat.primitives.asymmetric import rsa
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
-from app.core.config import settings
 from app.core.security import encrypt_secret
 from app.db.base import Base
 from app.db.models import OAuthProviderConfig
@@ -30,6 +29,7 @@ async def test_database_oauth_configuration_decrypts_and_honors_disabled_state()
     session_factory = async_sessionmaker(engine, expire_on_commit=False)
 
     async with session_factory() as db:
+        assert await load_provider_config("microsoft", db) is None
         row = OAuthProviderConfig(
             provider="microsoft",
             client_id="microsoft-client-id",
@@ -122,13 +122,3 @@ async def test_provider_test_rejects_invalid_client_credentials() -> None:
                 "wrong-client-secret",
                 client=client,
             )
-
-
-def test_missing_microsoft_credentials_do_not_enable_provider(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    from app.integrations.oauth import is_microsoft_configured
-
-    monkeypatch.setattr(settings, "microsoft_client_id", None)
-    monkeypatch.setattr(settings, "microsoft_client_secret", None)
-    assert not is_microsoft_configured()

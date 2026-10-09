@@ -122,8 +122,14 @@ def setup_superuser() -> None:
     if user_id is None or len(user_id) > 36:
         typer.echo("SUPERUSER_ID must contain at most 36 characters.", err=True)
         raise typer.Exit(code=2)
-    if username is None or not re.fullmatch(r"[a-z0-9_]{1,64}", username):
-        typer.echo("SUPERUSER_USERNAME must use lowercase letters, numbers, and underscores.", err=True)
+    if username is None:
+        raise typer.Exit(code=2)
+    username = username.lower()
+    if not re.fullmatch(r"[a-z0-9_]{1,64}", username):
+        typer.echo(
+            "SUPERUSER_USERNAME must use lowercase letters, numbers, and underscores.",
+            err=True,
+        )
         raise typer.Exit(code=2)
     if password is None:
         raise typer.Exit(code=2)
@@ -140,5 +146,7 @@ def setup_superuser() -> None:
         typer.echo(f"Could not configure the superuser: {error}", err=True)
         raise typer.Exit(code=1) from None
 
-    typer.echo(f"Superuser @{username} is ready. Scan this OTP seed now; it will not be shown again:")
+    typer.echo(
+        f"Superuser @{username} is ready. Scan this OTP seed now; it will not be shown again:"
+    )
     typer.echo(secret)
