@@ -35,19 +35,19 @@ const faqs = [
 export default function Help() {
   usePageTitle("OptiFine for Fabric | Help")
 
-  // Inject Tawk.to widget safely
-  useEffect(() => {
-    const s1 = document.createElement("script")
-    s1.async = true
-    s1.src = "https://embed.tawk.to/6913ebffc3f840195fe58a21/1j9qt3o0u"
-    s1.charset = "UTF-8"
-    s1.setAttribute("crossorigin", "*")
-    document.body.appendChild(s1)
+  // // Inject Tawk.to widget safely
+  // useEffect(() => {
+  //   const s1 = document.createElement("script")
+  //   s1.async = true
+  //   s1.src = "https://embed.tawk.to/6913ebffc3f840195fe58a21/1j9qt3o0u"
+  //   s1.charset = "UTF-8"
+  //   s1.setAttribute("crossorigin", "*")
+  //   document.body.appendChild(s1)
 
-    return () => {
-      document.body.removeChild(s1)
-    }
-  }, [])
+  //   return () => {
+  //     document.body.removeChild(s1)
+  //   }
+  // }, [])
 
   return (
     <div className="page">
